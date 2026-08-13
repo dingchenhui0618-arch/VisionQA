@@ -1,0 +1,233 @@
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudshell:CreateEnvironment",
+        "cloudshell:CreateSession"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "vpc:CreateVpc",
+        "vpc:CreateVSwitch",
+        "vpc:DescribeVpcs",
+        "vpc:DescribeVpcAttribute",
+        "vpc:DescribeVSwitches",
+        "vpc:DescribeVSwitchAttributes",
+        "vpc:TagResources",
+        "vpc:ListTagResources",
+        "vpc:DeleteVSwitch",
+        "vpc:DeleteVpc"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:CreateSecurityGroup",
+        "ecs:DescribeSecurityGroups",
+        "ecs:DescribeSecurityGroupAttribute",
+        "ecs:TagResources",
+        "ecs:ListTagResources",
+        "ecs:DeleteSecurityGroup"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "oss:PutBucket",
+        "oss:GetBucketInfo",
+        "oss:GetBucketLocation",
+        "oss:GetBucketAcl",
+        "oss:PutBucketPublicAccessBlock",
+        "oss:GetBucketPublicAccessBlock",
+        "oss:PutBucketEncryption",
+        "oss:GetBucketEncryption",
+        "oss:PutBucketLifecycle",
+        "oss:GetBucketLifecycle",
+        "oss:ListObjects",
+        "oss:ListMultipartUploads",
+        "oss:DeleteBucket"
+      ],
+      "Resource": [
+        "acs:oss:*:<ACCOUNT_ID>:visionqa-staging-*-cn-beijing",
+        "acs:oss:*:<ACCOUNT_ID>:visionqa-staging-*-cn-beijing/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "oss:PutObject",
+        "oss:GetObject",
+        "oss:DeleteObject",
+        "oss:AbortMultipartUpload",
+        "oss:ListParts"
+      ],
+      "Resource": "acs:oss:*:<ACCOUNT_ID>:visionqa-staging-*-cn-beijing/staging/visionqa/*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "log:CreateProject",
+        "log:GetProject",
+        "log:CreateLogStore",
+        "log:GetLogStore",
+        "log:UpdateLogStore",
+        "log:CreateIndex",
+        "log:GetIndex",
+        "log:UpdateIndex",
+        "log:TagResources",
+        "log:DeleteLogStore",
+        "log:DeleteProject"
+      ],
+      "Resource": [
+        "acs:log:cn-beijing:<ACCOUNT_ID>:project/visionqa-staging-sls",
+        "acs:log:cn-beijing:<ACCOUNT_ID>:project/visionqa-staging-sls/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "fc:CreateFunction",
+        "fc:GetFunction",
+        "fc:ListFunctions",
+        "fc:UpdateFunction",
+        "fc:DeleteFunction",
+        "fc:PutConcurrencyConfig",
+        "fc:GetConcurrencyConfig",
+        "fc:DeleteConcurrencyConfig",
+        "fc:GetProvisionConfig",
+        "fc:PutProvisionConfig",
+        "fc:DeleteProvisionConfig"
+      ],
+      "Resource": [
+        "acs:fc:cn-beijing:<ACCOUNT_ID>:functions/visionqa-staging-api",
+        "acs:fc:cn-beijing:<ACCOUNT_ID>:functions/visionqa-staging-evaluation-task",
+        "acs:fc:cn-beijing:<ACCOUNT_ID>:functions/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "resourcemanager:GetResourceGroup",
+        "resourcemanager:ListResourceGroups"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ram:PassRole",
+      "Resource": "<EXACT_FC_RUNTIME_ROLE_ARN>",
+      "Condition": {
+        "StringEquals": {
+          "acs:Service": "fc.aliyuncs.com"
+        },
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Deny",
+      "Action": [
+        "ram:CreateAccessKey",
+        "ram:UpdateAccessKey",
+        "ram:DeleteAccessKey",
+        "ram:CreateUser",
+        "ram:DeleteUser",
+        "ram:CreateRole",
+        "ram:UpdateRole",
+        "ram:DeleteRole",
+        "ram:CreatePolicy",
+        "ram:CreatePolicyVersion",
+        "ram:DeletePolicy",
+        "ram:DeletePolicyVersion",
+        "ram:SetDefaultPolicyVersion",
+        "ram:AttachPolicyToUser",
+        "ram:AttachPolicyToGroup",
+        "ram:AttachPolicyToRole",
+        "ram:DetachPolicyFromUser",
+        "ram:DetachPolicyFromGroup",
+        "ram:DetachPolicyFromRole",
+        "ram:CreateServiceLinkedRole"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Deny",
+      "Action": [
+        "rds:CreateDBInstance",
+        "rds:CreateAccount",
+        "rds:CreateDatabase",
+        "rds:ModifySecurityIps",
+        "rds:AllocateInstancePublicConnection",
+        "rds:CreateOrder",
+        "vpc:CreateNatGateway",
+        "vpc:DeleteNatGateway",
+        "vpc:AllocateEipAddress",
+        "vpc:AssociateEipAddress",
+        "vpc:CreateSnatEntry",
+        "ecs:AuthorizeSecurityGroup",
+        "ecs:AuthorizeSecurityGroupEgress",
+        "ecs:ModifySecurityGroupRule",
+        "ecs:ModifySecurityGroupEgressRule",
+        "oss:PutBucketAcl",
+        "oss:PutObjectAcl",
+        "oss:PutBucketPolicy",
+        "oss:PutBucketWebsite",
+        "fc:CreateCustomDomain",
+        "fc:UpdateCustomDomain",
+        "dashscope:*",
+        "sfm:*",
+        "bss:*",
+        "bssapi:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

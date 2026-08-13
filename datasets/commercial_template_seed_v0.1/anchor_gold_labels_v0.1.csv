@@ -1,0 +1,16 @@
+template_id,template_version,asset_id,source_number,assessability,fit_level,fit_score,product_subject_prominence,selling_point_clarity,promotion_hierarchy,mobile_readability,click_motivation,placement_fit,primary_strength,primary_gap,evidence_note,consensus_method,label_status
+platform_promotion_main_image_v0.1,0.1,CT-003,03,APPLICABLE,MEDIUM,85,89,80,87,82,83,89,人物商品与价格促销形成快速焦点,小型徽章与多处入口增加移动端识别成本,人物居中占比大且右下152价格醒目但赠品材质徽章较小,ALIGNED_TWO_REVIEWER_CONSENSUS,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-004,04,APPLICABLE,MEDIUM,84,88,81,84,84,81,86,人物商品与价格折扣形成清晰双焦点,功能卖点和小型赠品标识证据偏弱,人物约占画面六成且79.9价格与折扣横幅相邻但赠品文字较小,ALIGNED_TWO_REVIEWER_CONSENSUS,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-006,06,NOT_ASSESSABLE,,,,,,,,,促销版式框架存在,核心商品展示区域为空,大面积主图区域未放置待售商品,CATEGORICAL_EVIDENCE_ADJUDICATION,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-012,12,APPLICABLE,MEDIUM,81,87,80,78,73,81,81,双人穿着场景和含绒量卖点明确,多档价格优惠标签堆叠削弱阅读顺序,人物居中且卖点可见但500减100与299等多组数字竞争,ALIGNED_TWO_REVIEWER_CONSENSUS_WITH_EVIDENCE_REVIEW,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-015,15,APPLICABLE,MEDIUM,83,87,89,79,76,82,83,版型功能卖点与穿着效果表达充分,底部多组价格和减免数字视觉竞争,裤装主体与功能文案对应明确但182与259和59等数字同时出现,ALIGNED_TWO_REVIEWER_CONSENSUS,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-021,21,NOT_ASSESSABLE,,,,,,,,,价格与促销框架完整,核心商品区域为占位块,画面中部商品位置保留白色方形占位,CATEGORICAL_EVIDENCE_ADJUDICATION,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-024,24,APPLICABLE,MEDIUM,83,84,85,82,84,77,82,商品特写与轻薄卖点表达直接,无模特且促销权益较弱限制点击动机,商品与局部放大图清楚且48元价格醒目但缺少强活动入口,ALIGNED_TWO_REVIEWER_CONSENSUS,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-025,25,APPLICABLE,MEDIUM,80,78,79,83,82,78,80,价格满减与折扣层级较完整,商品本体展示不足且存在占位区域,人物占比大但商品细节有限并保留灰色占位框,ALIGNED_TWO_REVIEWER_CONSENSUS,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-030,30,APPLICABLE,MEDIUM,86,88,87,84,85,88,87,穿着场景与UPF50功能卖点清楚,底部多件折扣规则增加阅读成本,人物穿着防晒衣占主体且功能标签可读但两档件数折扣并列,ALIGNED_TWO_REVIEWER_CONSENSUS,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-035,35,NOT_ASSESSABLE,,,,,,,,,价格活动和版式结构完整,主体商品区域为空,中央大面积区域未展示待售商品,CATEGORICAL_EVIDENCE_ADJUDICATION,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-042,42,APPLICABLE,MEDIUM,86,88,88,85,81,85,87,穿着效果与支撑塑形卖点匹配,底部优惠计算链条偏长且不够直观,人物和两条功能标签清晰但原价与多项减免同时展示,ALIGNED_TWO_REVIEWER_CONSENSUS,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-043,43,APPLICABLE,MEDIUM,72,80,72,65,68,70,70,人物和服装轮廓完整可识别,装饰文字卡片与弱促销表达争夺商品焦点,英文线框与倾斜卡片覆盖主体且只有288价格缺少明确折扣,ALIGNED_TWO_REVIEWER_CONSENSUS_WITH_EVIDENCE_REVIEW,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-044,44,NOT_APPLICABLE,,,,,,,,,人物服装与穿搭风格表达完整,缺少价格优惠和活动CTA不符合促销主图目标,画面主要表达夏装风格和新品穿搭而非促销转化,CATEGORICAL_EVIDENCE_ADJUDICATION,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-047,47,APPLICABLE,MEDIUM,86,87,87,85,81,86,87,亲子商品关系和羊毛材质卖点明确,价格券满减和折扣信息接近密度上限,双人穿着展示清楚但298与满减和50元券及9折同时出现,ALIGNED_TWO_REVIEWER_CONSENSUS,PHASE1_GOLD
+platform_promotion_main_image_v0.1,0.1,CT-050,50,APPLICABLE,MEDIUM,84,90,74,84,82,85,86,童装主体识别和价格优惠非常直接,服装功能材质卖点不足且优惠门槛偏高,儿童和背带裤占据主要画面但卖点依赖视觉且满减门槛较高,ALIGNED_TWO_REVIEWER_CONSENSUS,PHASE1_GOLD

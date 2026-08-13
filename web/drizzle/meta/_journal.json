@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1785224026924,
+      "tag": "0000_workable_squirrel_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1785229200410,
+      "tag": "0001_round_thunderbolts",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1785287178302,
+      "tag": "0002_familiar_sentinels",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1785287304428,
+      "tag": "0003_yellow_electro",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1785287460108,
+      "tag": "0004_massive_iron_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1785288752795,
+      "tag": "0005_shocking_scarlet_witch",
+      "breakpoints": true
+    }
+  ]
+}

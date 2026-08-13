@@ -1,0 +1,53 @@
+{
+  "schema_version": "calibration-statistics@0.1.0",
+  "source": "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\calibration_human_review_v0.1.csv",
+  "row_count": 40,
+  "unique_assets": 40,
+  "review_status": {
+    "COMPLETED": 40
+  },
+  "reviewers": {
+    "EXTERNAL_REVIEWER_INVESTOR_PROXY": 40
+  },
+  "overall_score": {
+    "min": 82.0,
+    "max": 91.0,
+    "mean": 86.58
+  },
+  "raw_human_decision": {
+    "PASS": 40
+  },
+  "threshold_gate_decision": {
+    "PASS": 2,
+    "REVIEW": 38
+  },
+  "raw_gate_mismatches": 38,
+  "placements": {
+    "AESTHETIC_REFERENCE": {
+      "count": 2,
+      "mean": 83.5,
+      "min": 82.0,
+      "max": 85.0
+    },
+    "LIFESTYLE_CAMPAIGN": {
+      "count": 16,
+      "mean": 86.88,
+      "min": 84.0,
+      "max": 91.0
+    },
+    "PRODUCT_MAIN_IMAGE": {
+      "count": 22,
+      "mean": 86.64,
+      "min": 85.0,
+      "max": 88.0
+    }
+  },
+  "formula_delta_vs_reviewer": {
+    "comparable_count": 38,
+    "mean": -2.69,
+    "min": -4.15,
+    "max": -0.63
+  },
+  "validation_errors": [],
+  "validation_warnings": []
+}

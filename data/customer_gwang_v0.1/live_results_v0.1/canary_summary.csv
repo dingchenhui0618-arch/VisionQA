@@ -1,0 +1,6 @@
+﻿"asset_alias","asset_sha256","http_status","score","gate_decision","score_status","observations_count","response_file"
+"gwang/6e977399dd360b69.jpg","6e977399dd360b69d06aadaab910f0bd33e7dee64ea79552cfa161307a21e071","502",,,,"0","D:\VisionQA\data\customer_gwang_v0.1\live_results_v0.1\response_01.json"
+"gwang/9785cfc4cf3440bc.jpg","9785cfc4cf3440bc0a113276ce15802fce30d60a1b75171b4b81901fbe80772a","200",,,"PARTIAL","0","D:\VisionQA\data\customer_gwang_v0.1\live_results_v0.1\response_02.json"
+"gwang/1c577045771119b9.jpg","1c577045771119b9cfc683751e9e44beb42f9194b444201022a78b45af2e709d","413",,,,"0","D:\VisionQA\data\customer_gwang_v0.1\live_results_v0.1\response_03.json"
+"gwang/700d190d8cf52b9e.jpg","700d190d8cf52b9ec8a086613943e6dbf8e18c80ab277c9b484a604b77d4c5b8","502",,,,"0","D:\VisionQA\data\customer_gwang_v0.1\live_results_v0.1\response_04.json"
+"gwang/f5ddce3cb4b24e98.jpg","f5ddce3cb4b24e98fec63569e5e4a041fdc27de7e1ba28a533eea9b3f3a5ca98","502",,,,"0","D:\VisionQA\data\customer_gwang_v0.1\live_results_v0.1\response_05.json"

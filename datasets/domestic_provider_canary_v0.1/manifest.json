@@ -1,0 +1,240 @@
+{
+  "manifest_version": "0.1.0",
+  "dataset_id": "domestic-provider-canary-v0.1",
+  "created_at": "2026-07-29",
+  "purpose": "Pre-production canary for a domestic multimodal provider; dataset preparation only.",
+  "execution_status": "NOT_RUN",
+  "template": {
+    "template_id": "platform_promotion_main_image_v0.1",
+    "template_version": "0.1"
+  },
+  "source_collection": {
+    "collection_id": "purchased-fashion-commerce-template-seed-53",
+    "manifest_path": "D:\\VisionQA\\datasets\\commercial_template_seed_v0.1\\manifest.json",
+    "gold_labels_path": "D:\\VisionQA\\datasets\\commercial_template_seed_v0.1\\anchor_gold_labels_v0.1.csv"
+  },
+  "rights": {
+    "source_type": "purchased_template_material",
+    "confirmed_at": "2026-07-28",
+    "internal_research_allowed": true,
+    "third_party_model_testing_allowed": true,
+    "redistribution_allowed": false,
+    "verification": "5_OF_5_MATCH_SOURCE_RIGHTS_MANIFEST"
+  },
+  "governance_gates": {
+    "staging_ready": "PENDING_PLATFORM_CONFIRMATION",
+    "private_short_lived_image_delivery": "PENDING_PLATFORM_CONFIRMATION",
+    "provider_and_model_approved": "PENDING_EXTERNAL_GOVERNANCE_APPROVAL",
+    "data_processing_terms_approved": "PENDING_EXTERNAL_GOVERNANCE_APPROVAL",
+    "budget_approved": "PENDING_OWNER_APPROVAL",
+    "all_required_before_call": true
+  },
+  "payload_policy": {
+    "delivery": "PRIVATE_SHORT_LIVED_URL_ONLY",
+    "provider_request_asset_alias": "canary_run_item_id",
+    "allowed_metadata": [
+      "canary_run_item_id",
+      "template_id",
+      "template_version",
+      "response_schema_version",
+      "language"
+    ],
+    "never_send_fields": [
+      "local_source_path",
+      "original_filename",
+      "source_collection_manifest",
+      "human_gold_assessability",
+      "human_gold_fit_level",
+      "human_gold_fit_score",
+      "human_gold_subscores",
+      "human_primary_strength",
+      "human_primary_gap",
+      "human_evidence_note",
+      "rights_confirmed_by",
+      "archive_metadata",
+      "editable_source_metadata",
+      "api_key",
+      "access_token",
+      "account_id",
+      "personal_data"
+    ]
+  },
+  "budget": {
+    "currency": "CNY",
+    "provider": "PENDING_SELECTION",
+    "model": "PENDING_APPROVAL",
+    "image_count": 5,
+    "estimated_input_tokens": null,
+    "estimated_output_tokens_cap": null,
+    "estimated_total_cost": null,
+    "formula": "5 * (provider_image_input_cost + capped_text_input_cost + capped_output_cost)",
+    "hard_batch_cap": 5,
+    "call_performed": false
+  },
+  "run_order": [
+    "CANARY-01",
+    "CANARY-02",
+    "CANARY-03",
+    "CANARY-04",
+    "CANARY-05"
+  ],
+  "items": [
+    {
+      "run_item_id": "CANARY-01",
+      "asset_id": "CT-030",
+      "source_number": 30,
+      "source_manifest_asset_id": "commercial-seed-030",
+      "local_source_path": "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (30).jpg",
+      "media_type": "image/jpeg",
+      "width": 800,
+      "height": 800,
+      "bytes": 298477,
+      "sha256": "9578b020316332cb017dd107559b3f862a75285041a536ee96632640c3202406",
+      "source_exists": true,
+      "source_bytes_match_manifest": true,
+      "rights_match_collection": true,
+      "gold": {
+        "label_status": "PHASE1_GOLD",
+        "assessability": "APPLICABLE",
+        "fit_level": "MEDIUM",
+        "fit_score": 86,
+        "subscores": {
+          "product_subject_prominence": 88,
+          "selling_point_clarity": 87,
+          "promotion_hierarchy": 84,
+          "mobile_readability": 85,
+          "click_motivation": 88,
+          "placement_fit": 87
+        }
+      },
+      "test_purpose": "Relative-high end of the current MEDIUM set; verify evidence-backed medium/high-range scoring without inventing a hard defect.",
+      "expected_gate": "SCORED_APPLICABLE",
+      "provider_payload_must_exclude_gold": true
+    },
+    {
+      "run_item_id": "CANARY-02",
+      "asset_id": "CT-012",
+      "source_number": 12,
+      "source_manifest_asset_id": "commercial-seed-012",
+      "local_source_path": "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (12).jpg",
+      "media_type": "image/jpeg",
+      "width": 800,
+      "height": 800,
+      "bytes": 374182,
+      "sha256": "aabe885007031b88802da187cc3759ca80614ff998670ce1cb3bd25da930678d",
+      "source_exists": true,
+      "source_bytes_match_manifest": true,
+      "rights_match_collection": true,
+      "gold": {
+        "label_status": "PHASE1_GOLD",
+        "assessability": "APPLICABLE",
+        "fit_level": "MEDIUM",
+        "fit_score": 81,
+        "subscores": {
+          "product_subject_prominence": 87,
+          "selling_point_clarity": 80,
+          "promotion_hierarchy": 78,
+          "mobile_readability": 73,
+          "click_motivation": 81,
+          "placement_fit": 81
+        }
+      },
+      "test_purpose": "High information density; verify promotion hierarchy and mobile-readability evidence plus an actionable de-cluttering repair prompt.",
+      "expected_gate": "SCORED_APPLICABLE",
+      "provider_payload_must_exclude_gold": true
+    },
+    {
+      "run_item_id": "CANARY-03",
+      "asset_id": "CT-024",
+      "source_number": 24,
+      "source_manifest_asset_id": "commercial-seed-024",
+      "local_source_path": "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (24).jpg",
+      "media_type": "image/jpeg",
+      "width": 800,
+      "height": 800,
+      "bytes": 259805,
+      "sha256": "773fc568d574ce5cf7929a7353a973a4a9f6bd99d51d9d0addead9e85be92399",
+      "source_exists": true,
+      "source_bytes_match_manifest": true,
+      "rights_match_collection": true,
+      "gold": {
+        "label_status": "PHASE1_GOLD",
+        "assessability": "APPLICABLE",
+        "fit_level": "MEDIUM",
+        "fit_score": 83,
+        "subscores": {
+          "product_subject_prominence": 84,
+          "selling_point_clarity": 85,
+          "promotion_hierarchy": 82,
+          "mobile_readability": 84,
+          "click_motivation": 77,
+          "placement_fit": 82
+        }
+      },
+      "test_purpose": "Product flat-lay without a model; verify no false human/body defect and a proportionate click-motivation observation.",
+      "expected_gate": "SCORED_APPLICABLE",
+      "provider_payload_must_exclude_gold": true
+    },
+    {
+      "run_item_id": "CANARY-04",
+      "asset_id": "CT-044",
+      "source_number": 44,
+      "source_manifest_asset_id": "commercial-seed-044",
+      "local_source_path": "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (44).jpg",
+      "media_type": "image/jpeg",
+      "width": 1000,
+      "height": 1018,
+      "bytes": 308611,
+      "sha256": "853c8bf3ea98e474aad976ad3a7208689d8118c4a12083ed6d64c49f951cd4e6",
+      "source_exists": true,
+      "source_bytes_match_manifest": true,
+      "rights_match_collection": true,
+      "gold": {
+        "label_status": "PHASE1_GOLD",
+        "assessability": "NOT_APPLICABLE",
+        "fit_level": null,
+        "fit_score": null,
+        "subscores": null
+      },
+      "test_purpose": "Channel mismatch; require NOT_APPLICABLE evidence and prohibit forced commercial scoring.",
+      "expected_gate": "NO_SCORE_NOT_APPLICABLE",
+      "provider_payload_must_exclude_gold": true
+    },
+    {
+      "run_item_id": "CANARY-05",
+      "asset_id": "CT-035",
+      "source_number": 35,
+      "source_manifest_asset_id": "commercial-seed-035",
+      "local_source_path": "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (35).jpg",
+      "media_type": "image/jpeg",
+      "width": 800,
+      "height": 800,
+      "bytes": 221457,
+      "sha256": "208b4e6ef7d62d3f46ef39d131cb9ca908924b0ee97a308448a330def3b17d28",
+      "source_exists": true,
+      "source_bytes_match_manifest": true,
+      "rights_match_collection": true,
+      "gold": {
+        "label_status": "PHASE1_GOLD",
+        "assessability": "NOT_ASSESSABLE",
+        "fit_level": null,
+        "fit_score": null,
+        "subscores": null
+      },
+      "test_purpose": "Missing product-subject boundary; require NOT_ASSESSABLE or explicit manual review and prohibit forced commercial scoring.",
+      "expected_gate": "NO_SCORE_NOT_ASSESSABLE",
+      "provider_payload_must_exclude_gold": true
+    }
+  ],
+  "global_stop_conditions": [
+    "Any governance gate is not approved.",
+    "Source file is missing or SHA-256 differs from this manifest.",
+    "Image delivery is public, persistent, or not short-lived.",
+    "Request payload contains any never_send_fields entry or human gold label.",
+    "Projected batch cost is unavailable or exceeds the owner-approved cap.",
+    "Provider returns malformed schema twice consecutively.",
+    "Provider assigns a commercial score to CT-044 or CT-035.",
+    "Provider silently passes CT-035.",
+    "Any unauthorized retention, training-use, or redistribution behavior is detected."
+  ]
+}

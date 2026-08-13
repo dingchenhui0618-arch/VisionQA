@@ -1,0 +1,20 @@
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "oss:GetObject",
+        "oss:GetObjectMeta"
+      ],
+      "Resource": "acs:oss:*:*:VISIONQA_STAGING_BUCKET/staging/visionqa/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "log:PostLogStoreLogs"
+      ],
+      "Resource": "acs:log:cn-beijing:*:project/VISIONQA_SLS_PROJECT/logstore/VISIONQA_SLS_LOGSTORE"
+    }
+  ]
+}

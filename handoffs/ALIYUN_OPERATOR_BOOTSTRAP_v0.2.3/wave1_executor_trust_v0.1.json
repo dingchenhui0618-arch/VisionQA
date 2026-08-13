@@ -1,0 +1,19 @@
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "RAM": [
+          "acs:ram::<ACCOUNT_ID>:user/visionqa-staging-operator"
+        ]
+      },
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    }
+  ]
+}

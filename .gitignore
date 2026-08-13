@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Node / frontend build output
+node_modules/
+.next/
+.vinext/
+.wrangler/
+.turbo/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Local runtime output
+runs/
+outputs/
+work/
+*.log
+.tmp-*
+
+# Credentials and machine-local configuration
+secrets/
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+.private/
+*.pem
+*.p12
+*.pfx
+
+# User-uploaded runtime assets
+uploads/
+web/public/uploads/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.nested-git-backup/
+
+# Generated handoff archives (their reviewed source folders are tracked)
+*.zip
+*.7z
+*.rar

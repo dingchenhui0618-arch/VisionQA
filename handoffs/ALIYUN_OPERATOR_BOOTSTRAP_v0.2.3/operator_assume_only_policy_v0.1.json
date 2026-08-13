@@ -1,0 +1,92 @@
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudshell:CreateEnvironment",
+        "cloudshell:CreateSession"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "acs:ram::<ACCOUNT_ID>:role/visionqa-staging-wave1-executor",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sts:GetCallerIdentity",
+        "ram:GetUser",
+        "ram:ListAccessKeys",
+        "ram:ListVirtualMFADevices",
+        "ram:GetRole",
+        "ram:ListPoliciesForUser",
+        "ram:ListPoliciesForRole",
+        "ram:GetPolicy",
+        "ram:ListPolicyVersions",
+        "ram:GetPolicyVersion",
+        "resourcemanager:ListResourceGroups",
+        "resourcemanager:GetResourceGroup",
+        "vpc:DescribeVpcs",
+        "vpc:DescribeVpcAttribute",
+        "vpc:DescribeVSwitches",
+        "vpc:DescribeVSwitchAttributes",
+        "ecs:DescribeZones",
+        "ecs:DescribeSecurityGroups",
+        "ecs:DescribeSecurityGroupAttribute",
+        "rds:DescribeDBInstances",
+        "fc:ListFunctions",
+        "actiontrail:DescribeTrails"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Deny",
+      "Action": [
+        "ram:CreateAccessKey",
+        "ram:UpdateAccessKey",
+        "ram:DeleteAccessKey",
+        "ram:CreateUser",
+        "ram:DeleteUser",
+        "ram:CreateRole",
+        "ram:UpdateRole",
+        "ram:DeleteRole",
+        "ram:CreatePolicy",
+        "ram:CreatePolicyVersion",
+        "ram:DeletePolicy",
+        "ram:DeletePolicyVersion",
+        "ram:SetDefaultPolicyVersion",
+        "ram:AttachPolicyToUser",
+        "ram:AttachPolicyToGroup",
+        "ram:AttachPolicyToRole",
+        "ram:DetachPolicyFromUser",
+        "ram:DetachPolicyFromGroup",
+        "ram:DetachPolicyFromRole",
+        "ram:CreateServiceLinkedRole",
+        "rds:*",
+        "vpc:CreateNatGateway",
+        "vpc:DeleteNatGateway",
+        "vpc:AllocateEipAddress",
+        "vpc:AssociateEipAddress",
+        "vpc:CreateSnatEntry",
+        "dashscope:*",
+        "sfm:*",
+        "bss:*",
+        "bssapi:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

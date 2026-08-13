@@ -1,0 +1,13 @@
+decision_id,area,required_owner,normalized_owner_role,owner_name,decision,decision_date,structural_validation,evidence_validation,execution_class,normalized_status,blocking_reason,next_required_action
+ALIYUN-ACCOUNT-001,ACCOUNT,阿里云账号管理员,账户Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,账号声明存在但没有可读取的脱敏控制台证据,"补一份脱敏截图或工单引用，证明实名认证、中国内地服务可用、目标地域 cn-beijing；隐藏账号号段和敏感信息"
+ALIYUN-RAM-001,IAM,阿里云账号管理员,账户Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,证据引用明确写为待补且同目录不存在证据,"创建后补 visionqa-staging-operator 的脱敏截图，需显示仅控制台访问、MFA 已启用、无 AccessKey、无 AdministratorAccess"
+ALIYUN-ROLE-001,IAM,阿里云账号管理员,账户Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,运行角色策略证据待补,"补 visionqa-staging-runtime 的可信实体和最小权限策略脱敏截图或导出的非敏感策略摘要"
+ALIYUN-OSS-001,OSS,数据责任人/阿里云管理员,数据Owner+账户Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,OSS 生命周期配置证据待补,"补北京私有 OSS、staging/visionqa 前缀、当前对象 14 天永久删除、未完成分片 1 天清理、无公网 ACL 的脱敏证据"
+ALIYUN-RDS-001,RDS_POSTGRESQL,数据责任人/阿里云管理员,数据Owner+账户Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,RDS 网络与白名单证据待补,"补 RDS PostgreSQL cn-beijing、仅 VPC 内网、无公网地址、白名单不含 0.0.0.0/0 的脱敏证据"
+ALIYUN-COMPUTE-001,COMPUTE,技术负责人/阿里云管理员,技术Owner+账户Owner,丁陈辉,FUNCTION_COMPUTE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,FC 与稳定出口配置证据待补,"补 FC 服务、VPC/vSwitch 绑定和稳定出口 IP 已配置的“是/否”证明；证据中不要写 IP 明文"
+ALIYUN-BAILIAN-SPACE-001,MODEL_STUDIO,阿里云管理员,账户Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,百炼独立业务空间证据待补,"补 cn-beijing 的 visionqa-staging 独立业务空间和仅授权固定视觉模型的脱敏证据"
+ALIYUN-BAILIAN-KEY-001,MODEL_STUDIO,阿里云管理员,账户Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,BLOCKED,PENDING_PREREQUISITES,Key 范围和 IP 白名单证据待补且数据治理尚未闭环,"先完成稳定出口 IP、百炼数据治理和 cloud smoke；之后由管理员在控制台创建 Key 并直接写入 Secret，只补模型范围/IP 白名单截图，不得提交 Key 值"
+ALIYUN-BAILIAN-DATA-001,DATA_GOVERNANCE,数据责任人/阿里云管理员,数据Owner+账户Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,BLOCKED,PENDING_EVIDENCE,明确标注 PENDING 且缺少服务协议或工单条款证据,"提供阿里云官方协议或支持工单编号/脱敏 PDF，覆盖留存天数、删除 SLA、备份淘汰、人工审核边界和是否用于训练；此前 Qwen fetch 必须保持 0"
+ALIYUN-BUDGET-001,COST,预算责任人,预算Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,预算告警配置证据待补,"补 project=visionqa/environment=staging 范围内 ¥10/¥16/¥20 告警配置的脱敏截图，并显示预算接收责任人"
+ALIYUN-LOG-001,AUDIT,安全或数据责任人,安全Owner+数据Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,SLS 保存期和脱敏配置证据待补,"补应用日志 30 天、安全审计 90 天及禁止敏感正文的脱敏配置证据"
+ALIYUN-REVOCATION-001,REVOCATION,阿里云管理员/预算责任人,账户Owner+预算Owner,丁陈辉,APPROVE,2026-07-29,PASS,PENDING,CONDITIONAL,PENDING_EVIDENCE,撤销核验清单不存在,"补一份已签名或具名的非敏感撤销清单，明确 Canary 后禁用 Key、回收写权限、清理对象、停止资源和核验账单"

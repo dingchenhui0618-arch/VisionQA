@@ -1,0 +1,57 @@
+Policy: ALIYUN_OPERATOR_BOOTSTRAP_v0.2.3
+Policy-SHA256: e1dc84a67bc78723ac571d887a700031080f293ffbc53834466426b7fbc8f554
+
+ecs:CreateSecurityGroup
+ecs:DeleteSecurityGroup
+ecs:DescribeSecurityGroupAttribute
+ecs:DescribeSecurityGroups
+ecs:ListTagResources
+ecs:TagResources
+fc:CreateFunction
+fc:DeleteConcurrencyConfig
+fc:DeleteFunction
+fc:DeleteProvisionConfig
+fc:GetConcurrencyConfig
+fc:GetFunction
+fc:GetProvisionConfig
+fc:ListFunctions
+fc:ListTaggedResources
+fc:PutConcurrencyConfig
+fc:PutProvisionConfig
+fc:TagResources
+log:CreateLogStore
+log:CreateProject
+log:DeleteLogStore
+log:DeleteProject
+log:GetLogStore
+log:GetProject
+log:ListTagResources
+log:TagResources
+oss:DeleteBucket
+oss:GetBucketAcl
+oss:GetBucketEncryption
+oss:GetBucketInfo
+oss:GetBucketLifecycle
+oss:GetBucketPublicAccessBlock
+oss:GetBucketTagging
+oss:ListMultipartUploads
+oss:ListObjects
+oss:PutBucket
+oss:PutBucketEncryption
+oss:PutBucketLifecycle
+oss:PutBucketPublicAccessBlock
+oss:PutBucketTagging
+ram:PassRole (implicit only through FC CreateFunction role binding)
+resourcemanager:GetResourceGroup
+sts:GetCallerIdentity (Operator and assumed-role identity probes)
+sts:AssumeRole (exact role visionqa-staging-wave1-executor only; MFA required)
+vpc:CreateVpc
+vpc:CreateVSwitch
+vpc:DeleteVpc
+vpc:DeleteVSwitch
+vpc:DescribeVpcAttribute
+vpc:DescribeVpcs
+vpc:DescribeVSwitchAttributes
+vpc:DescribeVSwitches
+vpc:ListTagResources
+vpc:TagResources

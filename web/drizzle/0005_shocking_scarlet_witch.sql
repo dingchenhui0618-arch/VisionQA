@@ -1,0 +1,1 @@
+ALTER TABLE `batches` ADD `request_sha256` text;

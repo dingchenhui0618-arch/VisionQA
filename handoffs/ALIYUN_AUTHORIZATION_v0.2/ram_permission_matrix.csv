@@ -1,0 +1,13 @@
+identity,identity_type,environment,service,resource_scope,allowed_capabilities,explicitly_not_allowed,credential_method,grant_timing,revoke_condition
+阿里云主账号,ACCOUNT,staging,RAM/费用/服务开通,账号级一次性治理,实名认证;创建RAM身份;开通必要服务;配置预算联系人,日常部署;运行应用;创建AccessKey给项目,控制台+MFA,仅初始化和紧急恢复,初始化完成立即退出日常流程
+visionqa-staging-operator,RAM_USER,staging,控制台,资源组visionqa-staging和标签environment=staging,查看配置;查看账单;查看日志;按批准单执行部署,AdministratorAccess;生产资源;API调用访问;创建AccessKey,控制台密码+MFA,部署窗口临时授予写权限,部署验收后降为只读
+visionqa-staging-deployer,RAM_ROLE,staging,资源控制面,仅cn-beijing且仅资源组visionqa-staging,创建或更新已批准的OSS/RDS/计算/SLS配置;执行迁移,生产地域;RAM管理;费用充值;扩大百炼模型范围;公共OSS;RDS公网,STS短期扮演,仅批准的部署窗口,窗口结束或验收失败立即解除
+visionqa-staging-runtime,RAM_ROLE,staging,OSS,精确Bucket的staging/visionqa/*且治理层固定全部当前对象14天永久删除和未完成Multipart Upload 1天清理,GetObject;PutObject;DeleteObject;必要的分片操作;受前缀约束的ListObjects,PutBucketAcl;PutBucketPolicy;PutBucketLifecycle;DeleteBucket;访问其他前缀;修改14天对象或1天分片生命周期,计算服务角色STS,运行期间,停用staging或发生安全事件
+visionqa-staging-runtime,RAM_ROLE,staging,RDS PostgreSQL,无RDS控制面权限,无,RDS实例创建删除;白名单修改;公网地址管理;备份策略修改,VPC+数据库最小账号,运行期间,停用staging或数据库账号轮换
+visionqa-staging-runtime,RAM_ROLE,staging,KMS/Secret Manager,精确到已批准的百炼Key和RDS口令Secret,读取当前Secret版本;必要的解密,列出全部Secret;创建删除Secret;读取其他项目Secret;管理密钥,计算服务角色STS,运行期间,Secret撤销或服务停用
+visionqa-staging-runtime,RAM_ROLE,staging,SLS,精确Project和Logstore,写入脱敏应用日志,创建删除Project;修改保存期限;读取其他日志;写敏感正文,计算服务角色STS,运行期间,服务停用
+visionqa-staging-runtime,RAM_ROLE,staging,百炼,visionqa-staging业务空间内固定模型,仅推理调用,API Key管理;模型调优;知识库;数据处理;长期记忆;其他模型,自定义范围百炼API Key从Secret注入,单次Canary显式开启,达到5张15请求20元任一阈值或Canary结束
+visionqa-staging-migrator,DATABASE_ACCOUNT,staging,RDS PostgreSQL,仅VisionQA staging schema,执行已审查迁移;建改项目schema内对象,实例管理;其他数据库;业务日常读写;超级用户,数据库Secret临时注入,迁移窗口,迁移验收后立即禁用
+visionqa-staging-app,DATABASE_ACCOUNT,staging,RDS PostgreSQL,仅VisionQA staging schema,SELECT;INSERT;UPDATE;确需的DELETE,DDL;超级用户;跨schema;创建角色;修改审计表历史,数据库Secret注入,运行期间,服务停用或凭据轮换
+visionqa-staging-auditor,RAM_USER,staging,RAM/OSS/RDS/SLS/费用,visionqa-staging只读视图,查看配置;查看脱敏日志;查看预算,资源变更;Secret值读取;对象正文读取;模型调用,控制台+MFA,外审窗口,外审结束
+visionqa-staging-local-bootstrap,RAM_USER,staging,STS,仅visionqa-staging-deployer角色,AssumeRole,直接访问OSS/RDS/KMS/百炼;长期部署权限,本机Secret Manager中的短期AccessKey仅例外使用,仅本地无法无AK运行且书面批准时,当日任务结束删除AccessKey和用户

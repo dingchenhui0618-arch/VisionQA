@@ -1,0 +1,67 @@
+﻿[
+    {
+        "asset_alias":  "gwang/6e977399dd360b69.jpg",
+        "source_sha256":  "6e977399dd360b69d06aadaab910f0bd33e7dee64ea79552cfa161307a21e071",
+        "source_bytes":  164078,
+        "prepared_bytes":  164078,
+        "prepared_derivative":  false,
+        "http_status":  200,
+        "overall_score":  null,
+        "gate_decision":  "REVIEW",
+        "score_status":  "PARTIAL",
+        "observations_count":  3,
+        "response_file":  "D:\\VisionQA\\data\\mixed_commercial_reference_v0.3\\live_results\\response_01.json"
+    },
+    {
+        "asset_alias":  "gwang/700d190d8cf52b9e.jpg",
+        "source_sha256":  "700d190d8cf52b9ec8a086613943e6dbf8e18c80ab277c9b484a604b77d4c5b8",
+        "source_bytes":  392117,
+        "prepared_bytes":  392117,
+        "prepared_derivative":  false,
+        "http_status":  200,
+        "overall_score":  null,
+        "gate_decision":  "REJECT",
+        "score_status":  "PARTIAL",
+        "observations_count":  1,
+        "response_file":  "D:\\VisionQA\\data\\mixed_commercial_reference_v0.3\\live_results\\response_02.json"
+    },
+    {
+        "asset_alias":  "gwang/f5ddce3cb4b24e98.jpg",
+        "source_sha256":  "f5ddce3cb4b24e98fec63569e5e4a041fdc27de7e1ba28a533eea9b3f3a5ca98",
+        "source_bytes":  246236,
+        "prepared_bytes":  246236,
+        "prepared_derivative":  false,
+        "http_status":  200,
+        "overall_score":  null,
+        "gate_decision":  "REJECT",
+        "score_status":  "PARTIAL",
+        "observations_count":  4,
+        "response_file":  "D:\\VisionQA\\data\\mixed_commercial_reference_v0.3\\live_results\\response_03.json"
+    },
+    {
+        "asset_alias":  "xiaoyu/d5b064961a59c36a.jpg",
+        "source_sha256":  "d5b064961a59c36a875fb5aea29a876e7679b5fdef65f709f5d7c29011382573",
+        "source_bytes":  98732,
+        "prepared_bytes":  98732,
+        "prepared_derivative":  false,
+        "http_status":  200,
+        "overall_score":  82,
+        "gate_decision":  "REVIEW",
+        "score_status":  "SUCCEEDED",
+        "observations_count":  3,
+        "response_file":  "D:\\VisionQA\\data\\mixed_commercial_reference_v0.3\\live_results\\response_04.json"
+    },
+    {
+        "asset_alias":  "xiaoyu/fd7e3fb17988a2d7.jpg",
+        "source_sha256":  "fd7e3fb17988a2d7ba8c8e63834053ef3e89be42c9c1af5006293e0bc428592d",
+        "source_bytes":  407404,
+        "prepared_bytes":  407404,
+        "prepared_derivative":  false,
+        "http_status":  200,
+        "overall_score":  null,
+        "gate_decision":  "REJECT",
+        "score_status":  "PARTIAL",
+        "observations_count":  3,
+        "response_file":  "D:\\VisionQA\\data\\mixed_commercial_reference_v0.3\\live_results\\response_05.json"
+    }
+]

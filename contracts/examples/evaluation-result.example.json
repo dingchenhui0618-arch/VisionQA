@@ -1,0 +1,146 @@
+{
+  "schema_version": "0.1.0",
+  "run": {
+    "run_id": "run_20260728_0001",
+    "created_at": "2026-07-28T10:30:00+08:00",
+    "code_version": "git:example-commit",
+    "dataset_version": "pilot-0.1.0",
+    "taxonomy_version": "0.1",
+    "gates_version": "0.1",
+    "prompt_version": "observer-0.1.0",
+    "provider_adapter_version": "adapter-0.1.0",
+    "model_snapshot": "provider-returned-model-snapshot",
+    "configuration_hash": "sha256:example-configuration-hash"
+  },
+  "input": {
+    "asset_id": "candidate_image_01",
+    "asset_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "scenario": "fashion_ecommerce_ai_model_image",
+    "reference_asset_ids": []
+  },
+  "scope": {
+    "product_fidelity": {
+      "status": "NOT_VERIFIED",
+      "reason": "未提供商品标准图和 SKU 不可改变项"
+    },
+    "brand_guideline": {
+      "status": "NOT_VERIFIED",
+      "reason": "未提供品牌规范"
+    },
+    "channel_requirements": {
+      "status": "LIMITED",
+      "reason": "仅知道用途为服饰电商商品图，未提供具体版位"
+    },
+    "compliance": {
+      "status": "LIMITED",
+      "mode": "VISUAL_SCREENING_ONLY",
+      "reason": "未提供地区、平台和法务规则"
+    }
+  },
+  "model_evaluation": {
+    "status": "SUCCEEDED",
+    "status_detail": "结构化观察已通过契约解析",
+    "observations": [
+      {
+        "observation_id": "obs_001",
+        "issue_code": "AS-04",
+        "category": "assessability",
+        "severity": "information_insufficient",
+        "status": "not_assessable",
+        "region": {
+          "asset_id": "candidate_image_01",
+          "coordinate_space": "FULL_IMAGE",
+          "label": "整张候选图"
+        },
+        "observation": "未提供商品参考图或 SKU 不可改变项，无法比较商品事实",
+        "impact": "商品忠实度不能被验证",
+        "confidence": 1.0,
+        "evidence_refs": [
+          "candidate_image_01"
+        ],
+        "related_categories": [
+          "product_fidelity"
+        ]
+      },
+      {
+        "observation_id": "obs_002",
+        "issue_code": "GM-06",
+        "category": "garment_material",
+        "severity": "minor",
+        "status": "detected",
+        "region": {
+          "asset_id": "candidate_image_01",
+          "coordinate_space": "NORMALIZED_0_1",
+          "label": "上衣右侧下摆",
+          "bounding_box": {
+            "x": 0.54,
+            "y": 0.48,
+            "width": 0.2,
+            "height": 0.25
+          }
+        },
+        "observation": "局部面料纹理过度平滑，与邻近区域细节密度不一致",
+        "impact": "降低材质可信度，但当前未观察到商品事实错误",
+        "confidence": 0.81,
+        "evidence_refs": [
+          "candidate_image_01"
+        ],
+        "related_categories": []
+      }
+    ],
+    "warnings": [
+      "不得基于本次结果声称商品忠实度已通过"
+    ],
+    "raw_response_ref": "runs/run_20260728_0001/raw/provider_response.json"
+  },
+  "rule_evaluation": {
+    "status": "SUCCEEDED",
+    "decision": "REVIEW",
+    "decision_reason": "缺少商品参考材料，商品忠实度未验证；当前阈值也尚未完成真实数据标定",
+    "decision_confidence": null,
+    "gate_hits": [
+      {
+        "gate_id": "product_fidelity",
+        "result": "REVIEW",
+        "related_observation_ids": [
+          "obs_001"
+        ],
+        "rule_version": "gates-0.1",
+        "reason": "AS-04 表示商品参考不足"
+      }
+    ],
+    "dimension_scores": {
+      "product_fidelity": null,
+      "human_integrity": 4,
+      "garment_material": 3,
+      "photographic_physics": 4,
+      "composition_commercial": null,
+      "text_logo": null,
+      "compliance": null,
+      "assessability": 2
+    },
+    "overall_score": null,
+    "required_human_checks": [
+      "补充商品标准图、SKU 信息和不可改变项",
+      "确认目标渠道、版位和品牌规范",
+      "在阈值验证完成前执行人工发布复核"
+    ],
+    "recommended_actions": [
+      {
+        "action": "修复上衣右侧下摆的过度平滑区域，并保持商品结构不变",
+        "related_observation_ids": [
+          "obs_002"
+        ]
+      }
+    ]
+  },
+  "performance": {
+    "latency_ms": 2840,
+    "attempt_count": 1,
+    "cost": {
+      "status": "UNAVAILABLE",
+      "amount": null,
+      "currency": null
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/commercial-recalibration-event-v0.1.schema.json",
+  "title": "VisionQA Commercial Recalibration Event v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "client_id",
+    "template",
+    "asset_id",
+    "evaluation_id",
+    "system_result",
+    "human_result",
+    "reason_code",
+    "evidence_note",
+    "status",
+    "actor_id",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "0.1.0" },
+    "event_id": { "type": "string", "minLength": 1 },
+    "client_id": { "type": "string", "minLength": 1 },
+    "commercial_profile_id": { "type": ["string", "null"] },
+    "commercial_profile_version": { "type": ["string", "null"] },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["template_id", "template_version"],
+      "properties": {
+        "template_id": { "type": "string", "minLength": 1 },
+        "template_version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "asset_id": { "type": "string", "minLength": 1 },
+    "evaluation_id": { "type": "string", "minLength": 1 },
+    "system_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fit_score", "fit_level"],
+      "properties": {
+        "fit_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "fit_level": { "enum": ["HIGH", "MEDIUM", "LOW"] }
+      }
+    },
+    "human_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fit_score", "fit_level"],
+      "properties": {
+        "fit_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "fit_level": { "enum": ["HIGH", "MEDIUM", "LOW"] }
+      }
+    },
+    "reason_code": { "type": "string", "minLength": 1 },
+    "evidence_note": { "type": "string", "minLength": 1 },
+    "status": {
+      "enum": ["CAPTURED", "REVIEWED", "ACCEPTED", "REJECTED", "PROFILE_APPLIED"]
+    },
+    "actor_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "reviewed_by": { "type": "array", "items": { "type": "string" } },
+    "applied_profile_version": { "type": ["string", "null"] }
+  }
+}

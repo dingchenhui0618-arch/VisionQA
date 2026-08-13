@@ -1,0 +1,32 @@
+{
+  "corpus_version": "v0.2",
+  "total_assets": 190,
+  "xiaoyu_assets": 87,
+  "gwang_assets": 103,
+  "total_groups": 113,
+  "xiaoyu_groups": 15,
+  "gwang_provisional_groups": 98,
+  "split_counts": {
+    "TRAIN_REFERENCE": 63,
+    "DEVELOPMENT_REFERENCE": 49,
+    "CALIBRATION_REVIEW": 42,
+    "EVALUATION_HOLDOUT": 36
+  },
+  "contact_sheets": [
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\xiaoyu_contact_01.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\xiaoyu_contact_02.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\xiaoyu_contact_03.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\xiaoyu_contact_04.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\xiaoyu_contact_05.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\xiaoyu_contact_06.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\gwang_contact_01.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\gwang_contact_02.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\gwang_contact_03.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\gwang_contact_04.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\gwang_contact_05.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\gwang_contact_06.jpg",
+    "D:\\VisionQA\\data\\commercial_reference_corpus_v0.2\\contact_sheets\\gwang_contact_07.jpg"
+  ],
+  "human_labels": 0,
+  "status": "GROUPED_PROVISIONALLY_AND_READY_FOR_HUMAN_PLACEMENT_LABELING"
+}

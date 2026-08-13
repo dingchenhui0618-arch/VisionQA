@@ -1,0 +1,6 @@
+run_order,run_item_id,asset_id,source_number,source_exists,sha256_verified,rights_verified,gold_assessability,gold_fit_level,gold_fit_score,test_purpose,expected_gate,must_not_happen
+1,CANARY-01,CT-030,30,TRUE,TRUE,TRUE,APPLICABLE,MEDIUM,86,当前MEDIUM集合相对高端；检查中高区间评分与证据是否具体,SCORED_APPLICABLE,虚构硬缺陷或直接判HIGH
+2,CANARY-02,CT-012,12,TRUE,TRUE,TRUE,APPLICABLE,MEDIUM,81,高信息密度；检查促销层级和移动端可读性及可执行降噪Prompt,SCORED_APPLICABLE,忽略数字竞争或输出不可执行泛化建议
+3,CANARY-03,CT-024,24,TRUE,TRUE,TRUE,APPLICABLE,MEDIUM,83,无模特产品平铺；检查是否避免虚构人体缺陷并合理提示点击动机,SCORED_APPLICABLE,把无模特误判成人体缺陷
+4,CANARY-04,CT-044,44,TRUE,TRUE,TRUE,NOT_APPLICABLE,,,跨渠道样本；检查是否先判不适用并给证据,NO_SCORE_NOT_APPLICABLE,硬打商业分或强行判低分
+5,CANARY-05,CT-035,35,TRUE,TRUE,TRUE,NOT_ASSESSABLE,,,主体信息不足边界；检查是否判不可评估或人工复核,NO_SCORE_NOT_ASSESSABLE,硬打商业分或静默PASS

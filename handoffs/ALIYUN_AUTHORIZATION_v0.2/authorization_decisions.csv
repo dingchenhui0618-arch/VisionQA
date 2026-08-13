@@ -1,0 +1,13 @@
+decision_id,area,required_owner,requested_confirmation,allowed_decisions,current_status,owner_decision,owner_name,decision_date,evidence_reference,notes
+ALIYUN-ACCOUNT-001,ACCOUNT,阿里云账号管理员,账号已实名认证且可使用中国内地服务并同意全部资源固定cn-beijing,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,阿里云账号 13600549143（实名认证与内地服务可用性以控制台为准）；全部资源固定 cn-beijing,实际负责人仅丁陈辉，兼任账号管理员
+ALIYUN-RAM-001,IAM,阿里云账号管理员,同意创建仅控制台访问且开启MFA的visionqa-staging-operator并禁止AdministratorAccess,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,运维用户创建后控制台截图路径待补,丁陈辉兼任；仅控制台+MFA，禁AdministratorAccess
+ALIYUN-ROLE-001,IAM,阿里云账号管理员,同意创建visionqa-staging-runtime服务角色并仅绑定OSS前缀KMS精确Secret和SLS精确Logstore权限,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,运行角色策略截图路径待补,丁陈辉兼任
+ALIYUN-OSS-001,OSS,数据责任人/阿里云管理员,同意北京私有OSS仅staging/visionqa前缀且全部当前对象固定14天永久删除并固定1天清理未完成Multipart Upload且不得选择其他保留期,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,OSS生命周期规则截图路径待补,丁陈辉兼任数据责任人；14天删+1天清分片为冻结值不得更改
+ALIYUN-RDS-001,RDS_POSTGRESQL,数据责任人/阿里云管理员,同意北京RDS PostgreSQL仅VPC内网且无公网和无0.0.0.0/0白名单,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,RDS白名单与内网配置截图路径待补,丁陈辉兼任数据责任人；仅VPC内网无公网
+ALIYUN-COMPUTE-001,COMPUTE,技术负责人/阿里云管理员,确认使用函数计算或指定容器运行时并具备稳定出口IP用于百炼白名单,FUNCTION_COMPUTE|CONTAINER|HOLD,FUNCTION_COMPUTE,FUNCTION_COMPUTE,丁陈辉,2026-07-29,FC服务与VPC/稳定出口IP配置截图路径待补,丁陈辉兼任技术负责人；默认函数计算FC，需稳定出口IP收紧百炼白名单
+ALIYUN-BAILIAN-SPACE-001,MODEL_STUDIO,阿里云管理员,同意建立独立visionqa-staging业务空间且只授权固定视觉模型,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,百炼独立业务空间截图路径待补,丁陈辉兼任阿里云管理员
+ALIYUN-BAILIAN-KEY-001,MODEL_STUDIO,阿里云管理员,同意创建自定义模型范围和固定出口IP白名单的staging API Key并直接写入Secret且Canary后撤销,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,API Key自定义模型范围与IP白名单截图路径待补；Key值仅入Secret不外露,Canary后禁用或删除
+ALIYUN-BAILIAN-DATA-001,DATA_GOVERNANCE,数据责任人/阿里云管理员,提供百炼保留天数删除SLA备份淘汰人工审核边界和训练使用条款的证据引用,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,（PENDING）百炼服务协议/工单关于保留期/删除SLA/人工审核/是否训练的条款引用待补,丁陈辉兼任数据责任人；证据未提供前 Qwen canary 保持 NO-GO；凭据后置
+ALIYUN-BUDGET-001,COST,预算责任人,批准Canary人民币20元5张15请求并发1禁止自动续跑并配置10/16/20元告警,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,预算告警配置截图路径待补,丁陈辉兼任预算责任人；¥20/5张/15请求/并发1/禁自动续跑
+ALIYUN-LOG-001,AUDIT,安全或数据责任人,同意应用日志30天安全审计90天且禁止记录图片正文Prompt响应Secret和签名URL,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,SLS日志保留配置截图路径待补,丁陈辉兼任安全/数据责任人；不记敏感正文
+ALIYUN-REVOCATION-001,REVOCATION,阿里云管理员/预算责任人,确认Canary后禁用Key回收写权限清理对象停止资源并核验账单,APPROVE|HOLD|REJECT,APPROVE,APPROVE,丁陈辉,2026-07-29,撤销核验清单待补,丁陈辉兼任管理员/预算责任人

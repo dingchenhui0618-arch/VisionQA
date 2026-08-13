@@ -1,0 +1,17 @@
+{
+  "name": "visionqa-aliyun-fc-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20 <21"
+  },
+  "scripts": {
+    "start": "node src/web.mjs",
+    "test": "node --test test/*.test.mjs",
+    "lint": "node scripts/lint.mjs",
+    "build": "node scripts/build.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "verify": "npm run lint && npm test && npm run build && npm run smoke"
+  }
+}

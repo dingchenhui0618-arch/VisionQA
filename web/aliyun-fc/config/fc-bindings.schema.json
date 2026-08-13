@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/fc-bindings-v0.1.schema.json",
+  "title": "VisionQA FC 3.0 non-secret environment and role bindings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "region",
+    "runtime",
+    "instanceConcurrency",
+    "executionRoleArn",
+    "vpcBinding",
+    "ossBucketBinding",
+    "postgresBinding",
+    "slsProjectBinding",
+    "secretNames"
+  ],
+  "properties": {
+    "region": { "const": "cn-beijing" },
+    "runtime": { "enum": ["custom.debian12-nodejs20", "nodejs20"] },
+    "instanceConcurrency": { "const": 1 },
+    "executionRoleArn": {
+      "type": "string",
+      "pattern": "^acs:ram::[0-9]+:role/[A-Za-z0-9_-]+$"
+    },
+    "vpcBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vpcId", "vSwitchIds", "securityGroupId"],
+      "properties": {
+        "vpcId": { "type": "string", "pattern": "^vpc-" },
+        "vSwitchIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^vsw-" }
+        },
+        "securityGroupId": { "type": "string", "pattern": "^sg-" }
+      }
+    },
+    "ossBucketBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bucket", "prefix", "endpoint"],
+      "properties": {
+        "bucket": { "type": "string", "minLength": 3 },
+        "prefix": { "const": "staging/visionqa/" },
+        "endpoint": { "const": "https://oss-cn-beijing-internal.aliyuncs.com" }
+      }
+    },
+    "postgresBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostSecretName", "port", "database", "userSecretName"],
+      "properties": {
+        "hostSecretName": { "const": "VISIONQA_PG_HOST" },
+        "port": { "const": 5432 },
+        "database": { "type": "string", "minLength": 1 },
+        "userSecretName": { "const": "VISIONQA_PG_USER" }
+      }
+    },
+    "slsProjectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project", "logstore"],
+      "properties": {
+        "project": { "type": "string", "minLength": 1 },
+        "logstore": { "type": "string", "minLength": 1 }
+      }
+    },
+    "secretNames": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "VISIONQA_INTERNAL_TOKEN",
+          "VISIONQA_PG_HOST",
+          "VISIONQA_PG_USER",
+          "PG_PASSWORD",
+          "QWEN_API_KEY",
+          "VISION_PRIVATE_IMAGE_ENVELOPE_HMAC_SECRET"
+        ]
+      }
+    }
+  }
+}

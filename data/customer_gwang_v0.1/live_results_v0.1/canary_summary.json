@@ -1,0 +1,52 @@
+﻿[
+    {
+        "asset_alias":  "gwang/6e977399dd360b69.jpg",
+        "asset_sha256":  "6e977399dd360b69d06aadaab910f0bd33e7dee64ea79552cfa161307a21e071",
+        "http_status":  502,
+        "score":  null,
+        "gate_decision":  null,
+        "score_status":  null,
+        "observations_count":  0,
+        "response_file":  "D:\\VisionQA\\data\\customer_gwang_v0.1\\live_results_v0.1\\response_01.json"
+    },
+    {
+        "asset_alias":  "gwang/9785cfc4cf3440bc.jpg",
+        "asset_sha256":  "9785cfc4cf3440bc0a113276ce15802fce30d60a1b75171b4b81901fbe80772a",
+        "http_status":  200,
+        "score":  null,
+        "gate_decision":  null,
+        "score_status":  "PARTIAL",
+        "observations_count":  0,
+        "response_file":  "D:\\VisionQA\\data\\customer_gwang_v0.1\\live_results_v0.1\\response_02.json"
+    },
+    {
+        "asset_alias":  "gwang/1c577045771119b9.jpg",
+        "asset_sha256":  "1c577045771119b9cfc683751e9e44beb42f9194b444201022a78b45af2e709d",
+        "http_status":  413,
+        "score":  null,
+        "gate_decision":  null,
+        "score_status":  null,
+        "observations_count":  0,
+        "response_file":  "D:\\VisionQA\\data\\customer_gwang_v0.1\\live_results_v0.1\\response_03.json"
+    },
+    {
+        "asset_alias":  "gwang/700d190d8cf52b9e.jpg",
+        "asset_sha256":  "700d190d8cf52b9ec8a086613943e6dbf8e18c80ab277c9b484a604b77d4c5b8",
+        "http_status":  502,
+        "score":  null,
+        "gate_decision":  null,
+        "score_status":  null,
+        "observations_count":  0,
+        "response_file":  "D:\\VisionQA\\data\\customer_gwang_v0.1\\live_results_v0.1\\response_04.json"
+    },
+    {
+        "asset_alias":  "gwang/f5ddce3cb4b24e98.jpg",
+        "asset_sha256":  "f5ddce3cb4b24e98fec63569e5e4a041fdc27de7e1ba28a533eea9b3f3a5ca98",
+        "http_status":  502,
+        "score":  null,
+        "gate_decision":  null,
+        "score_status":  null,
+        "observations_count":  0,
+        "response_file":  "D:\\VisionQA\\data\\customer_gwang_v0.1\\live_results_v0.1\\response_05.json"
+    }
+]

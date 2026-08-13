@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/evaluation-result-v0.3.schema.json",
+  "title": "VisionQA Evaluation Result v0.3",
+  "description": "MVP contract with formal six-metric commercial assessment and source-linked repair prompt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "model_evaluation", "score_evaluation", "gate_evaluation", "action_plan"],
+  "properties": {
+    "schema_version": { "const": "0.3.0" },
+    "model_evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "observations"],
+      "properties": {
+        "status": { "enum": ["SUCCEEDED", "NOT_RUN", "INSUFFICIENT_INPUT", "UNREADABLE_ASSET", "PROVIDER_ERROR", "TIMEOUT", "INVALID_OUTPUT"] },
+        "observations": { "type": "array", "items": { "$ref": "#/$defs/observation" } }
+      }
+    },
+    "score_evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "calibration_status", "skill_scores", "overall_score", "score_band", "commercial_assessment"],
+      "properties": {
+        "status": { "enum": ["SUCCEEDED", "PARTIAL", "NOT_RUN", "INVALID_OBSERVATIONS"] },
+        "calibration_status": { "enum": ["DEMO", "UNCALIBRATED", "CALIBRATED"] },
+        "skill_scores": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["human_realism", "photography_realism", "material_realism", "commercial_value"],
+          "properties": {
+            "human_realism": { "$ref": "#/$defs/humanSkill" },
+            "photography_realism": { "$ref": "#/$defs/photoSkill" },
+            "material_realism": { "$ref": "#/$defs/materialSkill" },
+            "commercial_value": { "$ref": "#/$defs/commercialSkill" }
+          }
+        },
+        "overall_score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "score_band": { "type": ["string", "null"], "enum": ["PASS_CANDIDATE", "REVIEW_OPTIMIZE", "REJECT_REWORK", null] },
+        "commercial_assessment": { "$ref": "#/$defs/commercialAssessment" }
+      }
+    },
+    "gate_evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "decision_reason"],
+      "properties": {
+        "decision": { "type": ["string", "null"], "enum": ["PASS", "REVIEW", "REJECT", null] },
+        "decision_reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "action_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repair_prompt", "required_human_checks"],
+      "properties": {
+        "repair_prompt": { "oneOf": [{ "$ref": "#/$defs/repairPrompt" }, { "type": "null" }] },
+        "required_human_checks": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    }
+  },
+  "$defs": {
+    "assessability": { "enum": ["FULL", "LIMITED", "NOT_ASSESSABLE", "NOT_APPLICABLE"] },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observation_id", "issue_code", "primary_skill", "severity", "status", "observation", "impact"],
+      "properties": {
+        "observation_id": { "type": "string", "minLength": 1 },
+        "issue_code": { "type": "string", "pattern": "^(PF|HI|GM|PP|CC|TL|CO|AS)-[0-9]{2}$" },
+        "primary_skill": { "type": ["string", "null"], "enum": ["HUM", "PHO", "MAT", "COM", null] },
+        "severity": { "enum": ["blocker", "major", "minor", "information_insufficient"] },
+        "status": { "enum": ["detected", "suspected", "not_assessable"] },
+        "observation": { "type": "string", "minLength": 1 },
+        "impact": { "type": "string", "minLength": 1 }
+      }
+    },
+    "skillBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "weight", "assessability"],
+      "properties": {
+        "score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "weight": { "type": "number" },
+        "assessability": { "$ref": "#/$defs/assessability" }
+      }
+    },
+    "humanSkill": { "allOf": [{ "$ref": "#/$defs/skillBase" }, { "properties": { "weight": { "const": 0.25 } } }] },
+    "photoSkill": { "allOf": [{ "$ref": "#/$defs/skillBase" }, { "properties": { "weight": { "const": 0.2 } } }] },
+    "materialSkill": { "allOf": [{ "$ref": "#/$defs/skillBase" }, { "properties": { "weight": { "const": 0.2 } } }] },
+    "commercialSkill": { "allOf": [{ "$ref": "#/$defs/skillBase" }, { "properties": { "weight": { "const": 0.35 } } }] },
+    "metricScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "weight", "assessability", "evidence", "summary"],
+      "properties": {
+        "score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "weight": { "type": "number" },
+        "assessability": { "$ref": "#/$defs/assessability" },
+        "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "summary": { "type": "string", "minLength": 1 }
+      }
+    },
+    "commercialAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["template_id", "template_version", "assessment_scope", "assessability", "metrics", "template_fit_score", "fit_level", "commercial_strengths", "relative_gaps", "summary"],
+      "properties": {
+        "template_id": { "type": "string", "minLength": 1 },
+        "template_version": { "type": "string", "minLength": 1 },
+        "assessment_scope": { "type": "string", "minLength": 1 },
+        "assessability": { "$ref": "#/$defs/assessability" },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["product_prominence", "selling_point_clarity", "promotion_hierarchy", "information_legibility", "click_motivation", "channel_placement_fit"],
+          "properties": {
+            "product_prominence": { "allOf": [{ "$ref": "#/$defs/metricScore" }, { "properties": { "weight": { "const": 0.25 } } }] },
+            "selling_point_clarity": { "allOf": [{ "$ref": "#/$defs/metricScore" }, { "properties": { "weight": { "const": 0.2 } } }] },
+            "promotion_hierarchy": { "allOf": [{ "$ref": "#/$defs/metricScore" }, { "properties": { "weight": { "const": 0.2 } } }] },
+            "information_legibility": { "allOf": [{ "$ref": "#/$defs/metricScore" }, { "properties": { "weight": { "const": 0.15 } } }] },
+            "click_motivation": { "allOf": [{ "$ref": "#/$defs/metricScore" }, { "properties": { "weight": { "const": 0.1 } } }] },
+            "channel_placement_fit": { "allOf": [{ "$ref": "#/$defs/metricScore" }, { "properties": { "weight": { "const": 0.1 } } }] }
+          }
+        },
+        "template_fit_score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "fit_level": { "type": ["string", "null"], "enum": ["HIGH", "MEDIUM", "LOW", null] },
+        "commercial_strengths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "relative_gaps": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "summary": { "type": "string", "minLength": 1 }
+      }
+    },
+    "repairPrompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "prompt", "locked_attributes", "repair_actions", "commercial_actions", "negative_constraints", "related_observation_ids", "provenance"],
+      "properties": {
+        "strategy": { "enum": ["LOCAL_EDIT", "REGENERATE", "MANUAL_REVIEW"] },
+        "prompt": { "type": "string", "minLength": 1 },
+        "locked_attributes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "repair_actions": { "type": "array", "items": { "$ref": "#/$defs/repairAction" } },
+        "commercial_actions": { "type": "array", "items": { "$ref": "#/$defs/commercialAction" } },
+        "negative_constraints": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "related_observation_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["generator", "generator_version", "source"],
+          "properties": {
+            "generator": { "enum": ["DETERMINISTIC_RULES", "MODEL_ASSISTED"] },
+            "generator_version": { "type": "string", "minLength": 1 },
+            "source": { "enum": ["MODEL_OBSERVATIONS", "HUMAN_OVERRIDE", "MIXED"] }
+          }
+        }
+      }
+    },
+    "repairAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "source_observation_ids"],
+      "properties": {
+        "action": { "type": "string", "minLength": 1 },
+        "source_observation_ids": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "commercialAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "source_metric_ids"],
+      "properties": {
+        "action": { "type": "string", "minLength": 1 },
+        "source_metric_ids": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["product_prominence", "selling_point_clarity", "promotion_hierarchy", "information_legibility", "click_motivation", "channel_placement_fit"] } }
+      }
+    }
+  }
+}

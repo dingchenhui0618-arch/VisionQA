@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "visionqa-staging-remote-dev",
+  "main": "./dist/server/index.js",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": "./dist/client"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "visionqa-staging-d1-20260729",
+      "database_id": "REPLACE_WITH_REAL_STAGING_D1_ID",
+      "migrations_dir": "./drizzle",
+      "remote": true
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ASSETS",
+      "bucket_name": "visionqa-staging-assets-20260729",
+      "remote": true
+    }
+  ],
+  "vars": {
+    "VISIONQA_ENVIRONMENT": "staging",
+    "VISIONQA_PROVIDER_ENABLED": "false"
+  }
+}

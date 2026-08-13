@@ -1,0 +1,224 @@
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudshell:CreateEnvironment",
+        "cloudshell:CreateSession"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "oss:PutBucket",
+        "oss:GetBucketInfo",
+        "oss:GetBucketLocation",
+        "oss:GetBucketAcl",
+        "oss:PutBucketLifecycle",
+        "oss:GetBucketLifecycle",
+        "oss:ListObjects",
+        "oss:ListMultipartUploads"
+      ],
+      "Resource": [
+        "acs:oss:*:*:visionqa-staging-*",
+        "acs:oss:*:*:visionqa-staging-*/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "oss:PutObject",
+        "oss:GetObject",
+        "oss:DeleteObject",
+        "oss:AbortMultipartUpload",
+        "oss:ListParts"
+      ],
+      "Resource": "acs:oss:*:*:visionqa-staging-*/staging/visionqa/*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "vpc:CreateVpc",
+        "vpc:CreateVSwitch",
+        "vpc:CreateNatGateway",
+        "vpc:AllocateEipAddress",
+        "vpc:AssociateEipAddress",
+        "vpc:CreateSnatEntry",
+        "vpc:DescribeVpcs",
+        "vpc:DescribeVSwitches",
+        "vpc:DescribeNatGateways",
+        "vpc:DescribeEipAddresses",
+        "vpc:DescribeSnatTableEntries",
+        "vpc:TagResources"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecs:CreateSecurityGroup",
+        "ecs:AuthorizeSecurityGroup",
+        "ecs:DescribeSecurityGroups",
+        "ecs:DescribeSecurityGroupAttribute",
+        "ecs:TagResources"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "rds:CreateDBInstance",
+        "rds:DescribeRegions",
+        "rds:DescribeAvailableClasses",
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBInstanceAttribute",
+        "rds:DescribeDBInstanceNetInfo",
+        "rds:DescribePrice",
+        "rds:CreateAccount",
+        "rds:CreateDatabase",
+        "rds:ModifySecurityIps",
+        "rds:ModifyDBInstanceDescription",
+        "rds:TagResources"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "log:CreateProject",
+        "log:GetProject",
+        "log:ListProject",
+        "log:CreateLogStore",
+        "log:GetLogStore",
+        "log:UpdateLogStore",
+        "log:CreateIndex",
+        "log:GetIndex",
+        "log:UpdateIndex",
+        "log:TagResources"
+      ],
+      "Resource": [
+        "acs:log:cn-beijing:*:project/visionqa-staging-*",
+        "acs:log:cn-beijing:*:project/visionqa-staging-*/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "fc:CreateFunction",
+        "fc:GetFunction",
+        "fc:ListFunctions",
+        "fc:UpdateFunction",
+        "fc:CreateTrigger",
+        "fc:GetTrigger",
+        "fc:ListTriggers",
+        "fc:UpdateTrigger",
+        "fc:CreateAlias",
+        "fc:GetAlias",
+        "fc:ListAliases",
+        "fc:UpdateAlias",
+        "fc:PublishFunctionVersion",
+        "fc:CreateVpcBinding",
+        "fc:ListVpcBindings",
+        "fc:PutConcurrencyConfig",
+        "fc:GetConcurrencyConfig"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ram:PassRole",
+      "Resource": "acs:ram::*:role/visionqa-staging-runtime",
+      "Condition": {
+        "StringEquals": {
+          "acs:Service": "fc.aliyuncs.com"
+        },
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Deny",
+      "Action": [
+        "ram:CreateAccessKey",
+        "ram:UpdateAccessKey",
+        "ram:DeleteAccessKey",
+        "ram:CreateUser",
+        "ram:DeleteUser",
+        "ram:CreateRole",
+        "ram:UpdateRole",
+        "ram:DeleteRole",
+        "ram:CreatePolicy",
+        "ram:SetDefaultPolicyVersion",
+        "ram:AttachPolicyToUser",
+        "ram:AttachPolicyToGroup",
+        "ram:AttachPolicyToRole",
+        "ram:CreateServiceLinkedRole"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Deny",
+      "Action": [
+        "rds:AllocateInstancePublicConnection",
+        "oss:PutBucketWebsite",
+        "oss:PutBucketPolicy",
+        "oss:PutObjectAcl",
+        "oss:PutBucketAcl",
+        "fc:CreateCustomDomain",
+        "fc:UpdateCustomDomain"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Deny",
+      "Action": [
+        "bss:*",
+        "bssapi:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

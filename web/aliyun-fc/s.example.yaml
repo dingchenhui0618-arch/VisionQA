@@ -1,0 +1,52 @@
+edition: 3.0.0
+name: visionqa-fc-staging
+access: default
+
+vars:
+  region: cn-beijing
+
+resources:
+  visionqa_web:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: visionqa-staging-api
+      description: VisionQA staging Web Function; never deploy without reviewed bindings.
+      runtime: custom.debian12
+      code: ./
+      customRuntimeConfig:
+        command:
+          - /var/fc/lang/nodejs20/bin/node
+          - src/web.mjs
+        port: 9000
+      memorySize: 1024
+      diskSize: 512
+      timeout: 30
+      instanceConcurrency: 1
+      environmentVariables:
+        VISIONQA_RUNTIME_MODE: fixture
+        ALIBABA_CLOUD_REGION_ID: cn-beijing
+        FC_INSTANCE_CONCURRENCY: "1"
+
+  visionqa_task:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: visionqa-staging-evaluation-task
+      description: VisionQA staging asynchronous Task Function.
+      runtime: nodejs20
+      code: ./
+      handler: src/task.handler
+      memorySize: 1024
+      diskSize: 512
+      timeout: 120
+      instanceConcurrency: 1
+      environmentVariables:
+        VISIONQA_RUNTIME_MODE: fixture
+        ALIBABA_CLOUD_REGION_ID: cn-beijing
+        FC_INSTANCE_CONCURRENCY: "1"
+
+# Secrets, roleArn, VPC, SLS and async invocation settings are intentionally
+# absent. Bind them from reviewed deployment inputs; never paste secret values
+# into this file. Recommended async limits: max attempts 3 including the first
+# attempt, max event age 300 seconds, dead-letter destination required.

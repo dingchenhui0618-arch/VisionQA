@@ -1,0 +1,6 @@
+﻿"asset_alias","source_sha256","source_bytes","prepared_bytes","prepared_derivative","http_status","overall_score","gate_decision","score_status","observations_count","response_file"
+"gwang/6e977399dd360b69.jpg","6e977399dd360b69d06aadaab910f0bd33e7dee64ea79552cfa161307a21e071","164078","164078","False","502",,,,"0","D:\VisionQA\data\mixed_commercial_reference_v0.2\live_results\response_01.json"
+"gwang/1c577045771119b9.jpg","1c577045771119b9cfc683751e9e44beb42f9194b444201022a78b45af2e709d","3460924","105737","True","200",,"REVIEW","PARTIAL","4","D:\VisionQA\data\mixed_commercial_reference_v0.2\live_results\response_02.json"
+"gwang/700d190d8cf52b9e.jpg","700d190d8cf52b9ec8a086613943e6dbf8e18c80ab277c9b484a604b77d4c5b8","392117","392117","False","502",,,,"0","D:\VisionQA\data\mixed_commercial_reference_v0.2\live_results\response_03.json"
+"gwang/f5ddce3cb4b24e98.jpg","f5ddce3cb4b24e98fec63569e5e4a041fdc27de7e1ba28a533eea9b3f3a5ca98","246236","246236","False","502",,,,"0","D:\VisionQA\data\mixed_commercial_reference_v0.2\live_results\response_04.json"
+"xiaoyu/d5b064961a59c36a.jpg","d5b064961a59c36a875fb5aea29a876e7679b5fdef65f709f5d7c29011382573","98732","98732","False","200",,"REVIEW","PARTIAL","3","D:\VisionQA\data\mixed_commercial_reference_v0.2\live_results\response_05.json"

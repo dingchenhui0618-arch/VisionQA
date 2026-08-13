@@ -1,0 +1,6 @@
+decision_id,area,requested_confirmation,allowed_decisions,current_status,owner_decision,owner_name,decision_date,evidence_reference,notes
+STG-PLAN-001,RESOURCE_BASELINE,"批准先创建cn-beijing的非RDS基础层：资源组、VPC、vSwitch、安全组、私有OSS、SLS和fixture模式FC Web+Task；仅按量低风险资源，不触发RDS订单、不创建NAT/EIP/百炼Key、不上传真实图",APPROVE|HOLD|REJECT,APPROVED,APPROVE,丁陈辉,2026-07-29,"本对话用户明确回复：确认","权限readiness已通过；OSS/SLS/FC按量可能产生小额用量费，受月度总预算约束"
+STG-BUDGET-001,COST,"批准基础设施月度上限¥300及¥150/¥240/¥300告警；超限停止创建，不把账单告警当自动停机",APPROVE|HOLD|REJECT,APPROVED,APPROVE,丁陈辉,2026-07-29,"本对话用户明确回复：确认","覆盖基础层与未来RDS；Qwen另有¥20硬门且当前HOLD"
+STG-RDS-ORDER-001,RDS_ORDER,"仅在控制台显示cn-beijing、Serverless基础系列、0.5-1 RCU、20GB、自动启停、按量且预计基础设施总月费不超¥300时，由丁陈辉核对实时报价并亲自点击RDS最终订单",APPROVE|HOLD|REJECT,HOLD_FOR_LIVE_QUOTE_AND_OWNER_CLICK,,,,,"本轮不下单；Agent不得代点；需记录脱敏报价证据"
+STG-CANARY-NET-001,TEMPORARY_EGRESS,"数据治理外审通过后，再决定是否创建单可用区NAT+EIP最多24小时用于固定出口；canary后立即释放",APPROVE|HOLD|REJECT,HOLD_PENDING_DATA_EVIDENCE,,,,,"当前不创建；费用按小时/流量"
+STG-QWEN-001,MODEL_CANARY,"仅在ALIYUN-BAILIAN-DATA-001证据被外审接受后，再决定是否运行固定qwen3-vl-plus-2025-12-19的5张/15请求/并发1/¥20 canary",APPROVE|HOLD|REJECT,HOLD_PENDING_DATA_EVIDENCE,,,,,"当前不创建Key、不调用模型；Key不得进入聊天或文件"

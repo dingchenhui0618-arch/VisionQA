@@ -1,0 +1,53 @@
+{
+  "protocol_version": "0.2",
+  "template_id": "platform_promotion_main_image_v0.1",
+  "sample_count": 11,
+  "reviewer_files": [
+    "datasets/commercial_template_seed_v0.1/reviewer_a_rescore_v0.2.csv",
+    "datasets/commercial_template_seed_v0.1/reviewer_b_rescore_v0.2.csv"
+  ],
+  "metrics": {
+    "fit_score": {
+      "mae": 5.7273,
+      "spearman_rho": 0.3109,
+      "mae_target_passed": true,
+      "ranking_target_passed": false
+    },
+    "product_subject_prominence": {
+      "mae": 7.2727,
+      "spearman_rho": -0.4074
+    },
+    "selling_point_clarity": {
+      "mae": 6.4545,
+      "spearman_rho": 0.5393
+    },
+    "promotion_hierarchy": {
+      "mae": 7.8182,
+      "spearman_rho": -0.0459
+    },
+    "mobile_readability": {
+      "mae": 7.2727,
+      "spearman_rho": 0.2930
+    },
+    "click_motivation": {
+      "mae": 6.8182,
+      "spearman_rho": 0.7093
+    },
+    "placement_fit": {
+      "mae": 8.5455,
+      "spearman_rho": 0.3539
+    }
+  },
+  "mandatory_disagreements": {
+    "fit_score_gap_over_15": 0,
+    "submetric_gap_over_20": 0
+  },
+  "coverage": {
+    "applicable_high": 0,
+    "applicable_medium": 11,
+    "applicable_low": 0,
+    "not_applicable": 1,
+    "not_assessable": 3
+  },
+  "decision": "PHASE1_CONSENSUS_LABELS_FROZEN_RANKING_NOT_VALIDATED"
+}

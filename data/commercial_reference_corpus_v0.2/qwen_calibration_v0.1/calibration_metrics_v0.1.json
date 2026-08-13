@@ -1,0 +1,154 @@
+{
+  "schema_version": "visionqa-calibration-metrics@0.1.0",
+  "model_snapshot": "qwen3-vl-plus-2025-12-19",
+  "sample_count": 40,
+  "http_200": 40,
+  "score_status": {
+    "SUCCEEDED": 38,
+    "PARTIAL": 2
+  },
+  "overall": {
+    "n": 38,
+    "bias": 3.84,
+    "mae": 6.18,
+    "rmse": 6.56,
+    "human_mean_all": 86.58,
+    "human_mean_comparable": 86.74,
+    "model_mean_comparable": 90.58,
+    "within_5_points": 8,
+    "within_10_points": 38
+  },
+  "gate": {
+    "accuracy": 0.325,
+    "matches": 13,
+    "false_passes": 26,
+    "confusion": {
+      "human_PASS__model_PASS": 2,
+      "human_REVIEW__model_PASS": 26,
+      "human_REVIEW__model_REJECT": 1,
+      "human_REVIEW__model_REVIEW": 11
+    }
+  },
+  "dimensions": {
+    "human_realism": {
+      "n": 39,
+      "bias": 1.13,
+      "mae": 2.1,
+      "rmse": 2.67,
+      "applicability": {
+        "BOTH_SCORED": 39,
+        "MODEL_OVER_ASSESSED": 1
+      }
+    },
+    "photography_realism": {
+      "n": 40,
+      "bias": 3.75,
+      "mae": 4.3,
+      "rmse": 5.26,
+      "applicability": {
+        "BOTH_SCORED": 40
+      }
+    },
+    "material_realism": {
+      "n": 40,
+      "bias": 0.3,
+      "mae": 4.9,
+      "rmse": 6.47,
+      "applicability": {
+        "BOTH_SCORED": 40
+      }
+    },
+    "product_prominence": {
+      "n": 38,
+      "bias": 0.47,
+      "mae": 9.89,
+      "rmse": 12.28,
+      "applicability": {
+        "BOTH_SCORED": 38,
+        "BOTH_NA": 2
+      }
+    },
+    "selling_point_clarity": {
+      "n": 38,
+      "bias": -1.05,
+      "mae": 7.53,
+      "rmse": 10.3,
+      "applicability": {
+        "BOTH_SCORED": 38,
+        "BOTH_NA": 2
+      }
+    },
+    "promotion_hierarchy": {
+      "n": 0,
+      "bias": null,
+      "mae": null,
+      "rmse": null,
+      "applicability": {
+        "BOTH_NA": 40
+      }
+    },
+    "information_legibility": {
+      "n": 0,
+      "bias": null,
+      "mae": null,
+      "rmse": null,
+      "applicability": {
+        "BOTH_NA": 33,
+        "MODEL_OVER_ASSESSED": 7
+      }
+    },
+    "click_motivation": {
+      "n": 38,
+      "bias": -1.0,
+      "mae": 5.21,
+      "rmse": 7.68,
+      "applicability": {
+        "BOTH_SCORED": 38,
+        "BOTH_NA": 2
+      }
+    },
+    "channel_placement_fit": {
+      "n": 38,
+      "bias": 1.95,
+      "mae": 8.05,
+      "rmse": 10.74,
+      "applicability": {
+        "BOTH_SCORED": 38,
+        "BOTH_NA": 2
+      }
+    }
+  },
+  "by_placement": {
+    "LIFESTYLE_CAMPAIGN": {
+      "n": 16,
+      "bias": 5.47,
+      "mae": 6.12,
+      "rmse": 6.46
+    },
+    "PRODUCT_MAIN_IMAGE": {
+      "n": 22,
+      "bias": 2.65,
+      "mae": 6.22,
+      "rmse": 6.63
+    }
+  },
+  "by_dataset": {
+    "gwang": {
+      "n": 19,
+      "bias": 4.23,
+      "mae": 6.31,
+      "rmse": 6.59
+    },
+    "xiaoyu": {
+      "n": 19,
+      "bias": 3.45,
+      "mae": 6.04,
+      "rmse": 6.53
+    }
+  },
+  "usage": {
+    "input_tokens": 93181,
+    "output_tokens": 46678,
+    "mean_latency_ms": 29540.0
+  }
+}

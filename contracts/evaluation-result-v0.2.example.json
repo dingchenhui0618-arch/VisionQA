@@ -1,0 +1,164 @@
+{
+  "schema_version": "0.2.0",
+  "run": {
+    "run_id": "run-demo-001",
+    "created_at": "2026-07-28T08:30:00Z",
+    "model_snapshot": "PROTOTYPE_DEMO_NOT_MODEL_OUTPUT",
+    "prompt_version": "fashion-qa-demo-0.2",
+    "taxonomy_version": "issue-taxonomy-0.1",
+    "score_policy_version": "score-policy-0.2",
+    "threshold_policy_version": "threshold-policy-0.2",
+    "gate_policy_version": "gate-policy-0.2",
+    "code_version": "prototype-v0.2",
+    "dataset_version": "demo-assets-0.1",
+    "provider_adapter_version": "not-connected"
+  },
+  "input": {
+    "asset_id": "prototype-asset-1",
+    "asset_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "scenario": "fashion_ecommerce_ai_model_image",
+    "reference_asset_ids": ["product-reference-demo-1"],
+    "locked_attributes": ["印花", "领型", "袖型", "裙长", "商品颜色"]
+  },
+  "scope": {
+    "product_reference": {
+      "status": "LIMITED",
+      "reason": "当前为原型示例参考图。"
+    },
+    "brand_guideline": {
+      "status": "NOT_VERIFIED",
+      "reason": "尚未提供品牌规范。"
+    },
+    "channel_requirements": {
+      "status": "LIMITED",
+      "reason": "采用通用服饰电商发布前检查项。"
+    },
+    "compliance": {
+      "status": "NOT_VERIFIED",
+      "reason": "尚未接入平台合规规则。"
+    }
+  },
+  "model_evaluation": {
+    "status": "SUCCEEDED",
+    "observations": [
+      {
+        "observation_id": "obs-001",
+        "issue_code": "PF-03",
+        "primary_skill": "MAT",
+        "category": "product_fidelity",
+        "severity": "major",
+        "status": "suspected",
+        "region": {
+          "asset_id": "prototype-asset-1",
+          "coordinate_space": "NORMALIZED_0_1",
+          "label": "右袖口",
+          "bounding_box": {
+            "x": 0.63,
+            "y": 0.34,
+            "width": 0.16,
+            "height": 0.18
+          }
+        },
+        "observation": "右袖口结构与商品参考图存在疑似偏差。",
+        "impact": "可能降低商品忠实度并造成售后风险。",
+        "confidence": 0.84,
+        "evidence_refs": ["product-reference-demo-1"]
+      }
+    ],
+    "warnings": [
+      "这是数据契约示例，不代表真实模型评估结果。"
+    ],
+    "raw_response_ref": "demo://raw-response/run-demo-001"
+  },
+  "score_evaluation": {
+    "status": "SUCCEEDED",
+    "calibration_status": "DEMO",
+    "skill_scores": {
+      "human_realism": {
+        "score": 86,
+        "weight": 0.25,
+        "assessability": "FULL",
+        "related_observation_ids": [],
+        "summary": "人体结构整体自然，仍需人工复核手部。"
+      },
+      "photography_realism": {
+        "score": 82,
+        "weight": 0.2,
+        "assessability": "FULL",
+        "related_observation_ids": [],
+        "summary": "光影基本可信，但画面质感略显过度平滑。"
+      },
+      "material_realism": {
+        "score": 74,
+        "weight": 0.2,
+        "assessability": "LIMITED",
+        "related_observation_ids": ["obs-001"],
+        "summary": "袖口结构疑似偏差，面料细节需结合原图复核。"
+      },
+      "commercial_value": {
+        "score": 81,
+        "weight": 0.35,
+        "assessability": "FULL",
+        "related_observation_ids": [],
+        "summary": "商品主体清晰，但首屏点击动机仍可加强。"
+      }
+    },
+    "overall_score": 81.3,
+    "score_band": "REVIEW_OPTIMIZE",
+    "commercial_assessment": {
+      "product_focus": "主体明确，服装占画面比例合适。",
+      "selling_point_expression": "印花与版型可见，但袖口卖点表达受结构疑点影响。",
+      "click_motivation": "具备基础吸引力，缺少更自然的手机摄影质感。",
+      "brand_fit": "未提供品牌规范，暂不作确定判断。",
+      "placement_fit": "适合详情页候选图，主图发布前需复核。",
+      "summary": "合规基础较好，但还未达到可自动直发的商业质量。"
+    }
+  },
+  "gate_evaluation": {
+    "status": "SUCCEEDED",
+    "decision": "REVIEW",
+    "decision_reason": "综合分位于 70–89，且存在需要人工核验的商品结构疑点。",
+    "gate_hits": [
+      {
+        "gate_id": "GATE-PRODUCT-FIDELITY-MAJOR",
+        "result": "REVIEW",
+        "related_observation_ids": ["obs-001"],
+        "rule_version": "gate-policy-0.2",
+        "reason": "商品关键结构疑似偏差，但证据不足以直接判为阻断。"
+      }
+    ]
+  },
+  "action_plan": {
+    "repair_prompt": {
+      "strategy": "LOCAL_EDIT",
+      "prompt": "保持蓝色碎花连衣裙的印花、领型、裙长和整体颜色不变，参照商品图修正右袖口结构；减少皮肤过度磨皮，增加自然手机摄影的微小纹理与真实光影，保持人物身份、姿势和背景不变。",
+      "locked_attributes": ["印花", "领型", "裙长", "商品颜色", "人物身份", "背景"],
+      "repair_actions": [
+        "按商品参考图修正右袖口轮廓与连接关系。",
+        "降低皮肤与布料的过度平滑感。"
+      ],
+      "commercial_actions": [
+        "保持商品主体清晰。",
+        "增加自然手机摄影质感，避免棚拍塑料感。"
+      ],
+      "negative_constraints": [
+        "不得改变商品印花。",
+        "不得改变裙长与颜色。",
+        "不得新增配饰或文字。"
+      ],
+      "related_observation_ids": ["obs-001"],
+      "template_version": "repair-prompt-0.2"
+    },
+    "required_human_checks": [
+      "对照商品参考图确认袖口结构。",
+      "确认修复后没有改变锁定商品属性。"
+    ]
+  },
+  "performance": {
+    "latency_ms": 0,
+    "attempt_count": 0,
+    "cost_status": "NOT_APPLICABLE",
+    "cost_amount": null,
+    "cost_currency": null
+  }
+}

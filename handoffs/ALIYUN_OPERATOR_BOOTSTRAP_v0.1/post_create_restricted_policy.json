@@ -1,0 +1,167 @@
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudshell:CreateEnvironment",
+        "cloudshell:CreateSession"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "oss:GetBucketInfo",
+        "oss:GetBucketLocation",
+        "oss:GetBucketAcl",
+        "oss:GetBucketLifecycle",
+        "oss:ListObjects",
+        "oss:ListMultipartUploads"
+      ],
+      "Resource": [
+        "acs:oss:*:*:REPLACE_WITH_ACTUAL_VISIONQA_STAGING_BUCKET",
+        "acs:oss:*:*:REPLACE_WITH_ACTUAL_VISIONQA_STAGING_BUCKET/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "oss:GetObject",
+        "oss:DeleteObject",
+        "oss:AbortMultipartUpload",
+        "oss:ListParts"
+      ],
+      "Resource": "acs:oss:*:*:REPLACE_WITH_ACTUAL_VISIONQA_STAGING_BUCKET/staging/visionqa/*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBInstanceAttribute",
+        "rds:DescribeDBInstanceNetInfo"
+      ],
+      "Resource": "acs:rds:cn-beijing:*:dbinstance/REPLACE_WITH_ACTUAL_RDS_INSTANCE_ID",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "log:GetProject",
+        "log:ListProject",
+        "log:GetLogStore",
+        "log:GetIndex"
+      ],
+      "Resource": [
+        "acs:log:cn-beijing:*:project/REPLACE_WITH_ACTUAL_SLS_PROJECT",
+        "acs:log:cn-beijing:*:project/REPLACE_WITH_ACTUAL_SLS_PROJECT/*"
+      ],
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "fc:GetFunction",
+        "fc:ListFunctions",
+        "fc:GetTrigger",
+        "fc:ListTriggers",
+        "fc:GetAlias",
+        "fc:ListAliases",
+        "fc:ListVpcBindings",
+        "fc:GetConcurrencyConfig"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "vpc:DescribeVpcs",
+        "vpc:DescribeVSwitches",
+        "vpc:DescribeNatGateways",
+        "vpc:DescribeEipAddresses",
+        "vpc:DescribeSnatTableEntries",
+        "ecs:DescribeSecurityGroups",
+        "ecs:DescribeSecurityGroupAttribute"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "acs:MFAPresent": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Deny",
+      "Action": [
+        "ram:CreateAccessKey",
+        "ram:UpdateAccessKey",
+        "ram:DeleteAccessKey",
+        "ram:CreateUser",
+        "ram:DeleteUser",
+        "ram:CreateRole",
+        "ram:UpdateRole",
+        "ram:DeleteRole",
+        "ram:CreatePolicy",
+        "ram:SetDefaultPolicyVersion",
+        "ram:AttachPolicyToUser",
+        "ram:AttachPolicyToGroup",
+        "ram:AttachPolicyToRole",
+        "ram:PassRole",
+        "ram:CreateServiceLinkedRole",
+        "rds:CreateDBInstance",
+        "rds:AllocateInstancePublicConnection",
+        "oss:PutBucket",
+        "oss:PutBucketAcl",
+        "oss:PutBucketPolicy",
+        "oss:PutBucketWebsite",
+        "oss:PutObject",
+        "fc:CreateFunction",
+        "fc:UpdateFunction",
+        "fc:CreateCustomDomain",
+        "fc:UpdateCustomDomain",
+        "vpc:CreateVpc",
+        "vpc:CreateVSwitch",
+        "vpc:CreateNatGateway",
+        "vpc:AllocateEipAddress",
+        "vpc:AssociateEipAddress",
+        "vpc:CreateSnatEntry",
+        "ecs:CreateSecurityGroup",
+        "ecs:AuthorizeSecurityGroup",
+        "log:CreateProject",
+        "log:CreateLogStore",
+        "log:UpdateLogStore",
+        "bss:*",
+        "bssapi:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

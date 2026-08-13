@@ -1,0 +1,29 @@
+{
+  "schema_version": "0.2.0",
+  "template_id": "platform_promotion_main_image",
+  "template_version": "0.2.0",
+  "name": "天猫 / 平台促销主图",
+  "status": "VALIDATING",
+  "context": {
+    "channel": "platform_ecommerce",
+    "placement": "main_image",
+    "brand_positioning": "mass_market_white_label_to_established",
+    "commercial_objectives": ["promotion_conversion", "selling_point_communication", "click_motivation"],
+    "visual_tones": ["clear", "direct", "promotion_forward", "mobile_legible"]
+  },
+  "submetrics": [
+    { "id": "product_prominence", "name": "商品主体突出度", "weight": 0.25, "question": "首屏是否能快速识别商品，人物是否服务于商品表达？", "positive_anchors": ["商品或穿着效果是第一视觉焦点"], "negative_anchors": ["装饰、价格或人物表情压过商品"] },
+    { "id": "selling_point_clarity", "name": "卖点表达清晰度", "weight": 0.2, "question": "材质、版型、功能或搭配价值是否表达清楚？", "positive_anchors": ["一个核心卖点能够快速识别"], "negative_anchors": ["卖点泛化、重复或与画面证据无关"] },
+    { "id": "promotion_hierarchy", "name": "促销信息层级", "weight": 0.2, "question": "价格、优惠、活动和 CTA 是否有明确阅读顺序？", "positive_anchors": ["主价格、主权益与辅助信息层级分明"], "negative_anchors": ["多个优惠信息争夺同一视觉层级"] },
+    { "id": "information_legibility", "name": "信息可读性", "weight": 0.15, "question": "移动端缩略图下关键文字和数字是否仍然可读？", "positive_anchors": ["核心数字对比充分且字号有效"], "negative_anchors": ["关键信息过小、低对比或拥挤"] },
+    { "id": "click_motivation", "name": "点击动机", "weight": 0.1, "question": "画面是否形成可信且清晰的进入详情动机？", "positive_anchors": ["商品、利益点与情绪共同支持点击"], "negative_anchors": ["依靠夸张噪声而没有可信商品理由"] },
+    { "id": "channel_placement_fit", "name": "渠道与图位适配", "weight": 0.1, "question": "信息密度和表达方式是否适合平台主图？", "positive_anchors": ["缩略图浏览时重点仍然成立"], "negative_anchors": ["更像详情页长图、品牌海报或线下物料"] }
+  ],
+  "fit_bands": [
+    { "label": "HIGH", "minimum": 90, "maximum": 100, "action": "发布候选，验证期仍需人工复核" },
+    { "label": "MEDIUM", "minimum": 70, "maximum": 89.999, "action": "可用但建议优化主要差距" },
+    { "label": "LOW", "minimum": 0, "maximum": 69.999, "action": "商业表达明显不适合当前模板" }
+  ],
+  "calibration_policy": { "single_event_updates_profile": false, "required_reviewers": 2, "minimum_accepted_events": 5, "requires_versioned_application": true },
+  "provenance": { "seed_collection_id": "purchased-fashion-commerce-template-seed-53", "performance_evidence": "NOT_AVAILABLE", "calibration_status": "UNCALIBRATED" }
+}

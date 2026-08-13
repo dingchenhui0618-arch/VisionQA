@@ -1,0 +1,1150 @@
+﻿{
+    "manifest_version":  "0.1.0",
+    "created_at":  "2026-07-28T08:52:13.7881900Z",
+    "collection_id":  "purchased-fashion-commerce-template-seed-53",
+    "collection_name":  "53-fashion-commerce-main-image-templates",
+    "source_root":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图",
+    "rights":  {
+                   "source_type":  "purchased_template_material",
+                   "confirmed_by":  "project_owner",
+                   "confirmed_at":  "2026-07-28",
+                   "internal_research_allowed":  true,
+                   "third_party_model_testing_allowed":  true,
+                   "future_production_assets_same_permission":  true,
+                   "redistribution_allowed":  false
+               },
+    "intended_uses":  [
+                          "commercial_template_design",
+                          "commercial_submetric_anchoring",
+                          "layout_and_promotion_expression_analysis",
+                          "third_party_multimodal_model_testing"
+                      ],
+    "prohibited_claims":  [
+                              "verified_real_world_campaign_performance",
+                              "verified_ctr_or_cvr_improvement",
+                              "four_skill_accuracy_gold_set",
+                              "specific_client_brand_preference"
+                          ],
+    "collection_stats":  {
+                             "asset_sets":  53,
+                             "jpg_previews":  53,
+                             "rar_archives":  53,
+                             "psd_files":  155,
+                             "total_archive_bytes":  1595472420
+                         },
+    "entries":  [
+                    {
+                        "asset_id":  "commercial-seed-001",
+                        "source_number":  1,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (1).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  166584
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (1).rar",
+                                               "bytes":  3549526,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-002",
+                        "source_number":  2,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (2).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  155173
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (2).rar",
+                                               "bytes":  3962792,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-003",
+                        "source_number":  3,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (3).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  252128
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (3).rar",
+                                               "bytes":  17073877,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-004",
+                        "source_number":  4,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (4).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  229129
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (4).rar",
+                                               "bytes":  19123837,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-005",
+                        "source_number":  5,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (5).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  260656
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (5).rar",
+                                               "bytes":  16620375,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-006",
+                        "source_number":  6,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (6).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  182829
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (6).rar",
+                                               "bytes":  6910900,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-007",
+                        "source_number":  7,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (7).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  190064
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (7).rar",
+                                               "bytes":  2953879,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-008",
+                        "source_number":  8,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (8).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  144179
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (8).rar",
+                                               "bytes":  1940752,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-009",
+                        "source_number":  9,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (9).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  360828
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (9).rar",
+                                               "bytes":  19350624,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-010",
+                        "source_number":  10,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (10).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  178231
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (10).rar",
+                                               "bytes":  5306666,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-011",
+                        "source_number":  11,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (11).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  405564
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (11).rar",
+                                               "bytes":  94566157,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-012",
+                        "source_number":  12,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (12).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  374182
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (12).rar",
+                                               "bytes":  75277099,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-013",
+                        "source_number":  13,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (13).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  485066
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (13).rar",
+                                               "bytes":  56402070,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-014",
+                        "source_number":  14,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (14).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  280265
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (14).rar",
+                                               "bytes":  10493599,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-015",
+                        "source_number":  15,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (15).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  323063
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (15).rar",
+                                               "bytes":  63013988,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-016",
+                        "source_number":  16,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (16).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  261362
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (16).rar",
+                                               "bytes":  4763949,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-017",
+                        "source_number":  17,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (17).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  170446
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (17).rar",
+                                               "bytes":  2580705,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-018",
+                        "source_number":  18,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (18).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  225190
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (18).rar",
+                                               "bytes":  33852208,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-019",
+                        "source_number":  19,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (19).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  164017
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (19).rar",
+                                               "bytes":  6732103,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-020",
+                        "source_number":  20,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (20).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  212552
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (20).rar",
+                                               "bytes":  168913109,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-021",
+                        "source_number":  21,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (21).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  90651
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (21).rar",
+                                               "bytes":  9754558,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-022",
+                        "source_number":  22,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (22).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  126384
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (22).rar",
+                                               "bytes":  4725356,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-023",
+                        "source_number":  23,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (23).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  280943
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (23).rar",
+                                               "bytes":  36742931,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-024",
+                        "source_number":  24,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (24).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  259805
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (24).rar",
+                                               "bytes":  15363297,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-025",
+                        "source_number":  25,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (25).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  231545
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (25).rar",
+                                               "bytes":  48811427,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-026",
+                        "source_number":  26,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (26).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  368937
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (26).rar",
+                                               "bytes":  30473815,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-027",
+                        "source_number":  27,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (27).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  231043
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (27).rar",
+                                               "bytes":  29222887,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-028",
+                        "source_number":  28,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (28).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  80647
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (28).rar",
+                                               "bytes":  15527743,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-029",
+                        "source_number":  29,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (29).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  148454
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (29).rar",
+                                               "bytes":  743112,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-030",
+                        "source_number":  30,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (30).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  298477
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (30).rar",
+                                               "bytes":  6856701,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-031",
+                        "source_number":  31,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (31).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  233307
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (31).rar",
+                                               "bytes":  17675949,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-032",
+                        "source_number":  32,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (32).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  264747
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (32).rar",
+                                               "bytes":  79121544,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-033",
+                        "source_number":  33,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (33).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  344248
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (33).rar",
+                                               "bytes":  55697019,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-034",
+                        "source_number":  34,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (34).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  354428
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (34).rar",
+                                               "bytes":  20155063,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-035",
+                        "source_number":  35,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (35).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  221457
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (35).rar",
+                                               "bytes":  582552,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-036",
+                        "source_number":  36,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (36).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  174672
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (36).rar",
+                                               "bytes":  21432746,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-037",
+                        "source_number":  37,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (37).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  210827
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (37).rar",
+                                               "bytes":  19138156,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-038",
+                        "source_number":  38,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (38).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  64675
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (38).rar",
+                                               "bytes":  11337181,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-039",
+                        "source_number":  39,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (39).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  79399
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (39).rar",
+                                               "bytes":  93723713,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-040",
+                        "source_number":  40,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (40).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  92807
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (40).rar",
+                                               "bytes":  9882081,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-041",
+                        "source_number":  41,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (41).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  78202
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (41).rar",
+                                               "bytes":  4412687,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-042",
+                        "source_number":  42,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (42).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  115496
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (42).rar",
+                                               "bytes":  6619928,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-043",
+                        "source_number":  43,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (43).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  496796
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (43).rar",
+                                               "bytes":  57160505,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-044",
+                        "source_number":  44,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (44).jpg",
+                                        "width":  1000,
+                                        "height":  1018,
+                                        "bytes":  308611
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (44).rar",
+                                               "bytes":  65188150,
+                                               "psd_count":  1
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-045",
+                        "source_number":  45,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (45).jpg",
+                                        "width":  1000,
+                                        "height":  1000,
+                                        "bytes":  222717
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (45).rar",
+                                               "bytes":  5904530,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-046",
+                        "source_number":  46,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (46).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  78542
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (46).rar",
+                                               "bytes":  3156580,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-047",
+                        "source_number":  47,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (47).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  598883
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (47).rar",
+                                               "bytes":  62542317,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-048",
+                        "source_number":  48,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (48).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  173091
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (48).rar",
+                                               "bytes":  8382285,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-049",
+                        "source_number":  49,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (49).jpg",
+                                        "width":  1000,
+                                        "height":  988,
+                                        "bytes":  275180
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (49).rar",
+                                               "bytes":  65178959,
+                                               "psd_count":  1
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-050",
+                        "source_number":  50,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (50).jpg",
+                                        "width":  800,
+                                        "height":  800,
+                                        "bytes":  265106
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (50).rar",
+                                               "bytes":  26324177,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-051",
+                        "source_number":  51,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (51).jpg",
+                                        "width":  1000,
+                                        "height":  1000,
+                                        "bytes":  265833
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (51).rar",
+                                               "bytes":  43077025,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-052",
+                        "source_number":  52,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (52).jpg",
+                                        "width":  1000,
+                                        "height":  1000,
+                                        "bytes":  275664
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (52).rar",
+                                               "bytes":  82373417,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    },
+                    {
+                        "asset_id":  "commercial-seed-053",
+                        "source_number":  53,
+                        "source_kind":  "purchased_editable_ecommerce_template",
+                        "data_role":  "commercial_template_seed",
+                        "performance_evidence":  "NOT_AVAILABLE",
+                        "preview":  {
+                                        "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\JPG预览图(预览查找不可编辑)\\飞鱼素材库 (53).jpg",
+                                        "width":  1000,
+                                        "height":  1000,
+                                        "bytes":  229385
+                                    },
+                        "source_archive":  {
+                                               "path":  "D:\\BaiduNetdiskDownload\\53套服装服饰主图\\PSD源文件(下载电脑解压使用)\\飞鱼素材库 (53).rar",
+                                               "bytes":  24795814,
+                                               "psd_count":  3
+                                           },
+                        "initial_template":  "platform_promotion_main_image_v0.1",
+                        "annotation_status":  "UNLABELED",
+                        "review_status":  "PENDING_DOUBLE_REVIEW"
+                    }
+                ]
+}

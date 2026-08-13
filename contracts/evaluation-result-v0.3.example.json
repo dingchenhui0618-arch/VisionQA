@@ -1,0 +1,87 @@
+{
+  "schema_version": "0.3.0",
+  "model_evaluation": {
+    "status": "SUCCEEDED",
+    "observations": [
+      {
+        "observation_id": "obs-demo-001",
+        "issue_code": "PF-03",
+        "primary_skill": "MAT",
+        "severity": "major",
+        "status": "suspected",
+        "observation": "右袖口结构与商品参考图存在疑似偏差。",
+        "impact": "可能降低商品忠实度，需人工对照参考图核验。"
+      }
+    ]
+  },
+  "score_evaluation": {
+    "status": "SUCCEEDED",
+    "calibration_status": "DEMO",
+    "skill_scores": {
+      "human_realism": { "score": 86, "weight": 0.25, "assessability": "FULL" },
+      "photography_realism": { "score": 82, "weight": 0.2, "assessability": "FULL" },
+      "material_realism": { "score": 74, "weight": 0.2, "assessability": "LIMITED" },
+      "commercial_value": { "score": 80.9, "weight": 0.35, "assessability": "FULL" }
+    },
+    "overall_score": 81,
+    "score_band": "REVIEW_OPTIMIZE",
+    "commercial_assessment": {
+      "template_id": "platform_promotion_main_image",
+      "template_version": "0.2.0",
+      "assessment_scope": "仅按平台促销主图模板评估；没有真实投放转化数据。",
+      "assessability": "FULL",
+      "metrics": {
+        "product_prominence": { "score": 88, "weight": 0.25, "assessability": "FULL", "evidence": ["商品为第一视觉焦点"], "summary": "主体明确。" },
+        "selling_point_clarity": { "score": 82, "weight": 0.2, "assessability": "FULL", "evidence": ["版型与印花可见"], "summary": "核心卖点可见。" },
+        "promotion_hierarchy": { "score": 76, "weight": 0.2, "assessability": "FULL", "evidence": ["价格与优惠标签层级接近"], "summary": "促销层级需要优化。" },
+        "information_legibility": { "score": 78, "weight": 0.15, "assessability": "FULL", "evidence": ["缩略图下辅助文字偏小"], "summary": "核心价格可读，辅助信息偏小。" },
+        "click_motivation": { "score": 80, "weight": 0.1, "assessability": "FULL", "evidence": ["商品与价格共同支持点击"], "summary": "具备基础点击动机。" },
+        "channel_placement_fit": { "score": 76, "weight": 0.1, "assessability": "FULL", "evidence": ["信息密度接近平台主图上限"], "summary": "可用但需降低次要信息密度。" }
+      },
+      "template_fit_score": 80.9,
+      "fit_level": "MEDIUM",
+      "commercial_strengths": ["商品主体明确", "核心卖点可辨认"],
+      "relative_gaps": ["促销信息层级接近", "移动端辅助文字偏小"],
+      "summary": "相对平台促销主图模板为中等贴合，仍需优化信息层级。"
+    }
+  },
+  "gate_evaluation": {
+    "decision": "REVIEW",
+    "decision_reason": "综合分位于优化区间，且存在待人工核验的商品结构疑点。"
+  },
+  "action_plan": {
+    "repair_prompt": {
+      "strategy": "LOCAL_EDIT",
+      "prompt": "先对照商品参考图核验右袖口结构；确认偏差后仅修复袖口。降低辅助优惠信息层级。保持印花、颜色、版型不变。不得引入未在证据中出现的新商品属性、文字、Logo 或配饰。",
+      "locked_attributes": ["印花", "颜色", "版型"],
+      "repair_actions": [
+        {
+          "action": "先人工核验：右袖口结构与商品参考图存在疑似偏差。",
+          "source_observation_ids": ["obs-demo-001"]
+        }
+      ],
+      "commercial_actions": [
+        {
+          "action": "降低辅助优惠信息层级。",
+          "source_metric_ids": ["promotion_hierarchy"]
+        }
+      ],
+      "negative_constraints": [
+        "不得改变锁定属性：印花",
+        "不得改变锁定属性：颜色",
+        "不得改变锁定属性：版型",
+        "不得引入未在证据中出现的新商品属性、文字、Logo 或配饰。"
+      ],
+      "related_observation_ids": ["obs-demo-001"],
+      "provenance": {
+        "generator": "DETERMINISTIC_RULES",
+        "generator_version": "repair-rules-0.3.0",
+        "source": "MODEL_OBSERVATIONS"
+      }
+    },
+    "required_human_checks": [
+      "对照商品参考图确认袖口结构。",
+      "确认修复没有改变锁定商品属性。"
+    ]
+  }
+}

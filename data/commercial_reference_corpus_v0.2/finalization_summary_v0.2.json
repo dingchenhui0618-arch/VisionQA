@@ -1,0 +1,24 @@
+{
+  "assets": 190,
+  "groups": 31,
+  "dataset_counts": {
+    "xiaoyu": 87,
+    "gwang": 103
+  },
+  "placement_counts": {
+    "AESTHETIC_REFERENCE": 34,
+    "LIFESTYLE_CAMPAIGN": 83,
+    "PRODUCT_MAIN_IMAGE": 65,
+    "PLATFORM_PROMOTION_MAIN_IMAGE": 5,
+    "OUT_OF_SCOPE_OTHER_COMMERCIAL": 3
+  },
+  "split_counts": {
+    "EVALUATION_HOLDOUT": 31,
+    "CALIBRATION_REVIEW": 40,
+    "TRAIN_REFERENCE": 119
+  },
+  "model_exposed_assets": 7,
+  "model_exposed_in_holdout": 0,
+  "human_score_labels": 0,
+  "status": "PLACEMENT_AND_GROUP_SPLIT_PROPOSED_HUMAN_SCORE_LABELS_PENDING"
+}

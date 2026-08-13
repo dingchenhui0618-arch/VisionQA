@@ -1,0 +1,4 @@
+SUPERSEDED_BY=D:\VisionQA\handoffs\ALIYUN_AUTHORIZATION_v0.2\authorization_decisions.csv
+SUPERSEDED_DATE=2026-07-29
+REASON=OSS lifecycle ambiguity; use fixed 14-day current-object expiration and 1-day incomplete Multipart Upload cleanup.
+DO_NOT_SUBMIT_OR_SIGN=true
