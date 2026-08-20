@@ -163,7 +163,7 @@ function resolveCommercialTemplate(templateId: string, channel: string, placemen
     },
     "platform-promotion": {
       id: "platform_promotion_main_image",
-      scope: "平台促销主图：完整评估商品主体、卖点、促销层级、信息可读性、点击动机和渠道图位适配。",
+      scope: "平台商品表达：评估视觉重心、商品识别效率、关键细节呈现、原商品一致性、真实使用可信度和人群场景适配。促销信息不是默认评分前提。",
     },
   };
   const selected = templates[templateId] ?? templates["platform-promotion"];
@@ -179,11 +179,17 @@ type CustomerProfile = {
   priceMin: string;
   priceMax: string;
   audiences: string[];
+  ageRanges: string[];
+  genderProfiles: string[];
+  cityTiers: string[];
+  audienceSegments: string[];
+  scenarios: string[];
+  purchaseDrivers: string[];
   skuLinks: string[];
 };
 
 function parseCustomerProfile(value: FormDataEntryValue | null): CustomerProfile {
-  const empty = { styles: [], priceMin: "", priceMax: "", audiences: [], skuLinks: [] };
+  const empty = { styles: [], priceMin: "", priceMax: "", audiences: [], ageRanges: [], genderProfiles: [], cityTiers: [], audienceSegments: [], scenarios: [], purchaseDrivers: [], skuLinks: [] };
   if (typeof value !== "string") return empty;
   try {
     const source = JSON.parse(value) as Partial<CustomerProfile>;
@@ -197,6 +203,12 @@ function parseCustomerProfile(value: FormDataEntryValue | null): CustomerProfile
       priceMin: typeof source.priceMin === "string" ? source.priceMin.slice(0, 20) : "",
       priceMax: typeof source.priceMax === "string" ? source.priceMax.slice(0, 20) : "",
       audiences: list(source.audiences, 8),
+      ageRanges: list(source.ageRanges, 8),
+      genderProfiles: list(source.genderProfiles, 6),
+      cityTiers: list(source.cityTiers, 8),
+      audienceSegments: list(source.audienceSegments, 16),
+      scenarios: list(source.scenarios, 12),
+      purchaseDrivers: list(source.purchaseDrivers, 12),
       skuLinks: list(source.skuLinks, 20),
     };
   } catch {
@@ -319,13 +331,19 @@ export async function POST(request: Request) {
     `风格：${customerProfile.styles.join("、") || "未提供"}`,
     `定价：${customerProfile.priceMin || "未提供"} 至 ${customerProfile.priceMax || "未提供"} 元`,
     `目标人群：${customerProfile.audiences.join("、") || "未提供"}`,
+    `年龄：${customerProfile.ageRanges.join("、") || "未提供"}`,
+    `性别画像：${customerProfile.genderProfiles.join("、") || "未提供"}`,
+    `城市：${customerProfile.cityTiers.join("、") || "未提供"}`,
+    `人群标签：${customerProfile.audienceSegments.join("、") || "未提供"}`,
+    `场景：${customerProfile.scenarios.join("、") || "未提供"}`,
+    `决策驱动：${customerProfile.purchaseDrivers.join("、") || "未提供"}`,
     `SKU 链接：${customerProfile.skuLinks.join("；") || "未提供"}`,
   ].join("。 ");
   const missingContext = [
     ...(referenceStatus === "complete"
       ? []
       : ["商品参考图未进入模型上下文", "SKU/参考声明"]),
-    ...(provenanceStatus === "known" ? [] : ["AI 来源"]),
+    ...(["confirmed_ai", "confirmed_real", "known"].includes(provenanceStatus) ? [] : ["素材来源确认"]),
   ];
 
   try {

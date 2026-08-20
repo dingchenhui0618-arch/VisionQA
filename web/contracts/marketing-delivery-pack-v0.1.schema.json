@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/marketing-delivery-pack-v0.1.schema.json",
+  "title": "Marketing Delivery Pack v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "product_name",
+    "source",
+    "evidence_status",
+    "creator_profiles",
+    "real_creator_candidates",
+    "social_copy",
+    "information_flow_video_outline",
+    "video_generation_prompts",
+    "review_issues",
+    "prohibited_claims",
+    "human_final_review_required"
+  ],
+  "properties": {
+    "schema_version": { "const": "marketing-delivery-pack-v0.1" },
+    "product_name": { "type": "string", "minLength": 1 },
+    "source": { "type": "string", "minLength": 1 },
+    "evidence_status": { "enum": ["DEMO_ONLY", "HUMAN_REVIEW_REQUIRED"] },
+    "creator_profiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "fit", "use", "risk"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "fit": { "type": "string", "minLength": 1 },
+          "use": { "type": "string", "minLength": 1 },
+          "risk": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "real_creator_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["platform", "profile_url", "source", "retrieved_on", "human_verified"],
+        "properties": {
+          "platform": { "type": "string", "minLength": 1 },
+          "profile_url": { "type": "string", "format": "uri" },
+          "source": { "type": "string", "minLength": 1 },
+          "retrieved_on": { "type": "string", "format": "date" },
+          "human_verified": { "const": true }
+        }
+      }
+    },
+    "social_copy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["小红书", "抖音"],
+      "properties": {
+        "小红书": { "$ref": "#/$defs/socialCopy" },
+        "抖音": { "$ref": "#/$defs/socialCopy" }
+      }
+    },
+    "information_flow_video_outline": {
+      "type": "array",
+      "minItems": 3,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "video_generation_prompts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "text"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "text": { "type": "string", "minLength": 80 }
+        }
+      }
+    },
+    "review_issues": { "type": "array", "items": { "type": "string" } },
+    "prohibited_claims": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "human_final_review_required": { "const": true }
+  },
+  "$defs": {
+    "socialCopy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "body", "tags"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "body": { "type": "string", "minLength": 1 },
+        "tags": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

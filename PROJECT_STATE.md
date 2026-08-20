@@ -1,8 +1,41 @@
 # VisionQA 项目状态
 
 > 这是本项目的首要状态入口。每次阶段交付、评审结论或方向变化后更新。  
-> 最后更新：2026-08-13（Asia/Shanghai；RDS migration 已落库，public Schema 11 张业务表与真实持久写入验收通过；下一步接入 FC 运行时）  
+> 最后更新：2026-08-20（Asia/Shanghai；千问营销 Provider 适配层已实现；Key、数据外传与付费调用仍未授权）
 > 内部代号：`VisionQA`；外部产品名：待定  
+
+## 2026-08-20 商品表达效能契约与本地营销智能体
+
+- `product-expression-v0.1` 已具备固定六维权重、证据引用、来源引用、不可评估状态、SKU 一致性 Gate、未知项和人工终审运行时校验。
+- 历史 `evaluation-result-v0.3` 采用诚实投影：只迁移有直接证据对应的字段，原商品一致性等缺失维度保持 `NOT_ASSESSABLE`，不把旧分数改名冒充新结果。
+- 工作台第五阶段新增可交互智能体链路：商品事实守门员 → 商品表达评审员 → 营销策略生成员 → 证据审计员。
+- 营销内容改为运行后生成，并附事实编号、来源和未知项；未运行前不再展示预置文案作为交付结果。
+- 当前模式为 `LOCAL_RULES_NO_NETWORK`：没有外部 API、图片上传、付费模型、联网达人检索或自动发布。
+- 新增测试覆盖固定权重、无证据分数拒绝、旧版不虚构 SKU 一致性、营销证据引用和缺失输入失败关闭。
+- 最终回归：`npm test` 84/84，`npm run lint` 0 error / 0 warning；浏览器交互与 390px 移动端无横向溢出验收通过。
+- 下一授权点：真实营销模型的供应商、预算、允许发送的数据范围、日志留存；改图模型继续单独授权。
+- 当前 Gate：`PRODUCT_EXPRESSION_RUNTIME_READY / LOCAL_AGENT_ORCHESTRATION_READY / LIVE_MARKETING_MODEL_NOT_AUTHORIZED / HUMAN_REVIEW_REQUIRED / AUTO_PASS_DISABLED`。
+
+## 2026-08-20 L2 领域智能体运行框架
+
+- 新增最大 6 步的 Provider 决策循环、四项领域白名单工具、结构化观察轨迹和明确停止原因。
+- 当前 `visionqa-local-l2-test-provider` 为非模型测试 Provider：不联网、不推理、不产生费用，仅验证 L2 运行机制，禁止把测试结果宣称为真实模型效果。
+- 越权工具、Provider 超时、缺少草案和超过最大步数全部失败关闭；正式结果仍需人工终审。
+- 桌面 `小宇电商图素材/服装类视觉主图` 66 张图片已生成本地 SHA-256 清单，0 组内容重复；原图未复制、未上传、未发送第三方。
+- 用户授权边界已版本化：项目和桌面相关素材可自主本地测试；支付动作与 API Key 创建/保存/启用必须单独确认。
+- 当前 Gate：`L2_RUNTIME_SCAFFOLD_READY / NON_MODEL_TEST_PROVIDER_ACTIVE / LOCAL_MATERIAL_MANIFEST_READY / EXTERNAL_MODEL_DISABLED / API_KEY_APPROVAL_REQUIRED / HUMAN_REVIEW_REQUIRED`。
+- 本轮回归：`npm test` 88/88，`npm run lint` 0 error / 0 warning；浏览器 L2 工具循环成功，控制台 0 error，390px 与 1440px 均无页面级横向溢出。
+
+## 2026-08-20 千问营销 Provider 适配层
+
+- 首选营销模型确定为阿里云百炼 `qwen3.7-plus-2026-05-26`，使用 OpenAI 兼容 Chat Completions 与 Function Calling 协议。
+- 新增 `lib/visionqa/agents/qwen-marketing-provider.ts`：只发送目标和结构化观察，关闭联网搜索、思考输出和并行工具调用，复用四项领域白名单工具。
+- 启用必须同时满足 API Key、Provider 批准、付费调用、`STRUCTURED_FACTS_ONLY` 数据范围、固定模型快照和每次最多 6 次调用；任一缺失均在网络请求前失败关闭。
+- 工作台能力条显示“千问 · 百炼 / 适配完成 · 等待授权”，当前活动运行仍为本地非模型测试 Provider，真实千问调用与新增费用均为 0。
+- 模拟响应测试覆盖 Key 不进入请求体、搜索关闭、固定模型、完整停止与异常 JSON 失败关闭。
+- POST 运行接口已接好受控切换：仅当六项 Gate 全部满足时使用千问，否则保持本地非模型 Provider；本轮没有设置任何启用变量。
+- 本轮分组回归共 91/91（界面/契约 13、TypeScript 77、生产启动 smoke 1），构建与 lint 通过；浏览器 390px、1440px 均无页面级横向溢出，控制台 0 error。
+- 当前 Gate：`QWEN_PROVIDER_ADAPTER_READY / QWEN_NOT_ACTIVATED / NON_MODEL_TEST_PROVIDER_ACTIVE / STRUCTURED_FACTS_ONLY_PENDING_APPROVAL / API_KEY_APPROVAL_REQUIRED / PAID_CALLS_DISABLED / HUMAN_REVIEW_REQUIRED`。
 
 ## 2026-08-13 RDS migration 与真实读写验收
 

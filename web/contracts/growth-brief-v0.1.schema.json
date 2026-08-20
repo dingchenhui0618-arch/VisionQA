@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionos.local/contracts/growth-brief-v0.1.schema.json",
+  "title": "Growth Brief v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "vertical", "brief_id", "sku", "opportunity_card", "creator_candidates", "delivery_decision"],
+  "properties": {
+    "schema_version": {"const": "growth-brief-v0.1"},
+    "vertical": {"const": "apparel_ecommerce"},
+    "brief_id": {"type": "string", "pattern": "^gb_[a-z0-9_-]+$"},
+    "sku": {"$ref": "#/$defs/sku"},
+    "opportunity_card": {"$ref": "#/$defs/opportunityCard"},
+    "creator_candidates": {"type": "array", "items": {"$ref": "#/$defs/creatorCandidate"}},
+    "delivery_decision": {"$ref": "#/$defs/deliveryDecision"},
+    "notes": {"type": "string", "maxLength": 1000}
+  },
+  "$defs": {
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim", "level", "source"],
+      "properties": {
+        "claim": {"type": "string", "minLength": 1},
+        "level": {"enum": ["confirmed", "visible_evidence", "inference", "unknown"]},
+        "source": {"type": "string", "minLength": 1},
+        "validation_action": {"type": "string"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"level": {"const": "inference"}}},
+          "then": {"required": ["validation_action"]}
+        }
+      ]
+    },
+    "sku": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display_name", "apparel_category", "facts", "reference_scope"],
+      "properties": {
+        "display_name": {"type": "string", "minLength": 1},
+        "apparel_category": {"type": "string", "minLength": 1},
+        "facts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidenceItem"}},
+        "reference_scope": {"enum": ["FULL_SKU", "FRONT_ONLY", "STYLE_ONLY", "BLOCKED"]}
+      }
+    },
+    "hypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_user", "scenario", "pain_or_motivation", "basis", "validation_action"],
+      "properties": {
+        "target_user": {"type": "string", "minLength": 1},
+        "scenario": {"type": "string", "minLength": 1},
+        "pain_or_motivation": {"type": "string", "minLength": 1},
+        "basis": {"type": "string", "minLength": 1},
+        "validation_action": {"type": "string", "minLength": 1}
+      }
+    },
+    "videoMode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "funnel_stage", "goal", "evidence_points"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "funnel_stage": {"enum": ["awareness", "consideration", "conversion", "live"]},
+        "goal": {"type": "string", "minLength": 1},
+        "evidence_points": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "creatorProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["audience_fit", "content_format", "fit_reason", "risks"],
+      "properties": {
+        "audience_fit": {"type": "string", "minLength": 1},
+        "content_format": {"type": "string", "minLength": 1},
+        "fit_reason": {"type": "string", "minLength": 1},
+        "risks": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "script": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "sample", "evidence_binding", "prohibited_claims"],
+      "properties": {
+        "format": {"enum": ["short_video", "live_module"]},
+        "sample": {"type": "string", "minLength": 1},
+        "evidence_binding": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "prohibited_claims": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "severity", "action"],
+      "properties": {
+        "type": {"enum": ["sku", "brand", "safety", "compliance", "material", "human", "asset"]},
+        "severity": {"enum": ["low", "medium", "high", "blocking"]},
+        "action": {"type": "string", "minLength": 1}
+      }
+    },
+    "opportunityCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["user_pain_hypotheses", "video_modes", "creator_profiles", "script_samples", "asset_requirements", "review_risks"],
+      "properties": {
+        "user_pain_hypotheses": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/hypothesis"}},
+        "video_modes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/videoMode"}},
+        "creator_profiles": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/creatorProfile"}},
+        "script_samples": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/script"}},
+        "asset_requirements": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "review_risks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/risk"}}
+      }
+    },
+    "creatorCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "profile_url", "source", "retrieved_on", "human_verified", "fit_reason", "risks"],
+      "properties": {
+        "platform": {"type": "string", "minLength": 1},
+        "profile_url": {"type": "string", "format": "uri"},
+        "source": {"type": "string", "minLength": 1},
+        "retrieved_on": {"type": "string", "format": "date"},
+        "human_verified": {"const": true},
+        "fit_reason": {"type": "string", "minLength": 1},
+        "risks": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "deliveryDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reference_scope", "reason", "human_final_review_required"],
+      "properties": {
+        "status": {"enum": ["PASS", "CONDITIONAL_PASS", "REWORK", "REGENERATE", "BLOCKED"]},
+        "reference_scope": {"enum": ["FULL_SKU", "FRONT_ONLY", "STYLE_ONLY", "BLOCKED"]},
+        "reason": {"type": "string", "minLength": 1},
+        "human_final_review_required": {"const": true}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "BLOCKED"}}},
+          "then": {"properties": {"reference_scope": {"const": "BLOCKED"}}}
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["PASS", "CONDITIONAL_PASS"]}}},
+          "then": {"properties": {"reference_scope": {"enum": ["FULL_SKU", "FRONT_ONLY", "STYLE_ONLY"]}}}
+        }
+      ]
+    }
+  }
+}

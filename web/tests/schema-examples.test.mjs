@@ -6,18 +6,19 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 const contractsRoot = path.resolve(process.cwd(), "..", "contracts");
 const pairs = [
-  [
+  [contractsRoot,
     "commercial-template-v0.2.schema.json",
     "commercial-template-platform-promo-v0.2.example.json",
   ],
-  ["evaluation-result-v0.3.schema.json", "evaluation-result-v0.3.example.json"],
+  [contractsRoot, "evaluation-result-v0.3.schema.json", "evaluation-result-v0.3.example.json"],
+  [path.resolve(process.cwd(), "contracts"), "product-expression-v0.1.schema.json", "product-expression-v0.1.example.json"],
 ];
 
-for (const [schemaName, exampleName] of pairs) {
+for (const [root, schemaName, exampleName] of pairs) {
   test(`${exampleName} conforms to ${schemaName}`, async () => {
     const [schema, example] = await Promise.all(
       [schemaName, exampleName].map(async (name) =>
-        JSON.parse(await readFile(path.join(contractsRoot, name), "utf8")),
+        JSON.parse(await readFile(path.join(root, name), "utf8")),
       ),
     );
     const ajv = new Ajv2020({ allErrors: true, strict: false });

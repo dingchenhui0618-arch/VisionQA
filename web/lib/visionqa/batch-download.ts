@@ -89,7 +89,7 @@ function csvCell(value: string | number | null): string {
 export function createBatchCsv(rows: BatchReportRow[]): Blob {
   const headers = [
     "文件名", "综合评分", "门禁结论", "真人真实性", "摄影真实性",
-    "材质真实性", "商业价值", "优化Prompt",
+    "材质真实性", "商品表达效能", "优化Prompt",
   ];
   const lines = [
     headers.map(csvCell).join(","),

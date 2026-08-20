@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/repair-job-v0.1.schema.json",
+  "title": "VisionQA Repair Job v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "asset_id", "asset_name", "provider", "provider_execution_status", "issue_list", "repair_prompt", "locked_attributes", "output_supplied_by_user", "human_review_checks", "human_final_review_required"],
+  "properties": {
+    "schema_version": { "const": "repair-job-v0.1" },
+    "asset_id": { "type": "integer", "minimum": 1 },
+    "asset_name": { "type": "string", "minLength": 1 },
+    "provider": { "enum": ["seedream", "qwen-image", "gpt-image"] },
+    "provider_execution_status": { "enum": ["NOT_CONNECTED", "QUEUED", "RUNNING", "SUCCEEDED", "FAILED"] },
+    "issue_list": { "type": "array", "items": { "type": "object" } },
+    "repair_prompt": { "type": "string", "minLength": 20 },
+    "locked_attributes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "output_supplied_by_user": { "type": "boolean" },
+    "human_review_checks": { "type": "array", "items": { "type": "string" } },
+    "human_final_review_required": { "const": true }
+  }
+}

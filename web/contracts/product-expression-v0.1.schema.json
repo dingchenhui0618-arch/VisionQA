@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/product-expression-v0.1.schema.json",
+  "title": "VisionQA Product Expression v0.1",
+  "description": "商品表达效能运行时契约。促销信息不是评分前提；SKU 一致性 Gate 高于综合分，所有结果必须人工终审。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source", "scope", "score", "metrics", "sku_consistency_gate", "summary", "unknowns", "human_final_review_required"],
+  "properties": {
+    "schema_version": { "const": "product-expression-v0.1" },
+    "source": { "enum": ["DIRECT_REVIEW", "LEGACY_EVALUATION_PROJECTION", "DEMO_FIXTURE"] },
+    "scope": { "type": "string", "minLength": 1 },
+    "score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["visual_focus", "product_recognition", "detail_visibility", "reference_fidelity", "real_use_credibility", "audience_scene_fit"],
+      "properties": {
+        "visual_focus": { "$ref": "#/$defs/metric" },
+        "product_recognition": { "$ref": "#/$defs/metric" },
+        "detail_visibility": { "$ref": "#/$defs/metric" },
+        "reference_fidelity": { "$ref": "#/$defs/metric" },
+        "real_use_credibility": { "$ref": "#/$defs/metric" },
+        "audience_scene_fit": { "$ref": "#/$defs/metric" }
+      }
+    },
+    "sku_consistency_gate": { "enum": ["PASS", "REWORK", "REGENERATE", "BLOCKED", "NOT_ASSESSABLE"] },
+    "summary": { "type": "string", "minLength": 1 },
+    "unknowns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "human_final_review_required": { "const": true }
+  },
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "weight", "evidence", "source_refs", "summary", "assessability"],
+      "properties": {
+        "score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "weight": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "source_refs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "summary": { "type": "string", "minLength": 1 },
+        "assessability": { "enum": ["FULL", "PARTIAL", "NOT_ASSESSABLE"] }
+      }
+    }
+  }
+}

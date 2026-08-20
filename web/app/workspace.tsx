@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useEffect,
   useMemo,
@@ -32,9 +33,16 @@ import {
   createStoredZip,
   downloadBlob,
 } from "../lib/visionqa/batch-download";
+import { MarketingDeliveryPack } from "./workspace-growth";
+import { AssetIntakeWorkspace } from "./workspace-intake";
+import { WorkspaceLogin } from "./workspace-login";
+import { WorkspaceBaseline } from "./workspace-overview";
+import { RepairWorkspace } from "./workspace-repair";
+import { projectLegacyCommercialMetrics } from "../lib/visionqa/product-expression";
 
 type Decision = "PASS" | "REVIEW" | "REJECT";
 type View = "grid" | "evidence";
+type WorkspaceArea = "baseline" | "intake" | "review" | "repair" | "delivery";
 type CommercialTemplateId = "platform-promotion" | "brand-flagship";
 
 type SkillScore = {
@@ -158,7 +166,7 @@ type SubmissionContext = {
   channel: string;
   placement: string;
   referenceStatus: "complete" | "missing";
-  provenanceStatus: "known" | "unknown";
+  provenanceStatus: "confirmed_ai" | "confirmed_real" | "unknown";
 };
 
 type LocalCandidate = {
@@ -194,7 +202,13 @@ const defaultCustomerProfile: CustomerProfileInput = {
   styles: ["简约通勤"],
   priceMin: "199",
   priceMax: "599",
-  audiences: ["25-35 岁都市女性"],
+  audiences: ["都市白领", "通勤女性"],
+  ageRanges: ["24–30 岁"],
+  genderProfiles: ["女性为主"],
+  cityTiers: ["一线城市", "新一线城市"],
+  audienceSegments: ["都市白领", "通勤女性"],
+  scenarios: ["通勤"],
+  purchaseDrivers: ["版型", "搭配效率"],
   skuLinks: [],
 };
 
@@ -233,15 +247,15 @@ const commercialTemplates: {
 }[] = [
   {
     id: "platform-promotion",
-    name: "天猫 / 平台促销主图",
-    version: "0.1",
-    status: "平台促销主图标准",
+    name: "平台商品表达",
+    version: "0.2",
+    status: "视觉重心、商品细节与真实使用标准",
   },
   {
     id: "brand-flagship",
-    name: "品牌旗舰主图",
-    version: "0.1-demo",
-    status: "品牌旗舰主图标准",
+    name: "品牌场景表达",
+    version: "0.2-demo",
+    status: "商品识别、场景关系与品牌克制标准",
   },
 ];
 
@@ -379,7 +393,7 @@ function buildSkillScores(score: number, index: number): SkillScore[] {
     { id: "01", label: "真人真实性", score: clampScore(score + offsets[0]), weight: "25%" },
     { id: "02", label: "摄影真实性", score: clampScore(score + offsets[1]), weight: "20%" },
     { id: "03", label: "材质真实性", score: clampScore(score + offsets[2]), weight: "20%" },
-    { id: "04", label: "商业价值", score: clampScore(score + offsets[3]), weight: "35%" },
+    { id: "04", label: "商品表达效能", score: clampScore(score + offsets[3]), weight: "35%" },
   ];
 }
 
@@ -403,12 +417,12 @@ const assets: Asset[] = decisions.map((decision, index) => {
 });
 
 const commercialMetricLabels = [
-  "商品主体",
-  "卖点表达",
-  "促销层级",
-  "信息可读",
-  "点击动机",
-  "图位适配",
+  "视觉重心",
+  "商品识别效率",
+  "关键细节呈现",
+  "原商品一致性",
+  "真实使用可信度",
+  "人群与场景适配",
 ];
 
 function getCommercialResult(
@@ -430,12 +444,12 @@ function getCommercialResult(
   const template = commercialTemplates.find((item) => item.id === templateId)!;
   const gaps =
     templateId === "platform-promotion"
-      ? ["核心卖点识别速度仍可提升", "促销信息需要保持单一主层级"]
-      : ["促销信息密度偏高", "留白与品牌叙事不足"];
+      ? ["关键商品细节还不够集中", "原商品一致性需要结合基准图人工确认"]
+      : ["场景对商品的支撑关系偏弱", "品牌表达与商品细节需要重新平衡"];
   const strengths =
     templateId === "platform-promotion"
-      ? ["商品主体识别明确", "移动端首屏信息完整"]
-      : ["人物与商品关系清楚", "基础质感表达成立"];
+      ? ["视觉重心落在商品主体", "主要轮廓具备识别效率"]
+      : ["人物与商品关系清楚", "场景没有覆盖商品主要结构"];
 
   return {
     templateId,
@@ -446,7 +460,7 @@ function getCommercialResult(
     summary:
       templateId === "platform-promotion"
         ? asset.commercialAssessment
-        : `相对品牌旗舰模板，${asset.productLabel}的商品识别仍然成立，但当前促销表达与信息密度需要收敛。`,
+        : `相对品牌场景表达标准，${asset.productLabel}的商品识别仍然成立，但场景、人物和关键细节之间需要建立更明确的视觉秩序。`,
     strengths,
     gaps,
     metrics: commercialMetricLabels.map((label, index) => ({
@@ -550,11 +564,18 @@ function buildApiAsset(
 
 const statusClass = (decision: Decision) => decision.toLowerCase();
 
+const displayDecision = (decision: Decision) =>
+  decision === "PASS"
+    ? "PASS"
+    : decision === "REVIEW"
+      ? "REWORK"
+      : "REGENERATE";
+
 function Status({ value }: { value: Decision }) {
   return (
     <span className="inline-flex items-center gap-2">
       <span className={`status-dot ${statusClass(value)}`} aria-hidden="true" />
-      <span>{value}</span>
+      <span>{displayDecision(value)}</span>
     </span>
   );
 }
@@ -678,8 +699,9 @@ function SafeImage({
 }
 
 export function Workspace() {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [area, setArea] = useState<WorkspaceArea>("baseline");
   const [view, setView] = useState<View>("grid");
-  const [filter, setFilter] = useState<Decision | "ALL">("ALL");
   const [commercialTemplateId, setCommercialTemplateId] =
     useState<CommercialTemplateId>("platform-promotion");
   const [selectedId, setSelectedId] = useState(1);
@@ -723,13 +745,6 @@ export function Workspace() {
         : assets.map((asset) => evaluateAsset(asset, commercialTemplateId));
     },
     [apiAsset, batchCandidates, commercialTemplateId],
-  );
-  const visibleAssets = useMemo(
-    () =>
-      filter === "ALL"
-        ? evaluatedAssets
-        : evaluatedAssets.filter((asset) => asset.decision === filter),
-    [evaluatedAssets, filter],
   );
   const selected =
     evaluatedAssets.find((asset) => asset.id === selectedId) ??
@@ -789,7 +804,7 @@ export function Workspace() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (overrideOpen) return;
+      if (overrideOpen || area !== "review") return;
       if (event.key === "ArrowRight" || event.key === "ArrowDown") {
         setSelectedId((current) => (current % evaluatedAssets.length) + 1);
       }
@@ -803,7 +818,7 @@ export function Workspace() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [evaluatedAssets.length, overrideOpen]);
+  }, [area, evaluatedAssets.length, overrideOpen]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -866,7 +881,6 @@ export function Workspace() {
         reviewStartedAt: new Date().toISOString(),
       });
       setSelectedId(1);
-      setFilter("ALL");
       setView("grid");
       setLiveConsent(false);
       setDataState({
@@ -896,7 +910,6 @@ export function Workspace() {
     candidateFileRef.current = null;
     setLiveConsent(false);
     setSelectedId(1);
-    setFilter("ALL");
     setDataState({ kind: "fixture" });
     setIntakeState({ kind: "idle" });
   };
@@ -981,7 +994,6 @@ export function Workspace() {
           ));
         }
       }
-      setFilter("ALL");
       setView("grid");
       if (lastResult) {
         setDataState({
@@ -1184,127 +1196,245 @@ export function Workspace() {
     setOverrideOpen(true);
   };
 
+  const batchTitle =
+    batchCandidates.length > 0
+      ? `客户批次 · ${batchCandidates.length} 张`
+      : "夏季服饰示例项目";
+  const sourceLabel =
+    dataState.kind === "fixture"
+      ? "内置示例项目"
+      : dataState.kind === "live"
+        ? "AI 评分完成，等待人工终审"
+        : dataState.kind === "local"
+          ? "客户图片仅在本机等待"
+          : dataState.kind === "live-loading"
+            ? "AI 评分进行中"
+            : dataState.kind === "live-error"
+              ? "当前批次评分失败"
+              : "已保存评估";
+  const areaLabel: Record<WorkspaceArea, string> = {
+    baseline: "商品基准",
+    intake: "待评审素材",
+    review: "质量评审",
+    repair: "改图复审",
+    delivery: "营销交付",
+  };
+
+  if (!previewOpen) {
+    return <WorkspaceLogin onEnterPreview={() => setPreviewOpen(true)} />;
+  }
+
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div className="brand">VisionQA</div>
-        <div className="batch-title">
-          {batchCandidates.length > 0
-            ? `当前批次 · ${batchCandidates.length} 张`
-            : "示例项目 · 夏季服饰"}
+    <main className="vision-workbench-shell">
+      <aside className="workspace-rail-nav">
+        <Link className="workspace-brand" href="/" aria-label="返回 VisionQA 首页">
+          <span aria-hidden="true">VQ</span>
+          <strong>VisionQA</strong>
+        </Link>
+        <div className="rail-project">
+          <span>当前项目</span>
+          <strong>{batchTitle}</strong>
+          <small>{sourceLabel}</small>
         </div>
-        <div className="topbar-actions">
-          <label className="template-control">
-            <span>商业模板</span>
-            <select
-              value={commercialTemplateId}
-              disabled={
-                dataState.kind === "real" ||
-                dataState.kind === "local" ||
-                dataState.kind === "live" ||
-                dataState.kind === "live-loading"
-              }
-              onChange={(event) =>
-                setCommercialTemplateId(
-                  event.target.value as CommercialTemplateId,
-                )
-              }
-            >
-              {commercialTemplates.map((template) => (
-                <option value={template.id} key={template.id}>
-                  {template.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <DataSourceBadge state={dataState} />
-          <div className="view-switch" aria-label="视图">
+        <nav aria-label="工作台导航">
+          {(Object.keys(areaLabel) as WorkspaceArea[]).map((item, index) => (
             <button
+              key={item}
               type="button"
-              aria-pressed={view === "grid"}
-              onClick={() => setView("grid")}
+              aria-current={area === item ? "page" : undefined}
+              onClick={() => setArea(item)}
             >
-              批次
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              {areaLabel[item]}
             </button>
+          ))}
+        </nav>
+        <div className="rail-governance" role="note">
+          <span>交付规则</span>
+          <strong>人工终审始终开启</strong>
+          <p>自动放行关闭。参考范围不会从局部通过扩张为完整 SKU 通过。</p>
+        </div>
+      </aside>
+
+      <section className="workspace-frame">
+        <header className="workspace-topbar">
+          <div>
+            <span>{areaLabel[area]}</span>
+            <strong>{batchTitle}</strong>
+          </div>
+          <div className="topbar-actions">
+            {area === "review" && (
+              <label className="template-control">
+                <span>评估模板</span>
+                <select
+                  value={commercialTemplateId}
+                  disabled={
+                    dataState.kind === "real" ||
+                    dataState.kind === "local" ||
+                    dataState.kind === "live" ||
+                    dataState.kind === "live-loading"
+                  }
+                  onChange={(event) =>
+                    setCommercialTemplateId(event.target.value as CommercialTemplateId)
+                  }
+                >
+                  {commercialTemplates.map((template) => (
+                    <option value={template.id} key={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <DataSourceBadge state={dataState} />
+            {area === "review" && (
+              <div className="view-switch" aria-label="评审视图">
+                <button type="button" aria-pressed={view === "grid"} onClick={() => setView("grid")}>
+                  批次
+                </button>
+                <button type="button" aria-pressed={view === "evidence"} onClick={() => setView("evidence")}>
+                  证据
+                </button>
+              </div>
+            )}
             <button
+              className="icon-button"
               type="button"
-              aria-pressed={view === "evidence"}
-              onClick={() => setView("evidence")}
+              aria-label="退出内部预览"
+              onClick={() => setPreviewOpen(false)}
             >
-              证据
+              退
             </button>
           </div>
-          <button className="icon-button mono" type="button" aria-label="搜索">
-            /
-          </button>
-          <button
-            className="icon-button"
-            type="button"
-            aria-label="显示帮助"
-            onClick={() =>
-              setToast("方向键切换图片，Enter 打开证据，Esc 返回批次。")
-            }
-          >
-            ?
-          </button>
-        </div>
-      </header>
-      <DataStateNotice state={dataState} />
-      <CustomerWorkflow
-        state={intakeState}
-        candidate={localCandidate}
-        submissionContext={submissionContext}
-        setSubmissionContext={setSubmissionContext}
-        onSelect={loadBatchCandidates}
-        onRestore={restoreFixtureBatch}
-        liveCapability={liveCapability}
-        liveConsent={liveConsent}
-        setLiveConsent={setLiveConsent}
-        liveRunning={liveRunning}
-        onRunLive={runLiveEvaluation}
-        referenceFiles={referenceFiles}
-        setReferenceFiles={setReferenceFiles}
-        customerProfile={customerProfile}
-        setCustomerProfile={setCustomerProfile}
-        batchCandidates={batchCandidates}
-        toggleBatchSelection={toggleBatchSelection}
-        downloadSelectedOriginals={downloadSelectedOriginals}
-        downloadBatchReport={downloadBatchReport}
-      />
+        </header>
 
-      {batchCandidates.length > 0 && batchResultCount === 0 ? (
-        <BatchWaitingState
-          count={batchCandidates.length}
-          running={liveRunning}
-          errorCount={batchCandidates.filter((item) => item.status === "error").length}
-        />
-      ) : view === "grid" ? (
-        <GridWorkspace
-          filter={filter}
-          setFilter={setFilter}
-          assets={visibleAssets}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
-          openEvidence={() => setView("evidence")}
-          openOverride={openOverride}
-          commitDecision={commitDecision}
-          copyPrompt={copyPrompt}
-          selected={selected}
-          auditEntries={auditEntries}
-          allAssets={evaluatedAssets}
-        />
-      ) : (
-        <EvidenceWorkspace
-          selected={selected}
-          setSelectedId={setSelectedId}
-          back={() => setView("grid")}
-          openOverride={openOverride}
-          commitDecision={commitDecision}
-          copyPrompt={copyPrompt}
-          auditEntries={auditEntries}
-          allAssets={evaluatedAssets}
-        />
-      )}
+        <nav className="workspace-mobile-nav" aria-label="移动端工作台导航">
+          {(Object.keys(areaLabel) as WorkspaceArea[]).map((item) => (
+            <button
+              key={item}
+              type="button"
+              aria-current={area === item ? "page" : undefined}
+              onClick={() => setArea(item)}
+            >
+              {areaLabel[item]}
+            </button>
+          ))}
+        </nav>
+
+        <div className="workspace-content">
+          {area === "baseline" && (
+            <WorkspaceBaseline
+              referenceFiles={referenceFiles}
+              setReferenceFiles={setReferenceFiles}
+              customerProfile={customerProfile}
+              setCustomerProfile={setCustomerProfile}
+              onContinue={() => setArea("intake")}
+            />
+          )}
+
+          {area === "intake" && (
+            <AssetIntakeWorkspace
+              items={batchCandidates.map((item) => ({
+                id: item.id,
+                name: item.file.name,
+                src: item.src,
+                status: item.status,
+                selected: item.selected,
+                error: item.error,
+              }))}
+              processing={intakeState.kind === "processing"}
+              errorMessage={intakeState.kind === "error" ? intakeState.message : undefined}
+              submissionContext={submissionContext}
+              setSubmissionContext={setSubmissionContext}
+              onSelect={loadBatchCandidates}
+              onToggle={toggleBatchSelection}
+              onClear={restoreFixtureBatch}
+              onContinue={() => setArea("review")}
+            />
+          )}
+
+          {area === "review" && (
+            <section className="review-page" aria-label="质量评审">
+              <DataStateNotice state={dataState} />
+              <CustomerWorkflow
+                state={intakeState}
+                candidate={localCandidate}
+                submissionContext={submissionContext}
+                setSubmissionContext={setSubmissionContext}
+                onSelect={loadBatchCandidates}
+                onRestore={restoreFixtureBatch}
+                liveCapability={liveCapability}
+                liveConsent={liveConsent}
+                setLiveConsent={setLiveConsent}
+                liveRunning={liveRunning}
+                onRunLive={runLiveEvaluation}
+                referenceFiles={referenceFiles}
+                setReferenceFiles={setReferenceFiles}
+                customerProfile={customerProfile}
+                setCustomerProfile={setCustomerProfile}
+                batchCandidates={batchCandidates}
+                toggleBatchSelection={toggleBatchSelection}
+              />
+
+              {batchCandidates.length > 0 && batchResultCount === 0 ? (
+                <BatchWaitingState
+                  count={batchCandidates.length}
+                  running={liveRunning}
+                  errorCount={batchCandidates.filter((item) => item.status === "error").length}
+                />
+              ) : view === "grid" ? (
+                <GridWorkspace
+                  assets={evaluatedAssets}
+                  selectedId={selectedId}
+                  setSelectedId={setSelectedId}
+                  openEvidence={() => setView("evidence")}
+                  openOverride={openOverride}
+                  commitDecision={commitDecision}
+                  copyPrompt={copyPrompt}
+                  selected={selected}
+                  auditEntries={auditEntries}
+                  allAssets={evaluatedAssets}
+                  onRepair={() => setArea("repair")}
+                />
+              ) : (
+                <EvidenceWorkspace
+                  selected={selected}
+                  setSelectedId={setSelectedId}
+                  back={() => setView("grid")}
+                  openOverride={openOverride}
+                  commitDecision={commitDecision}
+                  copyPrompt={copyPrompt}
+                  auditEntries={auditEntries}
+                  allAssets={evaluatedAssets}
+                />
+              )}
+            </section>
+          )}
+
+          {area === "repair" && (
+            <RepairWorkspace
+              asset={selected}
+              isDemo={batchCandidates.length === 0}
+              onBack={() => setArea("review")}
+              onContinue={() => setArea("delivery")}
+            />
+          )}
+
+          {area === "delivery" && (
+            <DeliveryWorkspace
+              batchCandidates={batchCandidates}
+              assets={evaluatedAssets}
+              auditEntries={auditEntries}
+              sourceLabel={sourceLabel}
+              customerProfile={customerProfile}
+              toggleBatchSelection={toggleBatchSelection}
+              downloadSelectedOriginals={downloadSelectedOriginals}
+              downloadBatchReport={downloadBatchReport}
+              onReview={() => setArea("repair")}
+            />
+          )}
+        </div>
+      </section>
 
       {overrideOpen && (
         <OverridePanel
@@ -1370,8 +1500,6 @@ function CustomerWorkflow({
   setCustomerProfile,
   batchCandidates,
   toggleBatchSelection,
-  downloadSelectedOriginals,
-  downloadBatchReport,
 }: {
   state: IntakeState;
   candidate: LocalCandidate | null;
@@ -1390,8 +1518,6 @@ function CustomerWorkflow({
   setCustomerProfile: Dispatch<SetStateAction<CustomerProfileInput>>;
   batchCandidates: BatchCandidate[];
   toggleBatchSelection: (id: number) => void;
-  downloadSelectedOriginals: () => Promise<void>;
-  downloadBatchReport: () => void;
 }) {
   const styleOptions = ["简约通勤", "轻奢质感", "甜酷潮流", "自然松弛", "高级极简"];
   const audienceOptions = ["18-24 岁年轻女性", "25-35 岁都市女性", "35-45 岁品质女性", "大码人群"];
@@ -1409,20 +1535,15 @@ function CustomerWorkflow({
   const processing = state.kind === "processing" || liveRunning;
 
   return (
-    <section className="customer-workflow" aria-labelledby="customer-workflow-title">
-      <div className="workflow-header">
+    <details className="customer-workflow" open={batchCandidates.length > 0}>
+      <summary className="workflow-header">
         <div>
-          <h1 id="customer-workflow-title">建立客户标准并完成一批图片审核</h1>
-          <p>历史参考与客户画像会进入真实模型上下文。所有结果仍需人工终审，不自动放行。</p>
+          <span>第三步 · 质量评审</span>
+          <h2 id="customer-workflow-title">确认批次并开始真实质量评审</h2>
+          <p>系统先检查硬性 Gate，再生成评分、证据和返工建议。</p>
         </div>
-        <div className="workflow-progress" aria-label="客户工作流">
-          {["建立参考", "客户画像", "批次评分", "筛选下载"].map((label, index) => (
-            <span key={label} className={batchCandidates.length > 0 || index < 2 ? "active" : ""}>
-              <b className="mono">{String(index + 1).padStart(2, "0")}</b>{label}
-            </span>
-          ))}
-        </div>
-      </div>
+        <strong>{batchCandidates.length > 0 ? `${batchCandidates.length} 张素材已载入` : "展开评审准备"}</strong>
+      </summary>
 
       <div className="workflow-sections">
         <section className="workflow-block">
@@ -1479,11 +1600,11 @@ function CustomerWorkflow({
         </section>
 
         <section className="workflow-block workflow-block-wide">
-          <header><span className="workflow-step mono">03</span><div><h2>批次上传与真实评分</h2><p>按单并发逐张分析，最多 10 张，不会自动续跑。</p></div></header>
+          <header><span className="workflow-step mono">评审</span><div><h2>评审范围与启动</h2><p>按顺序逐张分析，最多 10 张，不会自动放行。</p></div></header>
           <div className="submission-context compact-context">
             <label>渠道<input value={submissionContext.channel} onChange={(event) => setSubmissionContext((current) => ({ ...current, channel: event.target.value }))} disabled={processing} /></label>
             <label>图位<input value={submissionContext.placement} onChange={(event) => setSubmissionContext((current) => ({ ...current, placement: event.target.value }))} disabled={processing} /></label>
-            <label>AI 来源<select value={submissionContext.provenanceStatus} onChange={(event) => setSubmissionContext((current) => ({ ...current, provenanceStatus: event.target.value as SubmissionContext["provenanceStatus"] }))} disabled={processing}><option value="known">已知</option><option value="unknown">未知</option></select></label>
+            <label>素材来源<select value={submissionContext.provenanceStatus} onChange={(event) => setSubmissionContext((current) => ({ ...current, provenanceStatus: event.target.value as SubmissionContext["provenanceStatus"] }))} disabled={processing}><option value="confirmed_ai">确认 AI 生成</option><option value="confirmed_real">确认真人／实拍</option><option value="unknown">暂不确定</option></select></label>
           </div>
           <div className="workflow-actions">
             <label className={`file-button ${processing ? "disabled" : ""}`}>
@@ -1511,26 +1632,220 @@ function CustomerWorkflow({
           <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured} onChange={(event) => setLiveConsent(event.target.checked)} /><span>我确认本批候选图与 {referenceFiles.length} 张历史参考可发送至阿里云百炼。应用不保存图片，所有结果必须人工终审。</span></label>
         </section>
 
-        <section className="workflow-block">
-          <header><span className="workflow-step mono">04</span><div><h2>筛选与下载</h2><p>下载对象以队列勾选为准。</p></div></header>
-          <div className="download-actions">
-            <button className="primary-button" type="button" disabled={selectedCount === 0} onClick={() => void downloadSelectedOriginals()}>下载选中原图 ZIP</button>
-            <button className="quiet-button" type="button" disabled={completed === 0} onClick={downloadBatchReport}>下载评分 CSV</button>
-          </div>
-          <p className="download-note">CSV 包含综合分、四大 Skill、Gate 与可复制优化 Prompt。未完成评分的图片不会写入报告。</p>
-        </section>
       </div>
       <p className="data-processing-note">
         隐私与授权：只有确认授权并点击开始评分后，候选图与历史参考图才会发送至阿里云百炼。
         本页面不保存原图；当前验收环境中的评分与人工改判仅保存在本浏览器。
       </p>
+    </details>
+  );
+}
+
+function DeliveryWorkspace({
+  batchCandidates,
+  assets: deliveryAssets,
+  auditEntries,
+  sourceLabel,
+  customerProfile,
+  toggleBatchSelection,
+  downloadSelectedOriginals,
+  downloadBatchReport,
+  onReview,
+}: {
+  batchCandidates: BatchCandidate[];
+  assets: EvaluatedAsset[];
+  auditEntries: AuditEntry[];
+  sourceLabel: string;
+  customerProfile: CustomerProfileInput;
+  toggleBatchSelection: (id: number) => void;
+  downloadSelectedOriginals: () => Promise<void>;
+  downloadBatchReport: () => void;
+  onReview: () => void;
+}) {
+  const selectedCount = batchCandidates.filter((item) => item.selected).length;
+  const completedCount = batchCandidates.filter((item) => item.result).length;
+  const failedCount = batchCandidates.filter((item) => item.status === "error").length;
+  const reviewedCount = new Set(auditEntries.map((entry) => entry.assetId)).size;
+  const isDemo = batchCandidates.length === 0;
+  const readyForExport = !isDemo && selectedCount > 0;
+  const marketingAsset = batchCandidates.find((item) => item.result)?.result ?? deliveryAssets[0];
+  const marketingIssues = marketingAsset?.issues.map((issue) => issue.title) ?? [];
+  const productExpression = marketingAsset && !isDemo
+    ? projectLegacyCommercialMetrics({ scope: marketingAsset.productLabel, metrics: {} })
+    : null;
+
+  return (
+    <section className="workspace-page delivery-page" aria-labelledby="delivery-title">
+      <header className="page-heading">
+        <div>
+          <p className="page-context">第五步 · 营销交付</p>
+          <h1 id="delivery-title">把评审结论变成可直接进入制作的交付包。</h1>
+          <p>博主画像、平台文案、信息流视频大纲和视频模型提示词集中交付，客户素材与证据边界保持可追溯。</p>
+        </div>
+        <button className="quiet-button" type="button" onClick={onReview}>
+          返回改图复审
+        </button>
+      </header>
+
+      <MarketingDeliveryPack
+        productName={marketingAsset?.productLabel ?? "待确认商品"}
+        sourceLabel={sourceLabel}
+        reviewIssues={marketingIssues}
+        isDemo={isDemo}
+        audienceSegments={customerProfile.audienceSegments}
+        scenarios={customerProfile.scenarios}
+        purchaseDrivers={customerProfile.purchaseDrivers}
+        lockedAttributes={marketingAsset?.lockedAttributes.split("、").filter(Boolean) ?? []}
+        productExpression={productExpression}
+      />
+
+      <section className="delivery-status-sheet" aria-labelledby="delivery-status-title">
+        <div>
+          <span>{sourceLabel}</span>
+          <h2 id="delivery-status-title">
+            {isDemo
+              ? "示例项目仅供体验，交付动作保持关闭。"
+              : completedCount === batchCandidates.length && failedCount === 0
+                ? "批次评分已完成，等待人工终审与客户选择。"
+                : "批次尚未完成，不生成完整交付结论。"}
+          </h2>
+        </div>
+        <dl>
+          <div>
+            <dt>候选图</dt>
+            <dd>{batchCandidates.length || deliveryAssets.length}</dd>
+          </div>
+          <div>
+            <dt>评分完成</dt>
+            <dd>{isDemo ? "示例" : completedCount}</dd>
+          </div>
+          <div>
+            <dt>人工记录</dt>
+            <dd>{reviewedCount}</dd>
+          </div>
+          <div>
+            <dt>下载选择</dt>
+            <dd>{selectedCount}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <div className="delivery-layout">
+        <section className="delivery-selection" aria-labelledby="delivery-selection-title">
+          <div className="section-title-row">
+            <div>
+              <span>文件选择</span>
+              <h2 id="delivery-selection-title">交付清单</h2>
+            </div>
+            <strong>{isDemo ? "示例预览" : `已选 ${selectedCount}`}</strong>
+          </div>
+          <div className="delivery-file-list">
+            {isDemo
+              ? deliveryAssets.slice(0, 6).map((asset) => (
+                  <article key={asset.id}>
+                    <SafeImage src={asset.src} alt={asset.productLabel} />
+                    <div>
+                      <strong>{asset.productLabel}</strong>
+                      <span>内置示例图 {String(asset.id).padStart(3, "0")}</span>
+                    </div>
+                    <Status value={asset.decision} />
+                  </article>
+                ))
+              : batchCandidates.map((item) => (
+                  <label key={item.id}>
+                    <input
+                      type="checkbox"
+                      checked={item.selected}
+                      onChange={() => toggleBatchSelection(item.id)}
+                    />
+                    <SafeImage src={item.src} alt={item.file.name} />
+                    <div>
+                      <strong>{item.file.name}</strong>
+                      <span>{item.result ? displayDecision(item.result.decision) : "等待有效结果"}</span>
+                    </div>
+                    <span className={`queue-status ${item.status}`}>
+                      {item.status === "done"
+                        ? "已评分"
+                        : item.status === "error"
+                          ? "失败"
+                          : item.status === "running"
+                            ? "评分中"
+                            : "等待"}
+                    </span>
+                  </label>
+                ))}
+          </div>
+        </section>
+
+        <aside className="delivery-checklist" aria-labelledby="delivery-checklist-title">
+          <span>交付 Gate</span>
+          <h2 id="delivery-checklist-title">四项确认，缺一项就不扩大结论。</h2>
+          <dl>
+            <div>
+              <dt>参考范围</dt>
+              <dd>{isDemo ? "示例项目，不构成 FULL_SKU" : "以本批输入为准"}</dd>
+            </div>
+            <div>
+              <dt>人工终审</dt>
+              <dd>{reviewedCount > 0 ? `已有 ${reviewedCount} 张记录` : "尚未完成"}</dd>
+            </div>
+            <div>
+              <dt>返工漂移</dt>
+              <dd>生成式返工后必须复验非目标区域</dd>
+            </div>
+            <div>
+              <dt>客户确认</dt>
+              <dd>采用、拒绝与再次提交需要真实记录</dd>
+            </div>
+          </dl>
+          <div className="delivery-download-actions">
+            <button
+              className="primary-button"
+              type="button"
+              disabled={!readyForExport}
+              onClick={() => void downloadSelectedOriginals()}
+            >
+              下载选中原图 ZIP
+            </button>
+            <button
+              className="quiet-button"
+              type="button"
+              disabled={completedCount === 0}
+              onClick={downloadBatchReport}
+            >
+              下载评审 CSV
+            </button>
+          </div>
+          <p>CSV 包含内部评分、质量维度、Gate、人工结论与返工 Prompt。未完成的图片不会写入。</p>
+        </aside>
+      </div>
+
+      <section className="commercial-evidence-status" aria-labelledby="commercial-evidence-title">
+        <div>
+          <span>商业证据</span>
+          <h2 id="commercial-evidence-title">当前仍是内部产品验证，不是商业成功。</h2>
+        </div>
+        <dl>
+          <div>
+            <dt>真实付款</dt>
+            <dd>0</dd>
+          </div>
+          <div>
+            <dt>客户采用</dt>
+            <dd>未记录</dd>
+          </div>
+          <div>
+            <dt>再次提交</dt>
+            <dd>未记录</dd>
+          </div>
+        </dl>
+        <p>至少完成 3 个真实付费批次并记录采用证据后，再讨论协助式 SaaS 与订阅产品化。</p>
+      </section>
     </section>
   );
 }
 
 function GridWorkspace({
-  filter,
-  setFilter,
   assets: visibleAssets,
   selectedId,
   setSelectedId,
@@ -1541,9 +1856,8 @@ function GridWorkspace({
   selected,
   auditEntries,
   allAssets,
+  onRepair,
 }: {
-  filter: Decision | "ALL";
-  setFilter: (filter: Decision | "ALL") => void;
   assets: EvaluatedAsset[];
   selectedId: number;
   setSelectedId: (id: number) => void;
@@ -1554,89 +1868,16 @@ function GridWorkspace({
   selected: EvaluatedAsset;
   auditEntries: AuditEntry[];
   allAssets: EvaluatedAsset[];
+  onRepair: () => void;
 }) {
   const allAssetsCount = allAssets.length;
-  const countDecision = (decision: Decision) =>
-    allAssets.filter((item) => item.decision === decision).length;
-  const highScoreCount = allAssets.filter((asset) => asset.score >= 90).length;
-  const reviewScoreCount = allAssets.filter(
-    (asset) => asset.score >= 70 && asset.score < 90,
-  ).length;
-  const rejectScoreCount = allAssets.filter((asset) => asset.score < 70).length;
-  const issueSkillCount = (skill: string) =>
-    allAssets.filter((asset) =>
-      asset.issues.some((issue) => issue.skill === skill),
-    ).length;
 
   return (
     <section className="workspace" aria-label="批次审核工作台">
-      <aside className="filter-panel" aria-label="筛选">
-        <h2 className="panel-heading">筛选</h2>
-        <FilterGroup
-          title="状态"
-          rows={[
-            ["全部", String(allAssetsCount)],
-            ["PASS", String(countDecision("PASS"))],
-            ["REVIEW", String(countDecision("REVIEW"))],
-            ["REJECT", String(countDecision("REJECT"))],
-          ]}
-        />
-        <FilterGroup
-          title="综合评分"
-          rows={[
-            ["90–100 PASS 候选", String(highScoreCount)],
-            ["70–89 REVIEW 优化", String(reviewScoreCount)],
-            ["0–69 REJECT 返工", String(rejectScoreCount)],
-          ]}
-        />
-        <FilterGroup
-          title="Skill 维度"
-          rows={[
-            ["真人真实性", String(issueSkillCount("真人真实性"))],
-            ["摄影真实性", String(issueSkillCount("摄影真实性"))],
-            ["材质真实性", String(issueSkillCount("材质真实性"))],
-            [
-              "模板贴合度低于 90",
-              String(
-                allAssets.filter(
-                  (asset) => asset.commercial.fitScore < 90,
-                ).length,
-              ),
-            ],
-          ]}
-        />
-        <FilterGroup
-          title="商品类别"
-          rows={[
-            ["连衣裙", "11"],
-            ["上装", "1"],
-          ]}
-        />
-        <FilterGroup
-          title="参考材料"
-          rows={[
-            ["参考完整", "12"],
-            ["参考缺失", "0"],
-          ]}
-        />
-      </aside>
-
       <section className="gallery">
         <div className="gallery-toolbar">
-          <span className="toolbar-label">评分与门禁</span>
-          {(["ALL", "PASS", "REVIEW", "REJECT"] as const).map((item) => (
-            <button
-              className="filter-pill"
-              key={item}
-              type="button"
-              aria-pressed={filter === item}
-              onClick={() => setFilter(item)}
-            >
-              {item === "ALL"
-                ? `全部 ${allAssetsCount}`
-                : `${item} ${countDecision(item)}`}
-            </button>
-          ))}
+          <span className="toolbar-label">评分与门禁 · {allAssetsCount} 张</span>
+          <span className="demo-source">按严重程度和上传顺序查看，不启用复杂筛选</span>
         </div>
         {visibleAssets.length ? (
           <div className="image-grid" role="listbox" aria-label="候选图片">
@@ -1652,7 +1893,7 @@ function GridWorkspace({
               >
                 <SafeImage
                   src={asset.src}
-                  alt={`候选图 ${asset.id}，系统判断 ${asset.decision}`}
+                  alt={`候选图 ${asset.id}，系统建议 ${displayDecision(asset.decision)}`}
                 />
                 <span className="asset-index mono">
                   {String(asset.id).padStart(3, "0")}
@@ -1667,14 +1908,7 @@ function GridWorkspace({
               </button>
             ))}
           </div>
-        ) : (
-          <div style={{ padding: "4rem 1.5rem", textAlign: "center" }}>
-            <h2>此筛选下没有图片</h2>
-            <p style={{ color: "var(--muted)" }}>
-              调整状态或问题类型筛选，查看其他候选图。
-            </p>
-          </div>
-        )}
+        ) : null}
       </section>
 
       <aside className="inspector" aria-label="当前图片判断">
@@ -1696,8 +1930,8 @@ function GridWorkspace({
               {selected.decision === "PASS"
                 ? "高分发布候选"
                 : selected.decision === "REVIEW"
-                  ? "建议优化后复核"
-                  : "门禁阻断，必须返工"}
+                  ? "建议返工后复核"
+                  : "建议重新生成"}
             </span>
           </div>
           <p className="calibration-note">
@@ -1712,12 +1946,13 @@ function GridWorkspace({
         </div>
         <div className="inspector-section">
           <div className="section-heading-row">
-            <p className="inspector-kicker">四大 Vision QA Skill</p>
+            <p className="inspector-kicker">四项质量维度</p>
             <span className="mono muted-label">权重</span>
           </div>
           <SkillScoreList skills={selected.skills} />
           <CommercialSummary
             result={selected.commercial}
+            detailed
             source={selected.evaluationId ? "real" : "fixture"}
           />
         </div>
@@ -1795,15 +2030,15 @@ function GridWorkspace({
             <p>
               最近记录：
               <span className="mono">
-                {
-                  auditEntries.find((entry) => entry.assetId === selected.id)
-                    ?.originalDecision
-                }
+                {displayDecision(
+                  auditEntries.find((entry) => entry.assetId === selected.id)!
+                    .originalDecision,
+                )}
                 {" → "}
-                {
-                  auditEntries.find((entry) => entry.assetId === selected.id)
-                    ?.humanDecision
-                }
+                {displayDecision(
+                  auditEntries.find((entry) => entry.assetId === selected.id)!
+                    .humanDecision,
+                )}
               </span>
               {" · "}
               {auditEntries.find((entry) => entry.assetId === selected.id)
@@ -1841,7 +2076,7 @@ function GridWorkspace({
             type="button"
             onClick={() => commitDecision(selected.decision)}
           >
-            确认 {selected.decision}
+            确认 {displayDecision(selected.decision)}
           </button>
           <button
             className="decision-button"
@@ -1851,6 +2086,9 @@ function GridWorkspace({
             }
           >
             人工改判
+          </button>
+          <button className="quiet-button" type="button" onClick={onRepair}>
+            进入改图复审
           </button>
         </div>
       </aside>
@@ -1954,27 +2192,6 @@ function SkillScoreList({
         </div>
       ))}
     </div>
-  );
-}
-
-function FilterGroup({
-  title,
-  rows,
-}: {
-  title: string;
-  rows: [string, string][];
-}) {
-  return (
-    <section className="filter-group">
-      <h3>{title}</h3>
-      {rows.map(([label, count], index) => (
-        <label className="check-row" key={label}>
-          <input type="checkbox" defaultChecked={index === 0} />
-          <span>{label}</span>
-          <span className="count mono">{count}</span>
-        </label>
-      ))}
-    </section>
   );
 }
 
@@ -2096,13 +2313,12 @@ function EvidenceWorkspace({
                   : "本次评估未上传历史参考图，涉及商品一致性与客户风格的结论需要人工重点复核。"}
               </p>
             ) : (
-              <div className="reference-grid">
-                {["正面", "背面", "细节"].map((label) => (
-                  <figure className="reference-item" key={label}>
-                    <figcaption>{label}</figcaption>
-                    <SafeImage src={selected.src} alt={`${label}示例参考图`} />
-                  </figure>
-                ))}
+              <div className="fixture-reference-note">
+                <SafeImage src={selected.src} alt="示例项目当前正面图" />
+                <p>
+                  示例项目只提供当前视觉功能参考，不把同一张图片重复标成正面、背面和细节。
+                  因此参考范围不能视为完整 SKU。
+                </p>
               </div>
             )}
           </section>
@@ -2205,7 +2421,7 @@ function EvidenceWorkspace({
                         `sample-${String(entry.assetId).padStart(3, "0")}`}
                     </span>
                     <span>
-                      {entry.originalDecision} → {entry.humanDecision}
+                      {displayDecision(entry.originalDecision)} → {displayDecision(entry.humanDecision)}
                     </span>
                     <span>{entry.reasonCode ?? "历史记录"}</span>
                     <time dateTime={entry.createdAt}>
@@ -2233,7 +2449,7 @@ function EvidenceWorkspace({
           type="button"
           onClick={() => commitDecision(selected.decision)}
         >
-          确认 {selected.decision}
+          确认 {displayDecision(selected.decision)}
         </button>
         <button
           className="decision-button"
@@ -2247,7 +2463,7 @@ function EvidenceWorkspace({
           type="button"
           onClick={() => openOverride("REJECT")}
         >
-          改为 REJECT
+          改为 REGENERATE
         </button>
       </footer>
     </>
@@ -2279,7 +2495,7 @@ function OverridePanel({
   return (
     <aside className="override-panel" aria-labelledby="override-title">
       <h2 id="override-title">
-        将 {original} 改为 {target}
+        将 {displayDecision(original)} 改为 {displayDecision(target)}
       </h2>
       <p>改判会保留系统原结论；D1 可用时写入服务端，否则明确降级到本地。</p>
       <fieldset style={{ border: 0, padding: 0, margin: 0 }}>

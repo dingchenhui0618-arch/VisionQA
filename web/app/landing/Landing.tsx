@@ -28,9 +28,9 @@ const SKILLS = [
   },
   {
     no: "04",
-    title: "商业价值",
-    en: "Commercial Value",
-    desc: "综合平台促销、渠道与人群语境，判定发布标准的最终评分。",
+    title: "商品表达效能",
+    en: "Product Expression",
+    desc: "综合视觉重心、商品细节、原商品一致性与真实使用关系，判断画面是否有效表达商品。",
     weight: "35%",
     emphasis: true,
   },
@@ -112,7 +112,7 @@ export default function Landing() {
           <h1 className="landing-title">VisionQA</h1>
           <p className="landing-title-sub">面向未来的 AI 视觉质量评估</p>
           <p className="landing-lede">
-            从真实感到商业价值，
+            从真实感到商品表达，
             <br />
             一套为服饰电商而生的结构化评分、修复 Prompt 与人工发布门禁。
           </p>
@@ -159,7 +159,7 @@ export default function Landing() {
           </div>
           <h2 className="landing-h2">四个 Skills，从像素到发布</h2>
           <p className="landing-section-sub">
-            每张图都经过真实感、摄影感、材质感与商业价值的逐项评估，并给出修复 Prompt 与人工复核建议。
+            每张图都经过人物结构、摄影可信度、材质细节与商品表达效能的逐项评估，并给出修复 Prompt 与人工复核建议。
           </p>
         </div>
         <div className="landing-cards">

@@ -1,0 +1,18 @@
+{
+  "schema_version": "product-expression-v0.1",
+  "source": "DIRECT_REVIEW",
+  "scope": "asset-example-001 against sku-reference-001",
+  "score": 83.7,
+  "metrics": {
+    "visual_focus": { "score": 82, "weight": 0.15, "evidence": ["商品主体完整且处于主要视觉区域"], "source_refs": ["review.asset-example-001.visual_focus"], "summary": "视觉重心明确", "assessability": "FULL" },
+    "product_recognition": { "score": 86, "weight": 0.2, "evidence": ["正面轮廓可被快速识别"], "source_refs": ["review.asset-example-001.product_recognition"], "summary": "商品识别效率较好", "assessability": "FULL" },
+    "detail_visibility": { "score": 78, "weight": 0.15, "evidence": ["腰线可见，袖口仍需补充近景"], "source_refs": ["review.asset-example-001.detail_visibility"], "summary": "关键细节部分清楚", "assessability": "FULL" },
+    "reference_fidelity": { "score": 88, "weight": 0.25, "evidence": ["主色、领口、袖型和腰线与参考图一致"], "source_refs": ["comparison.asset-example-001.sku-reference-001"], "summary": "当前参考范围内一致", "assessability": "FULL" },
+    "real_use_credibility": { "score": 80, "weight": 0.15, "evidence": ["布料褶皱与人物动作关系基本合理"], "source_refs": ["review.asset-example-001.real_use_credibility"], "summary": "真实使用可信度可接受", "assessability": "FULL" },
+    "audience_scene_fit": { "score": 85, "weight": 0.1, "evidence": ["通勤场景未遮挡商品主要结构"], "source_refs": ["brief.audience_scene_fit"], "summary": "场景与目标人群匹配", "assessability": "FULL" }
+  },
+  "sku_consistency_gate": "PASS",
+  "summary": "当前参考范围内可进入人工终审，不代表完整 SKU 自动通过。",
+  "unknowns": ["材质成分与触感未从图片判断"],
+  "human_final_review_required": true
+}

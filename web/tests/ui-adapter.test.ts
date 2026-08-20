@@ -28,7 +28,7 @@ test("v0.3 API envelope maps to one coherent UI evaluation", async () => {
   assert.equal(ui.score, 81);
   assert.equal(ui.decision, "REVIEW");
   assert.equal(ui.skills.length, 4);
-  assert.equal(ui.skills[3].label, "商业价值");
+  assert.equal(ui.skills[3].label, "商品表达效能");
   assert.equal(ui.commercial.fitScore, 80.9);
   assert.equal(ui.commercial.metrics.length, 6);
   assert.match(ui.repairPrompt || "", /袖口/);

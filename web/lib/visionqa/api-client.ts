@@ -44,6 +44,12 @@ export type CustomerProfileInput = {
   priceMin: string;
   priceMax: string;
   audiences: string[];
+  ageRanges: string[];
+  genderProfiles: string[];
+  cityTiers: string[];
+  audienceSegments: string[];
+  scenarios: string[];
+  purchaseDrivers: string[];
   skuLinks: string[];
 };
 
@@ -174,7 +180,7 @@ export async function evaluateLiveCandidate(input: {
   channel: string;
   placement: string;
   referenceStatus: "complete" | "missing";
-  provenanceStatus: "known" | "unknown";
+  provenanceStatus: "confirmed_ai" | "confirmed_real" | "unknown";
   commercialTemplateId: string;
   signal?: AbortSignal;
 }): Promise<{
@@ -199,6 +205,12 @@ export async function evaluateLiveCandidate(input: {
     priceMin: "",
     priceMax: "",
     audiences: [],
+    ageRanges: [],
+    genderProfiles: [],
+    cityTiers: [],
+    audienceSegments: [],
+    scenarios: [],
+    purchaseDrivers: [],
     skuLinks: [],
   }));
   form.set("consent", "confirmed");

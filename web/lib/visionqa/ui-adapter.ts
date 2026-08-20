@@ -55,7 +55,7 @@ const skillLabels = {
   human_realism: "真人真实性",
   photography_realism: "摄影真实性",
   material_realism: "材质真实性",
-  commercial_value: "商业价值",
+  commercial_value: "商品表达效能",
 } as const;
 
 const metricLabels: Record<CommercialMetricId, string> = {
@@ -71,7 +71,7 @@ const skillCodes: Record<string, string> = {
   HUM: "真人真实性",
   PHO: "摄影真实性",
   MAT: "材质真实性",
-  COM: "商业价值",
+  COM: "商品表达效能",
 };
 
 const issueLabels: Record<string, string> = {
