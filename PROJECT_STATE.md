@@ -1148,3 +1148,15 @@ Photoshop 和 LOW 是后续可选支线，不属于当前用户行动清单，�
 - No public endpoint was opened and no credential value was logged.
 - Resolved Gate: `RDS_MIGRATION_APPLIED / REAL_DB_READ_WRITE_VERIFIED`.
 - Evidence: [`reports/ALIYUN_RDS_MIGRATION_v0.1.md`](./reports/ALIYUN_RDS_MIGRATION_v0.1.md).
+
+## 2026-08-21 VisionQA Dionysus 公网演示发布
+
+- 公网地址：`https://visionqa.dionysusding.cn/`，工作台：`https://visionqa.dionysusding.cn/workspace`。
+- 当前服务器 release：`3fc8dc6`；GitHub 分支：`codex/visionqa-phase3-qwen`。发布包来自该提交的 `web` Git archive，未包含 `.env`、API Key、客户图片或本地素材。
+- 实际权威 DNS 位于 DNSPod；已创建并启用 `visionqa A 139.196.123.28`，TTL 600 秒。阿里云 DNS 控制台中存在一条同值但非权威的记录，不参与公网解析。
+- Let's Encrypt 证书已签发并由 Nginx 启用，证书到期日为 2026-11-19；`certbot-renew.timer` 已启用。HTTP 自动 301 跳转 HTTPS。
+- 独立 `visionqa-demo` systemd 服务监听 `127.0.0.1:3210`，状态 active；Qwen 与付费调用仍由 service unit 显式关闭，自动放行关闭，正式结果要求人工终审。
+- 生产验收：根页面 200、`/workspace` 200、主站 `dionysusding.cn` 200、`dionysus-api` active；桌面与 390×844 移动视口无横向溢出、浏览器控制台 0 error/warn。
+- 公网验收发现 Vinext `next/link` 预取异常会阻断首页进入工作台；已用可靠的原生站内链接修复并重新发布。修复后真实点击可进入 `/workspace`。
+- 本地验证：14/14 渲染、Schema 与 production smoke 测试通过；77/77 TypeScript 契约、规则、Agent、Provider、存储与持久化测试通过。
+- 当前对外边界：这是内部预览演示，不提供真实账户认证，不代表模型准确率、客户采用、商业成功或自动发布能力。
