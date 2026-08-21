@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   useEffect,
   useMemo,
@@ -1227,10 +1226,10 @@ export function Workspace() {
   return (
     <main className="vision-workbench-shell">
       <aside className="workspace-rail-nav">
-        <Link className="workspace-brand" href="/" aria-label="返回 VisionQA 首页">
+        <a className="workspace-brand" href="/" aria-label="返回 VisionQA 首页">
           <span aria-hidden="true">VQ</span>
           <strong>VisionQA</strong>
-        </Link>
+        </a>
         <div className="rail-project">
           <span>当前项目</span>
           <strong>{batchTitle}</strong>

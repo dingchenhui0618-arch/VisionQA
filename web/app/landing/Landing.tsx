@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import Link from "next/link";
 import "./landing.css";
 
 const SKILLS = [
@@ -97,13 +96,13 @@ export default function Landing() {
   return (
     <main className="landing">
       <nav className="landing-nav" aria-label="Primary">
-        <Link href="/workspace" className="landing-nav-left">
+        <a href="/workspace" className="landing-nav-left">
           <span className="landing-brand">VisionQA</span>
-        </Link>
-        <Link href="/workspace" className="landing-nav-right">
+        </a>
+        <a href="/workspace" className="landing-nav-right">
           <span>进入 VisionQA</span>
           <span aria-hidden>→</span>
-        </Link>
+        </a>
       </nav>
 
       <section className="landing-hero">
@@ -118,10 +117,10 @@ export default function Landing() {
           </p>
           <div className="landing-hero-spacer" aria-hidden />
           <div className="landing-cta-row">
-            <Link href="/workspace" className="landing-cta">
+            <a href="/workspace" className="landing-cta">
               <span>进入 VisionQA</span>
               <span aria-hidden>→</span>
-            </Link>
+            </a>
           </div>
         </div>
 
@@ -206,10 +205,10 @@ export default function Landing() {
             </div>
             <h2 className="landing-h2">进入工作台</h2>
           </div>
-          <Link href="/workspace" className="landing-cta landing-cta-lg">
+          <a href="/workspace" className="landing-cta landing-cta-lg">
             <span>打开 VisionQA</span>
             <span aria-hidden>→</span>
-          </Link>
+          </a>
         </div>
       </section>
 
