@@ -43,7 +43,8 @@ dev-*.log
 # typescript
 next-env.d.ts
 /dist/
-/build/
+/build/*
+!/build/sites-vite-plugin.ts
 /.wrangler/
 /outputs/
 /work/

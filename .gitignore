@@ -12,6 +12,9 @@ node_modules/
 .turbo/
 dist/
 build/
+!web/build/
+web/build/*
+!web/build/sites-vite-plugin.ts
 coverage/
 *.tsbuildinfo
 
