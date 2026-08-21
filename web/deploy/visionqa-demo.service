@@ -1,0 +1,21 @@
+[Unit]
+Description=VisionQA private demo workbench
+After=network.target
+
+[Service]
+Type=simple
+User=www
+WorkingDirectory=/www/wwwroot/visionqa.dionysusding.cn/current
+Environment=NODE_ENV=production
+ExecStart=/opt/node-v22.23.1/bin/node node_modules/vinext/dist/cli.js start --port 3210 --hostname 127.0.0.1
+Restart=on-failure
+RestartSec=5
+MemoryMax=640M
+NoNewPrivileges=true
+
+# The public demo must stay fail-closed until API key and paid-call approval.
+Environment=VISION_MARKETING_QWEN_APPROVED=false
+Environment=VISION_MARKETING_PAID_CALLS_ENABLED=false
+
+[Install]
+WantedBy=multi-user.target
