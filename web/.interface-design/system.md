@@ -6,7 +6,7 @@ Monochrome studio review desk for apparel ecommerce. The interface recedes into 
 
 ## Flow signature
 
-The fixed five-stage material track is the product signature: baseline SKU, review assets, quality review, repair review, marketing delivery. Each stage exposes input, evidence scope, current state, and next action.
+The fixed five-stage material track is the product signature: baseline SKU, review assets, quality review, repair review, marketing delivery. A zero-level project overview sits before the track and shows only current state, the single next action, and truthful completion facts. Each stage exposes input, evidence scope, current state, and next action.
 
 ## Tokens
 
@@ -20,12 +20,13 @@ The fixed five-stage material track is the product signature: baseline SKU, revi
 ## Reusable patterns
 
 - Login split: black product promise panel and white account panel; preview access is explicit and separate from real authentication.
-- Workbench shell: persistent five-stage rail above 1024px, sticky horizontal stage navigation at and below 1024px.
-- Dual baseline input: SKU links beside confirmed product-image references.
+- Workbench shell: persistent overview plus five-stage rail above 1024px, sticky horizontal stage navigation at and below 1024px.
+- Project overview: one next-action focal surface, one truthful project visual, four factual counters, and a linear stage ledger. On mobile, the action appears before the image.
+- Baseline: SKU links and confirmed product-image references remain the primary canvas; customer strategy and targeting live in a sticky side inspector with progressively disclosed controls.
 - Asset intake: one dominant neutral dropzone followed by real-color image tiles.
-- Review desktop: gallery plus inspector, without a complex filter rail. Review mobile: gallery first, inspector in document flow.
+- Review desktop: gallery plus result-first inspector, without a complex filter rail. Review mobile: conclusion inspector before the gallery. Scores, prompts, and audit details stay collapsed until requested.
 - Repair review: provider adapter choices, exported job, before/after stage, and four human drift checks.
-- Marketing delivery: pain-point evidence rows, creator profiles, platform copy, verbatim scripts, timed outline, and dark commercial-film prompt surface.
+- Marketing delivery: four local views—generation overview, audience and strategy, platform copy, and video production—so pain points, creator profiles, copy, scripts, and prompts are not expanded at once.
 - Status: text plus dot; never color alone.
 
 ## Content rules

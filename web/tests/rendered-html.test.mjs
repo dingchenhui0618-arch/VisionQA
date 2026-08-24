@@ -52,7 +52,9 @@ test("keeps the five-stage review-repair-delivery workflow in the implementation
   const intakeSource = await readFile(new URL("../app/workspace-intake.tsx", import.meta.url), "utf8");
   const repairSource = await readFile(new URL("../app/workspace-repair.tsx", import.meta.url), "utf8");
   const deliverySource = await readFile(new URL("../app/workspace-growth.tsx", import.meta.url), "utf8");
-  assert.match(workspaceSource, /type WorkspaceArea = "baseline" \| "intake" \| "review" \| "repair" \| "delivery"/);
+  assert.match(workspaceSource, /type WorkspaceArea = "overview" \| "baseline" \| "intake" \| "review" \| "repair" \| "delivery"/);
+  assert.match(workspaceSource, /项目总览/);
+  assert.match(workspaceSource, /当前唯一下一步/);
   assert.match(workspaceSource, /商品基准/);
   assert.match(workspaceSource, /待评审素材/);
   assert.match(workspaceSource, /质量评审/);
@@ -60,6 +62,8 @@ test("keeps the five-stage review-repair-delivery workflow in the implementation
   assert.match(workspaceSource, /营销交付/);
   assert.match(baselineSource, /SKU 链接/);
   assert.match(baselineSource, /上传历史产品图或确认稿/);
+  assert.match(baselineSource, /profile-sidebar/);
+  assert.match(baselineSource, /编辑商品策略与人群画像/);
   assert.match(intakeSource, /商品图/);
   assert.match(intakeSource, /详情页/);
   assert.match(intakeSource, /模特图/);
@@ -77,6 +81,8 @@ test("keeps the five-stage review-repair-delivery workflow in the implementation
   assert.match(deliverySource, /商业片制作参考/);
   assert.match(deliverySource, /痛点分析/);
   assert.match(deliverySource, /逐字稿/);
+  assert.match(deliverySource, /delivery-view-nav/);
+  assert.match(deliverySource, /生成概览/);
 });
 
 test("keeps the batch and evidence workflow behind quality review", async () => {
@@ -91,6 +97,8 @@ test("keeps the batch and evidence workflow behind quality review", async () => 
   assert.match(workspaceSource, /四项质量维度/);
   assert.match(workspaceSource, /商品表达效能/);
   assert.match(workspaceSource, /修复 Prompt/);
+  assert.match(workspaceSource, /review-decision-brief/);
+  assert.match(workspaceSource, /review-analysis-details/);
   assert.match(workspaceSource, /view === "evidence"/);
   assert.doesNotMatch(workspaceSource, /Your site is taking shape|react-loading-skeleton/);
 });

@@ -4760,3 +4760,318 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+/* VisionQA v0.6: result-first project flow and progressive disclosure */
+.overview-stage-ledger {
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.7fr) minmax(28rem, 1.3fr);
+  gap: 3rem;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line-strong);
+}
+
+.overview-stage-ledger .rail-intro p {
+  max-width: 32rem;
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.baseline-stage-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20.5rem;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.baseline-primary {
+  min-width: 0;
+}
+
+.profile-sidebar {
+  position: sticky;
+  top: 5.5rem;
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.profile-sidebar-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.profile-sidebar-status strong {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.profile-sidebar h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: -0.025em;
+}
+
+.profile-sidebar > p {
+  margin: -0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.profile-sidebar-summary {
+  display: grid;
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+
+.profile-sidebar-summary div {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-sidebar-summary dt {
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.profile-sidebar-summary dd {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.profile-editor {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.profile-editor > summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 650;
+  list-style: none;
+}
+
+.profile-editor > summary::-webkit-details-marker { display: none; }
+.profile-editor > summary::after { content: "+"; color: var(--faint); font-size: 1rem; }
+.profile-editor[open] > summary::after { content: "−"; }
+
+.profile-editor-content {
+  display: grid;
+  gap: 1rem;
+  max-height: calc(100dvh - 13rem);
+  padding: 1rem;
+  border-top: 1px solid var(--line);
+  overflow-y: auto;
+}
+
+.profile-editor-content .tag-field,
+.profile-editor-groups .audience-tag-field {
+  padding: 0;
+  border: 0;
+}
+
+.profile-editor-content .tag-field + .tag-field,
+.profile-editor-groups .audience-tag-field {
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.profile-editor-groups {
+  display: grid;
+}
+
+.profile-editor .tag-field button {
+  min-height: 2rem;
+  padding-inline: 0.55rem;
+  font-size: 0.6875rem;
+}
+
+.profile-editor .baseline-price-range {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.review-decision-brief {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.review-decision-brief > span:first-child {
+  color: var(--faint);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+
+.review-decision-brief h2 {
+  margin: 0.125rem 0 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.review-decision-brief > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.review-decision-brief dl {
+  display: grid;
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+
+.review-decision-brief dl div {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.review-decision-brief dt { color: var(--faint); font-size: 0.6875rem; }
+.review-decision-brief dd { margin: 0; font-size: 0.75rem; line-height: 1.45; }
+.review-decision-brief .text-button { justify-self: start; }
+
+.review-analysis-details {
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+
+.review-analysis-details > summary {
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.75rem;
+  list-style: none;
+}
+
+.review-analysis-details > summary::-webkit-details-marker { display: none; }
+.review-analysis-details > summary::after { content: "+"; font-size: 1rem; }
+.review-analysis-details[open] > summary::after { content: "−"; }
+.review-analysis-content { border-top: 1px solid var(--line); }
+
+.delivery-view-nav {
+  position: sticky;
+  top: 4rem;
+  z-index: 6;
+  display: flex;
+  gap: 0.25rem;
+  margin: 0 0 1.5rem;
+  padding: 0.375rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.delivery-view-nav button {
+  min-height: 2.5rem;
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.delivery-view-nav button[aria-current="page"] {
+  background: var(--ink);
+  color: #fff;
+}
+
+.marketing-output-grid.single-output {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 78rem) {
+  .baseline-stage-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 64rem) {
+  .overview-stage-ledger {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .delivery-view-nav {
+    top: 7rem;
+    overflow-x: auto;
+  }
+
+  .delivery-view-nav button {
+    flex: 0 0 auto;
+  }
+
+  .baseline-input-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-editor-content {
+    max-height: none;
+  }
+
+  .workspace-mobile-nav {
+    scrollbar-width: none;
+  }
+
+  .workspace-mobile-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .overview-next-action {
+    grid-row: 1;
+  }
+
+  .overview-cover {
+    grid-row: 2;
+  }
+
+  .overview-batch-facts {
+    grid-row: 3;
+  }
+
+  .review-page .inspector {
+    grid-row: 1;
+  }
+
+  .review-page .gallery {
+    grid-row: 2;
+  }
+}

@@ -41,7 +41,7 @@ import { projectLegacyCommercialMetrics } from "../lib/visionqa/product-expressi
 
 type Decision = "PASS" | "REVIEW" | "REJECT";
 type View = "grid" | "evidence";
-type WorkspaceArea = "baseline" | "intake" | "review" | "repair" | "delivery";
+type WorkspaceArea = "overview" | "baseline" | "intake" | "review" | "repair" | "delivery";
 type CommercialTemplateId = "platform-promotion" | "brand-flagship";
 
 type SkillScore = {
@@ -699,7 +699,7 @@ function SafeImage({
 
 export function Workspace() {
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [area, setArea] = useState<WorkspaceArea>("baseline");
+  const [area, setArea] = useState<WorkspaceArea>("overview");
   const [view, setView] = useState<View>("grid");
   const [commercialTemplateId, setCommercialTemplateId] =
     useState<CommercialTemplateId>("platform-promotion");
@@ -1212,6 +1212,7 @@ export function Workspace() {
               ? "当前批次评分失败"
               : "已保存评估";
   const areaLabel: Record<WorkspaceArea, string> = {
+    overview: "项目总览",
     baseline: "商品基准",
     intake: "待评审素材",
     review: "质量评审",
@@ -1226,6 +1227,8 @@ export function Workspace() {
   return (
     <main className="vision-workbench-shell">
       <aside className="workspace-rail-nav">
+        {/* Native navigation avoids the verified Vinext route-prefetch failure in production. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a className="workspace-brand" href="/" aria-label="返回 VisionQA 首页">
           <span aria-hidden="true">VQ</span>
           <strong>VisionQA</strong>
@@ -1243,7 +1246,7 @@ export function Workspace() {
               aria-current={area === item ? "page" : undefined}
               onClick={() => setArea(item)}
             >
-              <span>{String(index + 1).padStart(2, "0")}</span>
+              <span>{String(index).padStart(2, "0")}</span>
               {areaLabel[item]}
             </button>
           ))}
@@ -1321,6 +1324,20 @@ export function Workspace() {
         </nav>
 
         <div className="workspace-content">
+          {area === "overview" && (
+            <ProjectOverview
+              batchTitle={batchTitle}
+              sourceLabel={sourceLabel}
+              coverSrc={selected.src}
+              referenceCount={referenceFiles.length}
+              skuCount={customerProfile.skuLinks.length}
+              candidateCount={batchCandidates.length}
+              completedCount={batchResultCount}
+              reviewedCount={new Set(auditEntries.map((entry) => entry.assetId)).size}
+              onNavigate={setArea}
+            />
+          )}
+
           {area === "baseline" && (
             <WorkspaceBaseline
               referenceFiles={referenceFiles}
@@ -1449,6 +1466,99 @@ export function Workspace() {
         </div>
       )}
     </main>
+  );
+}
+
+function ProjectOverview({
+  batchTitle,
+  sourceLabel,
+  coverSrc,
+  referenceCount,
+  skuCount,
+  candidateCount,
+  completedCount,
+  reviewedCount,
+  onNavigate,
+}: {
+  batchTitle: string;
+  sourceLabel: string;
+  coverSrc: string;
+  referenceCount: number;
+  skuCount: number;
+  candidateCount: number;
+  completedCount: number;
+  reviewedCount: number;
+  onNavigate: (area: WorkspaceArea) => void;
+}) {
+  const hasBaseline = referenceCount > 0 || skuCount > 0;
+  const isDemo = candidateCount === 0;
+  const next = !hasBaseline
+    ? { area: "baseline" as const, eyebrow: "当前唯一下一步", title: "建立商品基准", detail: "先上传客户确认的 SKU 链接或历史产品图，后续判断才有可追溯的比较范围。" }
+    : candidateCount === 0
+      ? { area: "intake" as const, eyebrow: "商品基准已建立", title: "上传待评审素材", detail: "选择商品图、详情页、模特图或营销物料，并确认渠道、图位与素材来源。" }
+      : completedCount < candidateCount
+        ? { area: "review" as const, eyebrow: "批次等待处理", title: "完成质量评审", detail: `当前 ${completedCount}/${candidateCount} 张已有结果。先处理失败或未评审素材，再进入人工终审。` }
+        : reviewedCount < completedCount
+          ? { area: "review" as const, eyebrow: "AI 结果已返回", title: "完成人工终审", detail: `已有 ${completedCount} 张评审结果，其中 ${reviewedCount} 张留有人工作业记录。自动放行保持关闭。` }
+          : { area: "repair" as const, eyebrow: "质量结论已确认", title: "进入改图复审", detail: "先处理商品结构、Logo、细节或非目标区域漂移，再进入营销交付。" };
+
+  const stages: Array<{ area: Exclude<WorkspaceArea, "overview">; label: string; detail: string; status: string }> = [
+    { area: "baseline", label: "商品基准", detail: "SKU、历史确认图与目标人群", status: hasBaseline ? "已建立" : "待补齐" },
+    { area: "intake", label: "待评审素材", detail: "渠道、图位与 AI 生图确认", status: candidateCount ? `${candidateCount} 张` : "未上传" },
+    { area: "review", label: "质量评审", detail: "发布判断、证据与人工终审", status: isDemo ? "示例可浏览" : `${completedCount}/${candidateCount} 完成` },
+    { area: "repair", label: "改图复审", detail: "修改前后对比与非目标区域复验", status: reviewedCount ? "可进入" : "等待终审" },
+    { area: "delivery", label: "营销交付", detail: "策略、文案、脚本与制作提示词", status: reviewedCount ? "可准备" : "等待终审" },
+  ];
+
+  return (
+    <section className="workspace-page overview-page" aria-labelledby="overview-title">
+      <header className="page-heading">
+        <div>
+          <p className="page-context">项目总览</p>
+          <h1 id="overview-title">一个 SKU，一条清楚的交付路径。</h1>
+          <p>这里只呈现当前状态与下一步。评分细节、模型轨迹和审计证据保留在对应阶段。</p>
+        </div>
+      </header>
+
+      <section className="overview-focus" aria-label="当前项目下一步">
+        <figure className="overview-cover">
+          <SafeImage src={coverSrc} alt={`${batchTitle} 当前素材`} />
+          <figcaption>{isDemo ? "内置示例素材，不代表客户结果" : "当前批次素材预览"}</figcaption>
+        </figure>
+        <div className="overview-next-action">
+          <span>{next.eyebrow}</span>
+          <h2>{next.title}</h2>
+          <p>{next.detail}</p>
+          <div className="overview-actions">
+            <button className="primary-button" type="button" onClick={() => onNavigate(next.area)}>继续当前任务</button>
+            <button className="quiet-button" type="button" onClick={() => onNavigate("baseline")}>查看商品信息</button>
+          </div>
+        </div>
+        <dl className="overview-batch-facts">
+          <div><dt>基准输入</dt><dd>{referenceCount + skuCount}</dd></div>
+          <div><dt>候选素材</dt><dd>{candidateCount || "—"}</dd></div>
+          <div><dt>评审完成</dt><dd>{candidateCount ? `${completedCount}/${candidateCount}` : "—"}</dd></div>
+          <div><dt>人工记录</dt><dd>{reviewedCount || "—"}</dd></div>
+        </dl>
+      </section>
+
+      <section className="overview-stage-ledger" aria-labelledby="overview-stage-title">
+        <div className="rail-intro">
+          <span>五阶段工作流</span>
+          <h2 id="overview-stage-title">所有能力都归到一次明确决策里。</h2>
+          <p>{sourceLabel}。当前不存在的客户事实保持为空，不用示例内容补齐。</p>
+        </div>
+        <div className="rail-stages">
+          {stages.map((stage, index) => (
+            <button key={stage.area} type="button" onClick={() => onNavigate(stage.area)}>
+              <span className="rail-index">{String(index + 1).padStart(2, "0")}</span>
+              <span><strong>{stage.label}</strong><small>{stage.detail}</small></span>
+              <span className="rail-action">{stage.status}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </section>
   );
 }
 
@@ -1911,6 +2021,31 @@ function GridWorkspace({
       </section>
 
       <aside className="inspector" aria-label="当前图片判断">
+        <section className={`review-decision-brief ${selected.decision.toLowerCase()}`}>
+          <span>发布判断</span>
+          <Status value={selected.decision} />
+          <h2>
+            {selected.decision === "PASS"
+              ? "可进入人工发布复核"
+              : selected.decision === "REVIEW"
+                ? "先改图，再重新评审"
+                : "停止使用，建议重新生成"}
+          </h2>
+          <p>
+            {selected.issues[0]?.impact
+              ?? "当前未记录阻断问题，但仍需人工核对商品一致性与授权范围。"}
+          </p>
+          <dl>
+            <div><dt>最大问题</dt><dd>{selected.issues[0]?.title ?? "未发现主要问题"}</dd></div>
+            <div><dt>适用范围</dt><dd>{selected.productLabel || "当前单图"}</dd></div>
+            <div><dt>下一步</dt><dd>{selected.decision === "PASS" ? "人工确认后进入交付" : selected.decision === "REVIEW" ? "进入改图复审" : "重新生成候选图"}</dd></div>
+          </dl>
+          <button className="text-button" type="button" onClick={openEvidence}>查看问题证据</button>
+        </section>
+
+        <details className="review-analysis-details">
+          <summary>查看评分、问题、Prompt 与审计细节</summary>
+          <div className="review-analysis-content">
         <div className="inspector-section score-summary">
           <div>
             <p className="inspector-kicker">
@@ -2065,6 +2200,8 @@ function GridWorkspace({
             本地候选反馈写入版本化浏览器记录；正式评估优先写服务端
           </span>
         </div>
+          </div>
+        </details>
         <div className="inspector-actions">
           <div className="human-warning">
             <span className="status-dot review" aria-hidden="true" />
@@ -2255,6 +2392,18 @@ function EvidenceWorkspace({
           </span>
         </section>
         <aside className="evidence-panel">
+          <section className={`review-decision-brief ${selected.decision.toLowerCase()}`}>
+            <span>证据页结论</span>
+            <Status value={selected.decision} />
+            <h2>
+              {selected.decision === "PASS"
+                ? "可进入人工发布复核"
+                : selected.decision === "REVIEW"
+                  ? "先修复主要问题"
+                  : "停止使用当前素材"}
+            </h2>
+            <p>{selected.issues[0]?.impact ?? "未记录主要问题，仍需核对商品一致性与授权范围。"}</p>
+          </section>
           <section className="report-summary">
             <div className="report-score">
               <span>综合评分</span>

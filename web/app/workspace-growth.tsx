@@ -38,6 +38,7 @@ const creatorProfiles = [
 ] as const;
 
 type MarketingPlatform = "小红书" | "抖音";
+type DeliveryView = "overview" | "strategy" | "copy" | "video";
 type L2AgentCapability = {
   runtime_ready: boolean;
   current_level: "L2_RUNTIME_SCAFFOLD";
@@ -81,6 +82,7 @@ export function MarketingDeliveryPack({
   const [platform, setPlatform] = useState<MarketingPlatform>("小红书");
   const [copied, setCopied] = useState<string | null>(null);
   const [activePrompt, setActivePrompt] = useState(0);
+  const [deliveryView, setDeliveryView] = useState<DeliveryView>("overview");
   const [agentRun, setAgentRun] = useState<MarketingAgentRun | null>(null);
   const [agentRunning, setAgentRunning] = useState(false);
   const [agentError, setAgentError] = useState<string | null>(null);
@@ -177,6 +179,18 @@ export function MarketingDeliveryPack({
         <button className="quiet-button" type="button" disabled={!agentRun} onClick={() => downloadJson(deliveryPack)}>导出交付包 JSON</button>
       </div>
 
+      <nav className="delivery-view-nav" aria-label="营销交付内容">
+        {([
+          ["overview", "生成概览"],
+          ["strategy", "人群与策略"],
+          ["copy", "平台文案"],
+          ["video", "视频制作"],
+        ] as Array<[DeliveryView, string]>).map(([value, label]) => (
+          <button key={value} type="button" aria-current={deliveryView === value ? "page" : undefined} onClick={() => setDeliveryView(value)}>{label}</button>
+        ))}
+      </nav>
+
+      {deliveryView === "overview" && (
       <section className="agent-workbench" aria-labelledby="agent-workbench-title">
         <div className="agent-workbench-head">
           <div>
@@ -214,7 +228,10 @@ export function MarketingDeliveryPack({
           </>
         ) : <div className="agent-empty"><strong>尚未运行 L2 工具循环</strong><p>千问适配层已就绪（{agentCapability?.qwen_provider.model_snapshot ?? "固定模型版本检查中"}）。授权启用前，本地测试 Provider 只验证运行机制。</p></div>}
       </section>
+      )}
 
+      {deliveryView === "strategy" && (
+      <>
       <section className="creator-benchmark" aria-labelledby="creator-benchmark-title">
         <div className="section-title-row">
           <div>
@@ -254,7 +271,11 @@ export function MarketingDeliveryPack({
           )) : <div className="output-empty">运行智能体后生成基于人群、场景和质量证据的痛点分析。</div>}
         </div>
       </section>
+      </>
+      )}
 
+      {deliveryView === "copy" && (
+      <>
       <div className="marketing-output-grid">
         <section className="social-copy-sheet" aria-labelledby="social-copy-title">
           <div className="output-sheet-head">
@@ -273,18 +294,6 @@ export function MarketingDeliveryPack({
           </div>
           <button className="text-button" type="button" disabled={!copy} onClick={() => copy && void copyText(`copy-${platform}`, `${copy.title}\n\n${copy.body}\n\n${copy.tags}`)}>{copied === `copy-${platform}` ? "已复制" : "复制整段文案"}</button>
         </section>
-
-        <section className="video-outline-sheet" aria-labelledby="video-outline-title">
-          <span>信息流视频大纲</span>
-          <h3 id="video-outline-title">15 秒，四段证据节奏</h3>
-          <ol>
-            <li><span>00-03s</span><p>完整正面，建立商品识别。</p></li>
-            <li><span>03-08s</span><p>腰线、袖口和图案位置近景。</p></li>
-            <li><span>08-12s</span><p>自然动作，检查版型与非目标区域。</p></li>
-            <li><span>12-15s</span><p>回到完整正面，保留事实确认提醒。</p></li>
-          </ol>
-          <p className="review-binding">评审绑定：{reviewIssues.length ? reviewIssues.join(" / ") : "当前没有真实评审问题，使用示例结构"}</p>
-        </section>
       </div>
 
       <section className="verbatim-script-sheet" aria-labelledby="verbatim-script-title">
@@ -301,6 +310,24 @@ export function MarketingDeliveryPack({
           )) : <div className="output-empty">尚未生成逐字稿。</div>}
         </div>
       </section>
+      </>
+      )}
+
+      {deliveryView === "video" && (
+      <>
+      <div className="marketing-output-grid single-output">
+        <section className="video-outline-sheet" aria-labelledby="video-outline-title">
+          <span>信息流视频大纲</span>
+          <h3 id="video-outline-title">15 秒，四段证据节奏</h3>
+          <ol>
+            <li><span>00-03s</span><p>完整正面，建立商品识别。</p></li>
+            <li><span>03-08s</span><p>腰线、袖口和图案位置近景。</p></li>
+            <li><span>08-12s</span><p>自然动作，检查版型与非目标区域。</p></li>
+            <li><span>12-15s</span><p>回到完整正面，保留事实确认提醒。</p></li>
+          </ol>
+          <p className="review-binding">评审绑定：{reviewIssues.length ? reviewIssues.join(" / ") : "当前没有真实评审问题，使用示例结构"}</p>
+        </section>
+      </div>
 
       <section className="generation-prompt-sheet" aria-labelledby="generation-prompt-title">
         <div className="prompt-index">
@@ -319,6 +346,8 @@ export function MarketingDeliveryPack({
           </div><p>{generatedPrompts[activePrompt].text}</p><small>@商品正面参考图 需在实际视频模型中替换为已授权素材；交付前仍需人工终审。</small></> : <div className="output-empty inverse">尚未生成视频模型提示词。</div>}
         </div>
       </section>
+      </>
+      )}
     </section>
   );
 }

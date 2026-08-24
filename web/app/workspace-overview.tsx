@@ -77,6 +77,8 @@ export function WorkspaceBaseline({
         </button>
       </header>
 
+      <div className="baseline-stage-layout">
+        <div className="baseline-primary">
       <div className="baseline-input-layout">
         <section className="baseline-link-sheet" aria-labelledby="sku-link-title">
           <div className="input-route-heading">
@@ -164,61 +166,76 @@ export function WorkspaceBaseline({
         </section>
       </div>
 
-      <section className="baseline-context" aria-labelledby="baseline-context-title">
-        <div className="section-title-row">
-          <div>
-            <span>辅助信息</span>
-            <h2 id="baseline-context-title">让商品表达判断更接近客户场景。</h2>
-          </div>
-          <strong>{hasBaseline ? "商品基准已建立" : "可先继续，正式评分前需补齐"}</strong>
-        </div>
-        <div className="baseline-context-grid">
-          <fieldset className="tag-field">
-            <legend>目标风格</legend>
-            <div>{styleOptions.map((option) => (
-              <button key={option} type="button" aria-pressed={customerProfile.styles.includes(option)} onClick={() => toggleTag("styles", option)}>{option}</button>
-            ))}</div>
-          </fieldset>
-          <div className="price-range baseline-price-range">
-            <label><span>最低价</span><input inputMode="numeric" value={customerProfile.priceMin} onChange={(event) => setCustomerProfile((current) => ({ ...current, priceMin: event.target.value.replace(/[^0-9.]/g, "") }))} /></label>
-            <span>至</span>
-            <label><span>最高价</span><input inputMode="numeric" value={customerProfile.priceMax} onChange={(event) => setCustomerProfile((current) => ({ ...current, priceMax: event.target.value.replace(/[^0-9.]/g, "") }))} /></label>
-          </div>
-        </div>
-        <div className="audience-profile-board" aria-label="目标人群画像标签">
-          <div className="audience-board-heading">
-            <div>
-              <span>目标人群画像</span>
-              <h3>按营销目标选择，不从模特照片猜测人群属性。</h3>
-            </div>
-            <strong>结构化标签</strong>
-          </div>
-          <div className="audience-profile-groups">
-            {profileGroups.map((group) => (
-              <fieldset className="tag-field audience-tag-field" key={group.key}>
-                <legend>{group.label}<small>{group.hint}</small></legend>
-                <div>
-                  {group.options.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      aria-pressed={customerProfile[group.key].includes(option)}
-                      onClick={() => toggleTag(group.key, option)}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="baseline-boundary" role="note">
         <strong>基准输入不会自动形成通过结论</strong>
         <p>SKU 链接尚未抓取时只记录为输入；局部图片不能扩张为完整 SKU 通过，Logo 和字标仍需官方资产确认。</p>
       </section>
+        </div>
+
+        <aside className="profile-sidebar" aria-labelledby="baseline-context-title">
+          <div className="profile-sidebar-status">
+            <span>商品策略</span>
+            <strong>{hasBaseline ? "商品基准已建立" : "正式评分前需补齐"}</strong>
+          </div>
+          <h2 id="baseline-context-title">目标人群与表达方向</h2>
+          <p>这些信息只用于校准商业表达，不从模特照片推断人群属性。</p>
+
+          <dl className="profile-sidebar-summary">
+            <div>
+              <dt>目标风格</dt>
+              <dd>{customerProfile.styles.join("、") || "待选择"}</dd>
+            </div>
+            <div>
+              <dt>价格带</dt>
+              <dd>{customerProfile.priceMin || "?"}–{customerProfile.priceMax || "?"} 元</dd>
+            </div>
+            <div>
+              <dt>核心人群</dt>
+              <dd>{customerProfile.audienceSegments.join("、") || "待选择"}</dd>
+            </div>
+            <div>
+              <dt>使用场景</dt>
+              <dd>{customerProfile.scenarios.join("、") || "待选择"}</dd>
+            </div>
+          </dl>
+
+          <details className="profile-editor">
+            <summary>编辑商品策略与人群画像</summary>
+            <div className="profile-editor-content">
+              <fieldset className="tag-field">
+                <legend>目标风格</legend>
+                <div>{styleOptions.map((option) => (
+                  <button key={option} type="button" aria-pressed={customerProfile.styles.includes(option)} onClick={() => toggleTag("styles", option)}>{option}</button>
+                ))}</div>
+              </fieldset>
+              <div className="price-range baseline-price-range">
+                <label><span>最低价</span><input inputMode="numeric" value={customerProfile.priceMin} onChange={(event) => setCustomerProfile((current) => ({ ...current, priceMin: event.target.value.replace(/[^0-9.]/g, "") }))} /></label>
+                <span>至</span>
+                <label><span>最高价</span><input inputMode="numeric" value={customerProfile.priceMax} onChange={(event) => setCustomerProfile((current) => ({ ...current, priceMax: event.target.value.replace(/[^0-9.]/g, "") }))} /></label>
+              </div>
+              <div className="profile-editor-groups" aria-label="目标人群画像标签">
+                {profileGroups.map((group) => (
+                  <fieldset className="tag-field audience-tag-field" key={group.key}>
+                    <legend>{group.label}<small>{group.hint}</small></legend>
+                    <div>
+                      {group.options.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          aria-pressed={customerProfile[group.key].includes(option)}
+                          onClick={() => toggleTag(group.key, option)}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                ))}
+              </div>
+            </div>
+          </details>
+        </aside>
+      </div>
     </section>
   );
 }
