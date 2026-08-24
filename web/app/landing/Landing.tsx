@@ -6,31 +6,34 @@ import "./landing.css";
 const SKILLS = [
   {
     no: "01",
-    title: "真实感",
-    en: "Realism",
-    desc: "AI 真人图像中皮肤纹理、眼神光、发丝边缘的真实程度评估。",
-    weight: "25%",
+    title: "商品真值",
+    en: "Product Truth",
+    desc: "以白底图、官方确认稿和关键细节作为颜色、版型、图案与 Logo 的唯一依据。",
+    output: "REFERENCE LOCK",
+    emphasis: false,
   },
   {
     no: "02",
-    title: "摄影感",
-    en: "Photography",
-    desc: "光影逻辑、构图张力与镜头景深是否符合商业摄影语言。",
-    weight: "20%",
+    title: "问题诊断",
+    en: "Diagnosis",
+    desc: "定位商品漂移、人体异常、遮挡、材质失真和非目标区域变化，不因缺少促销文字误判。",
+    output: "EVIDENCE MAP",
+    emphasis: false,
   },
   {
     no: "03",
-    title: "材质感",
-    en: "Materiality",
-    desc: "面料纹理、金属高光、玻璃透射等材质表达的可信度。",
-    weight: "20%",
+    title: "局部修正",
+    en: "Repair",
+    desc: "把可修问题交给图像编辑模型；涉及商品身份或整体结构错误时，明确建议重新生成。",
+    output: "REPAIR JOB",
+    emphasis: false,
   },
   {
     no: "04",
-    title: "商品表达效能",
-    en: "Product Expression",
-    desc: "综合视觉重心、商品细节、原商品一致性与真实使用关系，判断画面是否有效表达商品。",
-    weight: "35%",
+    title: "复验与 4K",
+    en: "Delivery",
+    desc: "对比修改前后并检查非目标漂移；人工确认后生成本机 4K 尺寸文件与处理凭证。",
+    output: "HUMAN APPROVED",
     emphasis: true,
   },
 ] as const;
@@ -41,7 +44,7 @@ export default function Landing() {
     state: "checking" | "ready" | "setup-required";
     model: string;
     batchLimit: number;
-  }>({ state: "checking", model: "—", batchLimit: 10 });
+  }>({ state: "checking", model: "—", batchLimit: 3 });
 
   useEffect(() => {
     const root = cardsRef.current;
@@ -83,12 +86,12 @@ export default function Landing() {
           model: capability.configured
             ? capability.model_snapshot.toUpperCase()
             : "—",
-          batchLimit: capability.max_total_requests || 10,
+          batchLimit: Math.min(3, capability.max_total_requests || 3),
         });
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setEngine({ state: "setup-required", model: "—", batchLimit: 10 });
+        setEngine({ state: "setup-required", model: "—", batchLimit: 3 });
       });
     return () => controller.abort();
   }, []);
@@ -109,11 +112,11 @@ export default function Landing() {
         <div className="landing-hero-light">
           <div className="landing-hero-spacer" aria-hidden />
           <h1 className="landing-title">VisionQA</h1>
-          <p className="landing-title-sub">面向未来的 AI 视觉质量评估</p>
+          <p className="landing-title-sub">服饰电商 AI 模特图修正与交付</p>
           <p className="landing-lede">
-            从真实感到商品表达，
+            以真实商品白底图为依据，
             <br />
-            一套为服饰电商而生的结构化评分、修复 Prompt 与人工发布门禁。
+            定位并修正 AI 模特图中的商品漂移、人体异常与非目标变化。
           </p>
           <div className="landing-hero-spacer" aria-hidden />
           <div className="landing-cta-row">
@@ -141,10 +144,10 @@ export default function Landing() {
               MODEL <b>{engine.model}</b>
             </div>
             <div>
-              MODE <b>HUMAN REVIEW</b> · AUTO PASS <b>OFF</b>
+              MODE <b>REPAIR COPILOT</b> · HUMAN REVIEW <b>ON</b>
             </div>
             <div>
-              BATCH <b>{engine.batchLimit} MAX</b> · IMAGE STORE <b>NONE</b>
+              TASK <b>{engine.batchLimit} IMAGES MAX</b> · PROJECT <b>LOCAL</b>
             </div>
           </div>
           <div className="landing-scanline" aria-hidden />
@@ -154,11 +157,11 @@ export default function Landing() {
       <section id="skills" className="landing-skills" ref={cardsRef}>
         <div className="landing-section-head">
           <div className="landing-kicker">
-            <span className="landing-dot" aria-hidden /> 02 — 四维评估
+            <span className="landing-dot" aria-hidden /> 02 — 修正链路
           </div>
-          <h2 className="landing-h2">四个 Skills，从像素到发布</h2>
+          <h2 className="landing-h2">先修好母图，再进入详情与促销排版</h2>
           <p className="landing-section-sub">
-            每张图都经过人物结构、摄影可信度、材质细节与商品表达效能的逐项评估，并给出修复 Prompt 与人工复核建议。
+            评分只用于内部诊断。工作台围绕一张模特草图完成商品对照、问题定位、局部修正、前后复验和 4K 文件交付。
           </p>
         </div>
         <div className="landing-cards">
@@ -175,7 +178,7 @@ export default function Landing() {
                 <p className="landing-card-desc">{s.desc}</p>
               </div>
               <div className="landing-card-foot">
-                <span>权重 {s.weight}</span>
+                <span>{s.output}</span>
                 <span aria-hidden>→</span>
               </div>
             </article>
@@ -188,11 +191,11 @@ export default function Landing() {
           <span className="landing-dot" aria-hidden /> 03 — A FEW WORDS
         </div>
         <blockquote className="landing-quote">
-          未来电商的每一张主图，
+          AI 模特图真正昂贵的部分，
           <br />
-          都会经过 AI 的眼睛。
+          不是生成，而是返工。
           <span>
-            VisionQA 让这双眼睛 <em>有标准</em>。
+            VisionQA 让每一次修正 <em>有依据</em>。
           </span>
         </blockquote>
       </section>
@@ -213,9 +216,9 @@ export default function Landing() {
       </section>
 
       <footer className="landing-footer">
-        <span>VisionQA · 视觉质量评估</span>
+        <span>VisionQA · AI 模特图修正</span>
         <span className="landing-foot-sep">·</span>
-        <span>视觉评估与人工审核基础设施</span>
+        <span>商品真值、修正复验与 4K 交付</span>
         <span className="landing-foot-sep">·</span>
         <span>© 2026</span>
       </footer>

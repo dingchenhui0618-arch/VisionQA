@@ -187,6 +187,73 @@ test("fixture remains the network-free default and derives deterministic v0.3", 
   assert.equal(outcome.result.gate_evaluation.decision, "REVIEW");
 });
 
+test("AI model image repair never rejects a draft merely for missing promotion overlays", async () => {
+  const draft = createFixtureDraft();
+  draft.observations = [
+    {
+      observation_id: "obs-missing-promotion",
+      issue_code: "no_promotion_overlay",
+      primary_skill: "COM",
+      severity: "blocker",
+      status: "detected",
+      observation: "画面中没有价格、优惠或 CTA。",
+      impact: "旧促销模板会错误阻断模特母图。",
+    },
+  ];
+  draft.commercialAssessment.metrics.promotion_hierarchy = {
+    score: null,
+    assessability: "NOT_APPLICABLE",
+    evidence: [],
+    summary: "模特母图不承担促销表达。",
+  };
+  draft.commercialAssessment.metrics.information_legibility = {
+    score: null,
+    assessability: "NOT_APPLICABLE",
+    evidence: [],
+    summary: "当前没有需要评估的商业贴字。",
+  };
+  const adapter: VisionProviderAdapter = {
+    providerId: "test-model-image-repair",
+    adapterVersion: "0.1",
+    async evaluate() {
+      return {
+        providerId: this.providerId,
+        adapterVersion: this.adapterVersion,
+        modelSnapshot: "test-snapshot",
+        providerRequestId: null,
+        latencyMs: 1,
+        usage: { inputTokens: null, outputTokens: null },
+        warnings: [],
+        observationDraft: draft,
+      };
+    },
+  };
+  const outcome = await orchestrateVisionEvaluation(
+    adapter,
+    {
+      ...input,
+      placement: "AI 模特母图",
+      commercialTemplate: {
+        id: "ai_model_image_repair",
+        version: "0.3.0",
+        assessmentScope: "缺少促销信息不是缺陷。",
+      },
+    },
+    new AbortController().signal,
+  );
+  assert.equal(outcome.result.model_evaluation.observations.length, 0);
+  assert.equal(
+    outcome.result.score_evaluation.commercial_assessment.metrics
+      .promotion_hierarchy.assessability,
+    "NOT_APPLICABLE",
+  );
+  assert.notEqual(outcome.result.gate_evaluation.decision, "REJECT");
+  assert.doesNotMatch(
+    outcome.result.action_plan.repair_prompt?.prompt ?? "",
+    /促销|优惠|CTA/,
+  );
+});
+
 test("local Base64 canary stays disabled until every explicit gate and API key exist", () => {
   let fetchCalls = 0;
   const readiness = getLocalCanaryReadiness({

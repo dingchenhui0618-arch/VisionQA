@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/model-image-repair-brief-v0.1.schema.json",
+  "title": "VisionQA AI Model Image Repair Brief v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "task_type",
+    "sku_reference_asset_ids",
+    "candidate_asset_ids",
+    "promotion_overlay_required",
+    "human_final_review_required"
+  ],
+  "properties": {
+    "schema_version": { "const": "model-image-repair-brief-v0.1" },
+    "task_type": { "const": "AI_MODEL_IMAGE_REPAIR" },
+    "sku_reference_asset_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "candidate_asset_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "promotion_overlay_required": {
+      "const": false,
+      "description": "AI 模特母图不承担促销表达；缺少价格、优惠和 CTA 不是缺陷。"
+    },
+    "human_final_review_required": { "const": true }
+  }
+}

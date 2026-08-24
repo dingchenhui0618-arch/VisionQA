@@ -38,6 +38,7 @@ import { WorkspaceLogin } from "./workspace-login";
 import { WorkspaceBaseline } from "./workspace-overview";
 import { RepairWorkspace } from "./workspace-repair";
 import { projectLegacyCommercialMetrics } from "../lib/visionqa/product-expression";
+import type { UpscaleJobReceipt } from "../lib/visionqa/upscale";
 import {
   appendProjectRestoreEvent,
   createLocalProject,
@@ -53,7 +54,7 @@ import {
 type Decision = "PASS" | "REVIEW" | "REJECT";
 type View = "grid" | "evidence";
 type WorkspaceArea = "overview" | "baseline" | "intake" | "review" | "repair" | "delivery";
-type CommercialTemplateId = "platform-promotion" | "brand-flagship";
+type CommercialTemplateId = "model-image-repair" | "brand-flagship";
 
 type SkillScore = {
   id: string;
@@ -219,6 +220,15 @@ type StoredBatchCandidate = Omit<
   result?: StoredEvaluatedAsset;
 };
 
+type StoredRepairSession = {
+  schemaVersion: "visionqa-repair-session-v0.1";
+  sourceAssetId: number | null;
+  outputAssetId: string | null;
+  humanChecks: string[];
+  upscaleAssetId: string | null;
+  upscaleReceipt: UpscaleJobReceipt | null;
+};
+
 type WorkspaceProjectPayload = {
   schemaVersion: typeof VISIONQA_PROJECT_PAYLOAD_SCHEMA_VERSION;
   area: WorkspaceArea;
@@ -234,6 +244,7 @@ type WorkspaceProjectPayload = {
   customerProfile: CustomerProfileInput;
   referenceAssetIds: string[];
   batchCandidates: StoredBatchCandidate[];
+  repairSession?: StoredRepairSession;
 };
 
 type ProjectPersistenceState =
@@ -323,6 +334,11 @@ function buildWorkspaceProjectPayload({
   customerProfile,
   referenceFiles,
   batchCandidates,
+  repairOutputFile,
+  repairSourceAssetId,
+  repairChecks,
+  upscaleOutputFile,
+  upscaleReceipt,
 }: {
   area: WorkspaceArea;
   view: View;
@@ -337,6 +353,11 @@ function buildWorkspaceProjectPayload({
   customerProfile: CustomerProfileInput;
   referenceFiles: File[];
   batchCandidates: BatchCandidate[];
+  repairOutputFile: File | null;
+  repairSourceAssetId: number | null;
+  repairChecks: string[];
+  upscaleOutputFile: File | null;
+  upscaleReceipt: UpscaleJobReceipt | null;
 }): WorkspaceProjectPayload {
   return {
     schemaVersion: VISIONQA_PROJECT_PAYLOAD_SCHEMA_VERSION,
@@ -370,12 +391,26 @@ function buildWorkspaceProjectPayload({
           ? "上次分析在页面关闭前尚未完成，请重新发起。"
           : candidate.error,
     })),
+    repairSession: {
+      schemaVersion: "visionqa-repair-session-v0.1",
+      sourceAssetId: repairSourceAssetId,
+      outputAssetId: repairOutputFile
+        ? `repair-output-${repairOutputFile.lastModified}-${repairOutputFile.size}`
+        : null,
+      humanChecks: repairChecks,
+      upscaleAssetId: upscaleOutputFile
+        ? `upscale-output-${upscaleOutputFile.lastModified}-${upscaleOutputFile.size}`
+        : null,
+      upscaleReceipt,
+    },
   };
 }
 
 function buildProjectAssets(
   referenceFiles: File[],
   batchCandidates: BatchCandidate[],
+  repairOutputFile: File | null,
+  upscaleOutputFile: File | null,
 ): ProjectAssetInput[] {
   return [
     ...referenceFiles.map((file, index): ProjectAssetInput => ({
@@ -400,6 +435,32 @@ function buildProjectAssets(
       sha256: candidate.sha256,
       file: candidate.file,
     })),
+    ...(repairOutputFile
+      ? [{
+          assetId: `repair-output-${repairOutputFile.lastModified}-${repairOutputFile.size}`,
+          role: "REPAIR_OUTPUT" as const,
+          position: 0,
+          fileName: repairOutputFile.name,
+          mimeType: repairOutputFile.type,
+          byteSize: repairOutputFile.size,
+          lastModified: repairOutputFile.lastModified,
+          sha256: null,
+          file: repairOutputFile,
+        }]
+      : []),
+    ...(upscaleOutputFile
+      ? [{
+          assetId: `upscale-output-${upscaleOutputFile.lastModified}-${upscaleOutputFile.size}`,
+          role: "UPSCALE_OUTPUT" as const,
+          position: 0,
+          fileName: upscaleOutputFile.name,
+          mimeType: upscaleOutputFile.type,
+          byteSize: upscaleOutputFile.size,
+          lastModified: upscaleOutputFile.lastModified,
+          sha256: null,
+          file: upscaleOutputFile,
+        }]
+      : []),
   ];
 }
 
@@ -504,10 +565,10 @@ const commercialTemplates: {
   status: string;
 }[] = [
   {
-    id: "platform-promotion",
-    name: "平台商品表达",
-    version: "0.2",
-    status: "视觉重心、商品细节与真实使用标准",
+    id: "model-image-repair",
+    name: "AI 模特图修正",
+    version: "0.3",
+    status: "商品一致性、人体真实感与母图可交付性",
   },
   {
     id: "brand-flagship",
@@ -691,21 +752,21 @@ function getCommercialResult(
     asset.skills.find((skill) => skill.id === "04")?.score ?? asset.score;
   const flagshipOffsets = [-12, 4, -7, 8, 5, -9, -4, 7, -6, 3, -8, 6];
   const fitScore =
-    templateId === "platform-promotion"
+    templateId === "model-image-repair"
       ? baseScore
       : clampScore(baseScore + flagshipOffsets[asset.id - 1]);
   const metricOffsets =
-    templateId === "platform-promotion"
+    templateId === "model-image-repair"
       ? [6, -3, 2, 4, -7, 1]
       : [3, 5, -12, 8, -4, 6];
   const fitLevel = fitScore >= 90 ? "高" : fitScore >= 70 ? "中" : "低";
   const template = commercialTemplates.find((item) => item.id === templateId)!;
   const gaps =
-    templateId === "platform-promotion"
+    templateId === "model-image-repair"
       ? ["关键商品细节还不够集中", "原商品一致性需要结合基准图人工确认"]
       : ["场景对商品的支撑关系偏弱", "品牌表达与商品细节需要重新平衡"];
   const strengths =
-    templateId === "platform-promotion"
+    templateId === "model-image-repair"
       ? ["视觉重心落在商品主体", "主要轮廓具备识别效率"]
       : ["人物与商品关系清楚", "场景没有覆盖商品主要结构"];
 
@@ -716,7 +777,7 @@ function getCommercialResult(
     fitScore,
     fitLevel,
     summary:
-      templateId === "platform-promotion"
+      templateId === "model-image-repair"
         ? asset.commercialAssessment
         : `相对品牌场景表达标准，${asset.productLabel}的商品识别仍然成立，但场景、人物和关键细节之间需要建立更明确的视觉秩序。`,
     strengths,
@@ -849,7 +910,7 @@ function DataSourceBadge({ state }: { state: DataState }) {
           : state.kind === "real"
       ? "已保存评估"
       : state.kind === "local"
-        ? "批次待评分"
+        ? "等待问题诊断"
       : state.kind === "loading"
         ? "正在读取评估"
         : state.kind === "fallback"
@@ -866,8 +927,8 @@ function DataStateNotice({ state }: { state: DataState }) {
   if (state.kind === "fixture") {
     return (
       <div className="data-state-notice">
-        当前打开的是示例项目，用于体验评分、证据和优化 Prompt。上传自己的批次后，
-        示例结果不会进入客户评估。
+        当前打开的是示例项目，用于体验问题定位、证据和修正 Prompt。上传自己的 AI 模特草图后，
+        示例结果不会进入真实修正任务。
       </div>
     );
   }
@@ -888,16 +949,16 @@ function DataStateNotice({ state }: { state: DataState }) {
   if (state.kind === "live-error") {
     return (
       <div className="data-state-notice error" role="alert">
-        {state.candidateName} 未形成有效评分：{state.message}。未完成图片仍保留在批次队列中，
-        可以重新发起评分。
+        {state.candidateName} 未形成有效诊断：{state.message}。未完成图片仍保留在当前任务中，
+        可以重新发起分析。
       </div>
     );
   }
   if (state.kind === "local") {
     return (
       <div className="data-state-notice local" role="status">
-        已载入 {state.candidateName}。候选图正在本机等待，尚未发送到模型，也没有生成任何评分。
-        确认客户画像和授权后即可开始批次评分。
+        已载入 {state.candidateName}。AI 模特草图正在本机等待，尚未发送到模型，也没有生成诊断结论。
+        确认商品真值和发送授权后即可开始分析。
       </div>
     );
   }
@@ -911,8 +972,8 @@ function DataStateNotice({ state }: { state: DataState }) {
   if (state.kind === "live") {
     return (
       <div className="data-state-notice real">
-        AI 评分已完成 · {state.modelSnapshot} · 最近一张耗时{" "}
-        {(state.latencyMs / 1000).toFixed(1)} 秒。系统已生成评分、发布建议与优化 Prompt；
+        AI 问题诊断已完成 · {state.modelSnapshot} · 最近一张耗时{" "}
+        {(state.latencyMs / 1000).toFixed(1)} 秒。系统已生成问题证据、修正建议与 Prompt；
         最终决定仍需人工确认。
       </div>
     );
@@ -961,7 +1022,7 @@ export function Workspace() {
   const [area, setArea] = useState<WorkspaceArea>("overview");
   const [view, setView] = useState<View>("grid");
   const [commercialTemplateId, setCommercialTemplateId] =
-    useState<CommercialTemplateId>("platform-promotion");
+    useState<CommercialTemplateId>("model-image-repair");
   const [selectedId, setSelectedId] = useState(1);
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideTarget, setOverrideTarget] = useState<Decision>("REJECT");
@@ -975,9 +1036,9 @@ export function Workspace() {
   const [intakeState, setIntakeState] = useState<IntakeState>({ kind: "idle" });
   const [submissionContext, setSubmissionContext] = useState<SubmissionContext>({
     channel: "天猫",
-    placement: "平台主图",
+    placement: "AI模特图",
     referenceStatus: "complete",
-    provenanceStatus: "unknown",
+    provenanceStatus: "confirmed_ai",
   });
   const [promptCopyCount, setPromptCopyCount] = useState(0);
   const [liveCapability, setLiveCapability] =
@@ -988,6 +1049,12 @@ export function Workspace() {
   const [customerProfile, setCustomerProfile] =
     useState<CustomerProfileInput>(defaultCustomerProfile);
   const [batchCandidates, setBatchCandidates] = useState<BatchCandidate[]>([]);
+  const [repairOutputFile, setRepairOutputFile] = useState<File | null>(null);
+  const [repairSourceAssetId, setRepairSourceAssetId] = useState<number | null>(null);
+  const [repairChecks, setRepairChecks] = useState<string[]>([]);
+  const [upscaleOutputFile, setUpscaleOutputFile] = useState<File | null>(null);
+  const [upscaleReceipt, setUpscaleReceipt] =
+    useState<UpscaleJobReceipt | null>(null);
   const [projectRecord, setProjectRecord] =
     useState<VisionQaProjectRecord<WorkspaceProjectPayload> | null>(null);
   const [projectEvents, setProjectEvents] = useState<VisionQaProjectAuditEvent[]>([]);
@@ -1018,6 +1085,11 @@ export function Workspace() {
         customerProfile,
         referenceFiles,
         batchCandidates,
+        repairOutputFile,
+        repairSourceAssetId,
+        repairChecks,
+        upscaleOutputFile,
+        upscaleReceipt,
       }),
     [
       area,
@@ -1033,11 +1105,22 @@ export function Workspace() {
       customerProfile,
       referenceFiles,
       batchCandidates,
+      repairOutputFile,
+      repairSourceAssetId,
+      repairChecks,
+      upscaleOutputFile,
+      upscaleReceipt,
     ],
   );
   const projectAssets = useMemo(
-    () => buildProjectAssets(referenceFiles, batchCandidates),
-    [referenceFiles, batchCandidates],
+    () =>
+      buildProjectAssets(
+        referenceFiles,
+        batchCandidates,
+        repairOutputFile,
+        upscaleOutputFile,
+      ),
+    [referenceFiles, batchCandidates, repairOutputFile, upscaleOutputFile],
   );
   const projectCounts = useMemo(
     () => projectMaterialCounts(referenceFiles, batchCandidates, auditEntries),
@@ -1198,6 +1281,13 @@ export function Workspace() {
               ];
             },
           );
+          const restoredRepair = payload.repairSession;
+          const restoredRepairOutput = restoredRepair?.outputAssetId
+            ? assetMap.get(restoredRepair.outputAssetId)?.file
+            : null;
+          const restoredUpscaleOutput = restoredRepair?.upscaleAssetId
+            ? assetMap.get(restoredRepair.upscaleAssetId)?.file
+            : null;
           const restoredAssetInputs: ProjectAssetInput[] = loaded.assets.map(
             (asset) => ({
               assetId: logicalAssetId(asset),
@@ -1212,9 +1302,13 @@ export function Workspace() {
             }),
           );
 
-          setArea(payload.area);
+          setArea(payload.area === "delivery" ? "repair" : payload.area);
           setView(payload.view);
-          setCommercialTemplateId(payload.commercialTemplateId);
+          setCommercialTemplateId(
+            payload.commercialTemplateId === "brand-flagship"
+              ? "brand-flagship"
+              : "model-image-repair",
+          );
           setSelectedId(payload.selectedId);
           setAuditEntries(payload.auditEntries);
           setApiAsset(null);
@@ -1226,6 +1320,15 @@ export function Workspace() {
           setCustomerProfile(payload.customerProfile);
           setReferenceFiles(restoredReferences);
           setBatchCandidates(restoredCandidates);
+          setRepairOutputFile(
+            restoredRepairOutput instanceof File ? restoredRepairOutput : null,
+          );
+          setRepairSourceAssetId(restoredRepair?.sourceAssetId ?? null);
+          setRepairChecks(restoredRepair?.humanChecks ?? []);
+          setUpscaleOutputFile(
+            restoredUpscaleOutput instanceof File ? restoredUpscaleOutput : null,
+          );
+          setUpscaleReceipt(restoredRepair?.upscaleReceipt ?? null);
           setLiveConsent(false);
           setLiveRunning(false);
           candidateFileRef.current = restoredCandidates[0]?.file ?? null;
@@ -1356,7 +1459,8 @@ export function Workspace() {
       setIntakeState({ kind: "error", message: "尚未选择候选图。" });
       return;
     }
-    const limited = files.slice(0, liveCapability?.maxTotalRequests ?? 10);
+    const limit = Math.min(3, liveCapability?.maxTotalRequests ?? 3);
+    const limited = files.slice(0, limit);
     const invalid = limited.find((file) => !validateLocalCandidate(file).ok);
     if (invalid) {
       setIntakeState({
@@ -1385,6 +1489,11 @@ export function Workspace() {
         }),
       );
       setBatchCandidates(prepared);
+      setRepairOutputFile(null);
+      setRepairSourceAssetId(null);
+      setRepairChecks([]);
+      setUpscaleOutputFile(null);
+      setUpscaleReceipt(null);
       const first = prepared[0];
       candidateFileRef.current = first.file;
       setApiAsset(null);
@@ -1423,6 +1532,11 @@ export function Workspace() {
     setApiAsset(null);
     batchCandidates.forEach((item) => URL.revokeObjectURL(item.src));
     setBatchCandidates([]);
+    setRepairOutputFile(null);
+    setRepairSourceAssetId(null);
+    setRepairChecks([]);
+    setUpscaleOutputFile(null);
+    setUpscaleReceipt(null);
     setLocalCandidate(null);
     candidateFileRef.current = null;
     setLiveConsent(false);
@@ -1581,11 +1695,11 @@ export function Workspace() {
         };
       });
     if (rows.length === 0) {
-      setToast("选中的图片还没有真实评分结果。");
+      setToast("选中的图片还没有真实诊断结果。");
       return;
     }
-    downloadBlob(createBatchCsv(rows), "VisionQA-批次评分报告.csv");
-    setToast(`已下载 ${rows.length} 张图片的评分报告。`);
+    downloadBlob(createBatchCsv(rows), "VisionQA-问题诊断报告.csv");
+    setToast(`已下载 ${rows.length} 张图片的问题诊断报告。`);
   };
 
   const commitDecision = async (
@@ -1715,29 +1829,36 @@ export function Workspace() {
 
   const batchTitle =
     batchCandidates.length > 0
-      ? `客户批次 · ${batchCandidates.length} 张`
-      : "夏季服饰示例项目";
+      ? `当前 SKU · ${batchCandidates.length} 张模特草图`
+      : "AI 模特图修正示例";
   const projectTitle = projectRecord?.projectName ?? batchTitle;
   const sourceLabel =
     dataState.kind === "fixture"
       ? "内置示例项目"
       : dataState.kind === "live"
-        ? "AI 评分完成，等待人工终审"
+        ? "AI 诊断完成，等待人工确认"
         : dataState.kind === "local"
           ? "客户图片仅在本机等待"
           : dataState.kind === "live-loading"
-            ? "AI 评分进行中"
+            ? "AI 问题诊断中"
             : dataState.kind === "live-error"
-              ? "当前批次评分失败"
+              ? "当前草图诊断失败"
               : "已保存评估";
   const areaLabel: Record<WorkspaceArea, string> = {
     overview: "项目总览",
-    baseline: "商品基准",
-    intake: "待评审素材",
-    review: "质量评审",
-    repair: "改图复审",
-    delivery: "营销交付",
+    baseline: "商品真值",
+    intake: "AI 模特草图",
+    review: "问题诊断",
+    repair: "修正与交付",
+    delivery: "营销延展",
   };
+  const visibleAreas: WorkspaceArea[] = [
+    "overview",
+    "baseline",
+    "intake",
+    "review",
+    "repair",
+  ];
 
   if (!previewOpen) {
     return <WorkspaceLogin onEnterPreview={() => setPreviewOpen(true)} />;
@@ -1763,7 +1884,7 @@ export function Workspace() {
           )}
         </div>
         <nav aria-label="工作台导航">
-          {(Object.keys(areaLabel) as WorkspaceArea[]).map((item, index) => (
+          {visibleAreas.map((item, index) => (
             <button
               key={item}
               type="button"
@@ -1836,7 +1957,7 @@ export function Workspace() {
         </header>
 
         <nav className="workspace-mobile-nav" aria-label="移动端工作台导航">
-          {(Object.keys(areaLabel) as WorkspaceArea[]).map((item) => (
+          {visibleAreas.map((item) => (
             <button
               key={item}
               type="button"
@@ -1898,7 +2019,7 @@ export function Workspace() {
           )}
 
           {area === "review" && (
-            <section className="review-page" aria-label="质量评审">
+            <section className="review-page" aria-label="AI 模特图问题诊断">
               <DataStateNotice state={dataState} />
               <CustomerWorkflow
                 state={intakeState}
@@ -1958,9 +2079,26 @@ export function Workspace() {
           {area === "repair" && (
             <RepairWorkspace
               asset={selected}
+              sourceFile={batchCandidates.find((item) => item.id === selected.id)?.file ?? null}
+              outputFile={repairSourceAssetId === selected.id ? repairOutputFile : null}
+              onOutputFileChange={(file) => {
+                setRepairOutputFile(file);
+                setRepairSourceAssetId(file ? selected.id : null);
+                setRepairChecks([]);
+                setUpscaleOutputFile(null);
+                setUpscaleReceipt(null);
+              }}
+              checks={repairSourceAssetId === selected.id ? repairChecks : []}
+              onChecksChange={setRepairChecks}
+              upscaleOutputFile={repairSourceAssetId === selected.id ? upscaleOutputFile : null}
+              upscaleReceipt={repairSourceAssetId === selected.id ? upscaleReceipt : null}
+              onUpscaleReady={(file, receipt) => {
+                setUpscaleOutputFile(file);
+                setUpscaleReceipt(receipt);
+              }}
               isDemo={batchCandidates.length === 0}
               onBack={() => setArea("review")}
-              onContinue={() => setArea("delivery")}
+              onContinue={() => setArea("overview")}
             />
           )}
 
@@ -2050,21 +2188,20 @@ function ProjectOverview({
   const hasBaseline = referenceCount > 0 || skuCount > 0;
   const isDemo = candidateCount === 0;
   const next = !hasBaseline
-    ? { area: "baseline" as const, eyebrow: "当前唯一下一步", title: "建立商品基准", detail: "先上传客户确认的 SKU 链接或历史产品图，后续判断才有可追溯的比较范围。" }
+    ? { area: "baseline" as const, eyebrow: "当前唯一下一步", title: "建立商品真值", detail: "先上传真实白底图、细节图或官方确认稿，后续修正才有稳定的商品比较依据。" }
     : candidateCount === 0
-      ? { area: "intake" as const, eyebrow: "商品基准已建立", title: "上传待评审素材", detail: "选择商品图、详情页、模特图或营销物料，并确认渠道、图位与素材来源。" }
+      ? { area: "intake" as const, eyebrow: "商品真值已建立", title: "上传 AI 模特草图", detail: "当前只处理同一 SKU、同一用途的 1–3 张模特母图，不混入详情页和促销排版。" }
       : completedCount < candidateCount
-        ? { area: "review" as const, eyebrow: "批次等待处理", title: "完成质量评审", detail: `当前 ${completedCount}/${candidateCount} 张已有结果。先处理失败或未评审素材，再进入人工终审。` }
+        ? { area: "review" as const, eyebrow: "草图等待诊断", title: "定位商品与人体问题", detail: `当前 ${completedCount}/${candidateCount} 张已有结果。先完成问题定位，再决定局部修正还是重新生成。` }
         : reviewedCount < completedCount
           ? { area: "review" as const, eyebrow: "AI 结果已返回", title: "完成人工终审", detail: `已有 ${completedCount} 张评审结果，其中 ${reviewedCount} 张留有人工作业记录。自动放行保持关闭。` }
-          : { area: "repair" as const, eyebrow: "质量结论已确认", title: "进入改图复审", detail: "先处理商品结构、Logo、细节或非目标区域漂移，再进入营销交付。" };
+          : { area: "repair" as const, eyebrow: "问题结论已确认", title: "进入修正与交付", detail: "修正商品结构、人体异常或非目标漂移，复验完成后再生成 4K 交付文件。" };
 
-  const stages: Array<{ area: Exclude<WorkspaceArea, "overview">; label: string; detail: string; status: string }> = [
-    { area: "baseline", label: "商品基准", detail: "SKU、历史确认图与目标人群", status: hasBaseline ? "已建立" : "待补齐" },
-    { area: "intake", label: "待评审素材", detail: "渠道、图位与 AI 生图确认", status: candidateCount ? `${candidateCount} 张` : "未上传" },
-    { area: "review", label: "质量评审", detail: "发布判断、证据与人工终审", status: isDemo ? "示例可浏览" : `${completedCount}/${candidateCount} 完成` },
-    { area: "repair", label: "改图复审", detail: "修改前后对比与非目标区域复验", status: reviewedCount ? "可进入" : "等待终审" },
-    { area: "delivery", label: "营销交付", detail: "策略、文案、脚本与制作提示词", status: reviewedCount ? "可准备" : "等待终审" },
+  const stages: Array<{ area: "baseline" | "intake" | "review" | "repair"; label: string; detail: string; status: string }> = [
+    { area: "baseline", label: "商品真值", detail: "白底图、SKU 与不可修改属性", status: hasBaseline ? "已建立" : "待补齐" },
+    { area: "intake", label: "AI 模特草图", detail: "一次处理同一 SKU 的 1–3 张母图", status: candidateCount ? `${candidateCount} 张` : "未上传" },
+    { area: "review", label: "问题诊断", detail: "商品漂移、人体异常与可修复性", status: isDemo ? "示例可浏览" : `${completedCount}/${candidateCount} 完成` },
+    { area: "repair", label: "修正与交付", detail: "改图、前后复验与 4K 文件", status: reviewedCount ? "可进入" : "等待确认" },
   ];
 
   return (
@@ -2072,8 +2209,8 @@ function ProjectOverview({
       <header className="page-heading">
         <div>
           <p className="page-context">项目总览</p>
-          <h1 id="overview-title">一个 SKU，一条清楚的交付路径。</h1>
-          <p>这里只呈现当前状态与下一步。评分细节、模型轨迹和审计证据保留在对应阶段。</p>
+          <h1 id="overview-title">一个 SKU，修好一张模特母图。</h1>
+          <p>这里只呈现当前状态与下一步。评分退到诊断细节中，商品问题、修正版本和人工复验保留在对应阶段。</p>
         </div>
       </header>
 
@@ -2101,8 +2238,8 @@ function ProjectOverview({
 
       <section className="overview-stage-ledger" aria-labelledby="overview-stage-title">
         <div className="rail-intro">
-          <span>五阶段工作流</span>
-          <h2 id="overview-stage-title">所有能力都归到一次明确决策里。</h2>
+          <span>四步返修工作流</span>
+          <h2 id="overview-stage-title">先修好模特母图，再进入详情与促销排版。</h2>
           <p>{sourceLabel}。当前不存在的客户事实保持为空，不用示例内容补齐。</p>
         </div>
         <div className="rail-stages">
@@ -2185,15 +2322,15 @@ function BatchWaitingState({
         <span />
         <span />
       </div>
-      <h2>{running ? "正在生成首张评分" : errorCount > 0 ? "当前批次尚无有效结果" : "批次已准备好"}</h2>
+      <h2>{running ? "正在生成首张诊断" : errorCount > 0 ? "当前任务尚无有效结果" : "模特草图已准备好"}</h2>
       <p>
         {running
-          ? `系统正在按顺序分析 ${count} 张候选图，首张结果完成后会在这里显示。`
+          ? `系统正在按顺序分析 ${count} 张 AI 模特草图，首张结果完成后会在这里显示。`
           : errorCount > 0
             ? "请查看上方队列中的失败原因，确认后可以重新发起评分。"
-            : `已载入 ${count} 张候选图。完成客户画像和授权后，点击“开始真实批次评分”。`}
+            : `已载入 ${count} 张 AI 模特草图。确认商品真值和授权后，点击“开始 AI 问题诊断”。`}
       </p>
-      <small>在真实评分完成前，本区域不会显示示例分数或模拟结论。</small>
+      <small>在真实诊断完成前，本区域不会显示示例分数或模拟结论。</small>
     </section>
   );
 }
@@ -2254,16 +2391,16 @@ function CustomerWorkflow({
     <details className="customer-workflow" open={batchCandidates.length > 0}>
       <summary className="workflow-header">
         <div>
-          <span>第三步 · 质量评审</span>
-          <h2 id="customer-workflow-title">确认批次并开始真实质量评审</h2>
-          <p>系统先检查硬性 Gate，再生成评分、证据和返工建议。</p>
+          <span>第三步 · 问题诊断</span>
+          <h2 id="customer-workflow-title">确认商品真值并开始诊断</h2>
+          <p>系统先定位商品漂移和明显人体异常，再生成证据与修正建议；没有促销文字不会被判为缺陷。</p>
         </div>
         <strong>{batchCandidates.length > 0 ? `${batchCandidates.length} 张素材已载入` : "展开评审准备"}</strong>
       </summary>
 
       <div className="workflow-sections">
         <section className="workflow-block">
-          <header><span className="workflow-step mono">01</span><div><h2>历史参考与 SKU</h2><p>最多 4 张历史优秀图会随候选图进入模型。</p></div></header>
+          <header><span className="workflow-step mono">01</span><div><h2>商品真值与 SKU</h2><p>最多 4 张白底图、官方确认稿或关键细节图会随模特草图进入模型。</p></div></header>
           <div className="workflow-actions">
             <label className="secondary-file-button">
               <input type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={processing}
@@ -2271,9 +2408,9 @@ function CustomerWorkflow({
                   setReferenceFiles(Array.from(event.currentTarget.files ?? []).slice(0, 4));
                   event.currentTarget.value = "";
                 }} />
-              选择历史参考图
+              选择商品真值图
             </label>
-            <span className="context-count">已引用 {referenceFiles.length} 张参考</span>
+            <span className="context-count">已引用 {referenceFiles.length} 张商品真值</span>
           </div>
           {referenceFiles.length > 0 && (
             <ul className="compact-file-list">{referenceFiles.map((file) => <li key={`${file.name}-${file.size}`}>{file.name}</li>)}</ul>
@@ -2316,7 +2453,7 @@ function CustomerWorkflow({
         </section>
 
         <section className="workflow-block workflow-block-wide">
-          <header><span className="workflow-step mono">评审</span><div><h2>评审范围与启动</h2><p>按顺序逐张分析，最多 10 张，不会自动放行。</p></div></header>
+          <header><span className="workflow-step mono">诊断</span><div><h2>分析范围与启动</h2><p>按顺序逐张分析，当前最多 3 张同用途模特图；促销层级不属于本任务。</p></div></header>
           <div className="submission-context compact-context">
             <label>渠道<input value={submissionContext.channel} onChange={(event) => setSubmissionContext((current) => ({ ...current, channel: event.target.value }))} disabled={processing} /></label>
             <label>图位<input value={submissionContext.placement} onChange={(event) => setSubmissionContext((current) => ({ ...current, placement: event.target.value }))} disabled={processing} /></label>
@@ -2326,10 +2463,10 @@ function CustomerWorkflow({
             <label className={`file-button ${processing ? "disabled" : ""}`}>
               <input type="file" multiple accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" disabled={processing}
                 onChange={(event) => { void onSelect(Array.from(event.currentTarget.files ?? [])); event.currentTarget.value = ""; }} />
-              {state.kind === "processing" ? "正在建立批次" : batchCandidates.length ? "更换批次" : "选择候选图片"}
+              {state.kind === "processing" ? "正在建立任务" : batchCandidates.length ? "更换模特草图" : "选择 AI 模特草图"}
             </label>
             <button className="primary-button" type="button" disabled={processing || !candidate || !liveConsent || !liveCapability?.configured} onClick={() => void onRunLive()}>
-              {liveRunning ? `正在评分 ${completed + 1}/${batchCandidates.length}` : "开始真实批次评分"}
+              {liveRunning ? `正在诊断 ${completed + 1}/${batchCandidates.length}` : "开始 AI 问题诊断"}
             </button>
             {batchCandidates.length > 0 && <button className="quiet-button" type="button" disabled={processing} onClick={onRestore}>清空批次</button>}
           </div>
@@ -2339,13 +2476,13 @@ function CustomerWorkflow({
               <ul>{batchCandidates.map((item) => (
                 <li key={item.id}>
                   <label><input type="checkbox" checked={item.selected} onChange={() => toggleBatchSelection(item.id)} /><SafeImage src={item.src} alt={item.file.name} /><span title={item.file.name}>{item.file.name}</span></label>
-                  <span className={`queue-status ${item.status}`}>{item.status === "ready" ? "等待评分" : item.status === "running" ? "评分中" : item.status === "done" ? `${item.result?.scoreAvailable === false ? "未评估" : item.result?.score} · ${item.result?.decision}` : "失败"}</span>
+                  <span className={`queue-status ${item.status}`}>{item.status === "ready" ? "等待诊断" : item.status === "running" ? "诊断中" : item.status === "done" ? `${item.result?.scoreAvailable === false ? "待人工" : item.result?.score} · ${item.result?.decision}` : "失败"}</span>
                   {item.error && <small>{item.error}</small>}
                 </li>
               ))}</ul>
             </div>
           )}
-          <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured} onChange={(event) => setLiveConsent(event.target.checked)} /><span>我确认本批候选图与 {referenceFiles.length} 张历史参考可发送至阿里云百炼。服务端不留存原图，本机项目会保存工作集；所有结果必须人工终审。</span></label>
+          <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured} onChange={(event) => setLiveConsent(event.target.checked)} /><span>我确认当前 AI 模特草图与 {referenceFiles.length} 张商品真值图可发送至阿里云百炼。服务端不留存原图，本机项目会保存工作集；所有结果必须人工终审。</span></label>
         </section>
 
       </div>
@@ -2422,8 +2559,8 @@ function DeliveryWorkspace({
             {isDemo
               ? "示例项目仅供体验，交付动作保持关闭。"
               : completedCount === batchCandidates.length && failedCount === 0
-                ? "批次评分已完成，等待人工终审与客户选择。"
-                : "批次尚未完成，不生成完整交付结论。"}
+                ? "问题诊断已完成，等待人工终审与修正处理。"
+                : "当前图片尚未完成诊断，不生成完整交付结论。"}
           </h2>
         </div>
         <dl>
@@ -2432,7 +2569,7 @@ function DeliveryWorkspace({
             <dd>{batchCandidates.length || deliveryAssets.length}</dd>
           </div>
           <div>
-            <dt>评分完成</dt>
+            <dt>诊断完成</dt>
             <dd>{isDemo ? "示例" : completedCount}</dd>
           </div>
           <div>
@@ -2629,11 +2766,11 @@ function GridWorkspace({
 
       <aside className="inspector" aria-label="当前图片判断">
         <section className={`review-decision-brief ${selected.decision.toLowerCase()}`}>
-          <span>发布判断</span>
+          <span>修正判断</span>
           <Status value={selected.decision} />
           <h2>
             {selected.decision === "PASS"
-              ? "可进入人工发布复核"
+              ? "商品与人物可进入人工交付复核"
               : selected.decision === "REVIEW"
                 ? "先改图，再重新评审"
                 : "停止使用，建议重新生成"}
@@ -2645,7 +2782,7 @@ function GridWorkspace({
           <dl>
             <div><dt>最大问题</dt><dd>{selected.issues[0]?.title ?? "未发现主要问题"}</dd></div>
             <div><dt>适用范围</dt><dd>{selected.productLabel || "当前单图"}</dd></div>
-            <div><dt>下一步</dt><dd>{selected.decision === "PASS" ? "人工确认后进入交付" : selected.decision === "REVIEW" ? "进入改图复审" : "重新生成候选图"}</dd></div>
+            <div><dt>下一步</dt><dd>{selected.decision === "PASS" ? "人工确认后交付" : selected.decision === "REVIEW" ? "进入修正与复验" : "重新生成模特草图"}</dd></div>
           </dl>
           <button className="text-button" type="button" onClick={openEvidence}>查看问题证据</button>
         </section>
@@ -2831,7 +2968,7 @@ function GridWorkspace({
             人工改判
           </button>
           <button className="quiet-button" type="button" onClick={onRepair}>
-            进入改图复审
+            进入修正与复验
           </button>
         </div>
       </aside>

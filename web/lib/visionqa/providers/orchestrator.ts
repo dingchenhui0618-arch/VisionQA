@@ -36,7 +36,17 @@ function toResult(
   draft: ProviderObservationDraft,
   input: ProviderEvaluationInput,
 ): EvaluationResultV03 {
-  const missingPromotionObservation = draft.observations.find(
+  const promotionRequired =
+    input.commercialTemplate.id === "platform_promotion_main_image";
+  const observations = promotionRequired
+    ? draft.observations
+    : draft.observations.filter(
+        (observation) =>
+          !["no_promotion_overlay", "missing_promotion_overlay"].includes(
+            observation.issue_code,
+          ),
+      );
+  const missingPromotionObservation = observations.find(
     (observation) =>
       observation.status === "detected" &&
       ["no_promotion_overlay", "missing_promotion_overlay"].includes(
@@ -44,8 +54,7 @@ function toResult(
       ),
   );
   const platformPromotionMissingRequiredLayer = Boolean(
-    input.commercialTemplate.id === "platform_promotion_main_image" &&
-      missingPromotionObservation,
+    promotionRequired && missingPromotionObservation,
   );
   const commercialAssessability = platformPromotionMissingRequiredLayer
     ? "LIMITED"
@@ -170,7 +179,7 @@ function toResult(
     material_realism: skillScores.material_realism.score,
     commercial_value: skillScores.commercial_value.score,
   });
-  const gate = decideGate(draft.observations, overallScore);
+  const gate = decideGate(observations, overallScore);
   const commercialGaps = (
     Object.keys(COMMERCIAL_METRIC_WEIGHTS) as CommercialMetricId[]
   )
@@ -183,7 +192,7 @@ function toResult(
       action: `针对 ${metricId} 的现有证据进行优化，需人工确认具体修改。`,
     }));
   const repairPrompt = composeRepairPrompt({
-    observations: draft.observations,
+    observations,
     lockedAttributes: input.lockedAttributes,
     commercialGaps,
   });
@@ -197,7 +206,7 @@ function toResult(
     schema_version: "0.3.0",
     model_evaluation: {
       status: "SUCCEEDED",
-      observations: draft.observations,
+      observations,
     },
     score_evaluation: {
       status: evidenceIncomplete || overallScore === null ? "PARTIAL" : "SUCCEEDED",

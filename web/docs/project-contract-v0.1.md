@@ -38,7 +38,7 @@
 IndexedDB 数据库 `visionqa-project-store` 包含三个对象仓库：
 
 - `projects`：Project 主记录与最新内容版本；
-- `assets`：当前项目工作集中的原始 `File`，按基准图和候选图区分；
+- `assets`：当前项目工作集中的原始 `File`，区分商品真值、AI 模特草图、改图输出和 4K 输出；
 - `events`：只追加的项目事件，使用项目内连续序号。
 
 图片不会因为项目自动保存而发送到 VisionQA 服务端或第三方模型。当前存储只属于同一设备、同一浏览器、同一站点来源；清除站点数据会清除项目。
@@ -51,6 +51,7 @@ IndexedDB 数据库 `visionqa-project-store` 包含三个对象仓库：
 - 刷新后从 `projects + assets` 恢复工作状态，并重新创建仅当前会话有效的对象 URL；
 - `running / processing / live-loading` 等瞬时状态不会原样恢复，而会回到可安全重试的稳定状态；
 - 阿里云发送授权 `liveConsent` 永不持久化，刷新后必须重新确认；
+- 改图输出、人工漂移复验项、4K 输出和处理凭证随 Project 恢复；
 - 项目事件记录恢复与内容修改，但不把技术失败写成业务质量结论。
 
 ## 当前边界

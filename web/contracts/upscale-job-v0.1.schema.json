@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/upscale-job-v0.1.schema.json",
+  "title": "VisionQA Upscale Job v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceName",
+    "sourceBytes",
+    "sourceWidth",
+    "sourceHeight",
+    "targetWidth",
+    "targetHeight",
+    "executionMode",
+    "providerId",
+    "detailReconstruction",
+    "externalTransmission",
+    "humanFinalReviewRequired",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "visionqa-upscale-job-v0.1" },
+    "sourceName": { "type": "string", "minLength": 1 },
+    "sourceBytes": { "type": "integer", "minimum": 1 },
+    "sourceWidth": { "type": "integer", "minimum": 1 },
+    "sourceHeight": { "type": "integer", "minimum": 1 },
+    "targetWidth": { "type": "integer", "minimum": 1 },
+    "targetHeight": { "type": "integer", "minimum": 1 },
+    "executionMode": {
+      "enum": ["LOCAL_HIGH_QUALITY_RESAMPLE", "AI_SUPER_RESOLUTION"]
+    },
+    "providerId": { "type": "string", "minLength": 1 },
+    "detailReconstruction": { "type": "boolean" },
+    "externalTransmission": { "type": "boolean" },
+    "humanFinalReviewRequired": { "const": true },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

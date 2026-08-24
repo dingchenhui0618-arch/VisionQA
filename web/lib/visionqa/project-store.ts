@@ -41,7 +41,11 @@ export type VisionQaProjectRecord<TPayload = unknown> = {
   materialCounts: VisionQaProjectMaterialCounts;
 };
 
-export type VisionQaProjectAssetRole = "REFERENCE" | "CANDIDATE";
+export type VisionQaProjectAssetRole =
+  | "REFERENCE"
+  | "CANDIDATE"
+  | "REPAIR_OUTPUT"
+  | "UPSCALE_OUTPUT";
 
 export type VisionQaProjectAssetRecord = {
   schemaVersion: typeof VISIONQA_PROJECT_ASSET_SCHEMA_VERSION;

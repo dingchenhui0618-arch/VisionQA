@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VisionQA · 商品图评审与营销交付工作台",
-  description: "从商品基准、素材上传和质量评审到营销文案、视频脚本与生成提示词交付的服饰电商工作台",
+  title: "VisionQA · AI 模特图修正与交付工作台",
+  description: "以商品白底图为真值，定位并修正 AI 模特图中的商品漂移、人体异常和非目标区域变化，完成前后复验与 4K 文件交付。",
 };
 
 export default function RootLayout({

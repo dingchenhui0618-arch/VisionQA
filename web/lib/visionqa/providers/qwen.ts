@@ -74,6 +74,7 @@ function buildStrictPrompt(input: ProviderEvaluationInput): string {
     "}",
     "Scores must be numbers from 0 to 100 or null. Every non-null score must have at least one concrete evidence string.",
     "For a metric that the stated placement does not require, use score null with assessability NOT_APPLICABLE. Do not penalize a lifestyle, ordinary product, or aesthetic-reference image for lacking promotion text when the assessment scope says promotion is not required.",
+    "For ai_model_image_repair, the absence of price, discount, CTA, campaign copy, or other promotion overlays is expected and must never become an observation, gap, repair action, low score, or Gate reason. Mark promotion_hierarchy and information_legibility null with NOT_APPLICABLE unless the scope explicitly says that supplied overlay content must be preserved.",
     "information_legibility evaluates overlaid commercial information such as price, promotion, selling-point copy, CTA, or brand lockup. Garment prints, incidental scene text, copyright marks, or background signs do not make this metric applicable. If no required commercial overlay exists, return null and NOT_APPLICABLE.",
     "Exception for platform_promotion_main_image: promotion hierarchy and commercial information legibility are required. If the overlay is missing, score those required metrics 0-30 with assessability FULL or LIMITED; never mark them NOT_APPLICABLE merely because the required content is absent.",
   ].join("\n");

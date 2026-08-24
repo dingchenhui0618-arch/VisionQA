@@ -28,14 +28,13 @@ export function WorkspaceLogin({ onEnterPreview }: WorkspaceLoginProps) {
           <strong>VisionQA</strong>
         </div>
         <div className="login-statement">
-          <p>服饰电商内容交付工作台</p>
-          <h1 id="login-title">从商品事实，到改图复审与营销交付。</h1>
+          <p>服饰电商 AI 模特图修正工作台</p>
+          <h1 id="login-title">把 AI 模特草图，修成可交付商品图。</h1>
           <ol aria-label="工作流程">
-            <li><span>01</span>建立商品基准</li>
-            <li><span>02</span>提交待评审素材</li>
-            <li><span>03</span>完成质量评审</li>
-            <li><span>04</span>改图并重新复审</li>
-            <li><span>05</span>生成营销交付</li>
+            <li><span>01</span>建立商品真值</li>
+            <li><span>02</span>上传 AI 模特草图</li>
+            <li><span>03</span>定位商品与人体问题</li>
+            <li><span>04</span>修正、复验并输出 4K</li>
           </ol>
         </div>
         <p className="login-governance">自动放行关闭 · 所有正式结果必须人工终审</p>
@@ -46,7 +45,7 @@ export function WorkspaceLogin({ onEnterPreview }: WorkspaceLoginProps) {
           <div className="login-form-heading">
             <span>账户入口</span>
             <h2>登录工作台</h2>
-            <p>管理商品基准、评审批次和营销交付记录。</p>
+            <p>管理商品真值、模特草图、修正版本和交付记录。</p>
           </div>
 
           <form onSubmit={handleLogin} noValidate>

@@ -68,12 +68,12 @@ export function WorkspaceBaseline({
     <section className="workspace-page baseline-page" aria-labelledby="baseline-title">
       <header className="page-heading baseline-heading">
         <div>
-          <p className="page-context">第一步 · 商品基准</p>
+          <p className="page-context">第一步 · 商品真值</p>
           <h1 id="baseline-title">先告诉系统，什么是这个商品。</h1>
-          <p>上传历史 SKU 链接或已确认的 AI 商品图。它们只作为商品结构、风格和品牌信息的评审基准。</p>
+          <p>上传真实产品白底图、细节图或官方确认稿。后续修正以它们作为颜色、版型、图案、Logo 和材质的唯一商品依据。</p>
         </div>
         <button className="primary-button" type="button" onClick={onContinue}>
-          下一步：上传待评审素材
+          下一步：上传 AI 模特草图
         </button>
       </header>
 
@@ -130,7 +130,7 @@ export function WorkspaceBaseline({
           <div className="input-route-heading">
             <span>B</span>
             <div>
-              <h2 id="reference-image-title">上传历史产品图或确认稿</h2>
+              <h2 id="reference-image-title">上传商品白底图或官方确认稿</h2>
               <p>最多 4 张，优先正面、背面、侧面和关键细节。</p>
             </div>
           </div>
@@ -144,7 +144,7 @@ export function WorkspaceBaseline({
                 event.currentTarget.value = "";
               }}
             />
-            <strong>{referenceFiles.length ? "更换商品基准图" : "选择商品基准图"}</strong>
+            <strong>{referenceFiles.length ? "更换商品真值图" : "选择商品真值图"}</strong>
             <span>JPG、PNG、WebP · 单批最多 4 张</span>
           </label>
           <div className="baseline-preview-strip" aria-live="polite">
@@ -152,13 +152,13 @@ export function WorkspaceBaseline({
               previews.map((preview, index) => (
                 <figure key={`${preview.file.name}-${preview.file.size}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={preview.src} alt={`商品基准图 ${index + 1}`} />
+                  <img src={preview.src} alt={`商品真值图 ${index + 1}`} />
                   <figcaption>{preview.file.name}</figcaption>
                 </figure>
               ))
             ) : (
               <div className="baseline-empty-preview">
-                <span>暂无客户基准图</span>
+                <span>暂无商品真值图</span>
                 <p>未上传时，系统不会把示例图当作客户商品依据。</p>
               </div>
             )}
@@ -167,7 +167,7 @@ export function WorkspaceBaseline({
       </div>
 
       <section className="baseline-boundary" role="note">
-        <strong>基准输入不会自动形成通过结论</strong>
+        <strong>商品真值不会自动形成通过结论</strong>
         <p>SKU 链接尚未抓取时只记录为输入；局部图片不能扩张为完整 SKU 通过，Logo 和字标仍需官方资产确认。</p>
       </section>
         </div>
@@ -175,7 +175,7 @@ export function WorkspaceBaseline({
         <aside className="profile-sidebar" aria-labelledby="baseline-context-title">
           <div className="profile-sidebar-status">
             <span>商品策略</span>
-            <strong>{hasBaseline ? "商品基准已建立" : "正式评分前需补齐"}</strong>
+            <strong>{hasBaseline ? "商品真值已建立" : "开始诊断前需补齐"}</strong>
           </div>
           <h2 id="baseline-context-title">目标人群与表达方向</h2>
           <p>这些信息只用于校准商业表达，不从模特照片推断人群属性。</p>

@@ -2151,6 +2151,32 @@ button:active {
   font-size: 1rem;
 }
 
+.intake-scope-ledger {
+  display: grid;
+  gap: 0;
+  min-width: 19rem;
+  margin-top: 0.875rem;
+  border-top: 1px solid var(--line);
+}
+
+.intake-scope-ledger div {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.intake-scope-ledger span {
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.intake-scope-ledger strong {
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
 .asset-type-switch {
   display: flex;
   flex-wrap: wrap;
@@ -3097,6 +3123,177 @@ button:active {
 .repair-handoff { grid-column: 1 / -1; align-items: center; padding-top: 1rem; border-top: 1px solid var(--line); }
 .repair-handoff span { color: var(--muted); font-size: .82rem; }
 
+.upscale-delivery {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface-raised);
+}
+
+.upscale-delivery > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.upscale-delivery > header span,
+.upscale-source-line span,
+.upscale-methods article > div > span,
+.upscale-result span {
+  color: var(--faint);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+
+.upscale-delivery h2 {
+  margin: 0.375rem 0 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.025em;
+}
+
+.upscale-delivery > header p {
+  max-width: 48rem;
+  margin: 0.625rem 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.upscale-delivery > header > strong {
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.upscale-source-line {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.upscale-source-line div {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+  padding: 0.875rem 1rem;
+  border-left: 1px solid var(--line);
+}
+
+.upscale-source-line div:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.upscale-source-line strong {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upscale-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-top: 1.5rem;
+  background: var(--line-strong);
+  border: 1px solid var(--line-strong);
+}
+
+.upscale-methods article {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--surface-raised);
+}
+
+.upscale-methods article.is-disabled {
+  background: var(--canvas);
+}
+
+.upscale-methods h3 {
+  margin: 0.375rem 0 0;
+  font-size: 1rem;
+}
+
+.upscale-methods p {
+  min-height: 3.5rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.upscale-methods dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin: 0;
+  background: var(--line);
+}
+
+.upscale-methods dl div {
+  padding: 0.75rem;
+  background: var(--surface-raised);
+}
+
+.upscale-methods dt {
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.upscale-methods dd {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.upscale-methods button {
+  justify-self: start;
+}
+
+.upscale-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.upscale-result > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.upscale-result strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upscale-result small {
+  color: var(--muted);
+}
+
+.upscale-result > div:last-child {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.upscale-error {
+  margin: 1rem 0 0;
+  color: var(--red);
+  font-size: 0.75rem;
+}
+
 .pain-point-rows { margin-top: 1.25rem; border-top: 1px solid var(--line); }
 .pain-point-rows article { display: grid; grid-template-columns: 2.5rem .8fr 1fr 1fr 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
 .pain-point-rows article:last-child { border-bottom: 0; }
@@ -3132,6 +3329,8 @@ button:active {
   .repair-task-actions,
   .repair-output-upload,
   .repair-handoff,
+  .upscale-delivery > header,
+  .upscale-result,
   .audience-board-heading,
   .repair-command-heading { align-items: stretch; flex-direction: column; }
   .agent-workbench-head,
@@ -3143,6 +3342,11 @@ button:active {
   .agent-runtime-trace li p { grid-column: 2 / -1; }
   .repair-task-actions > span { margin-left: 0; }
   .channel-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .upscale-source-line,
+  .upscale-methods { grid-template-columns: 1fr; }
+  .upscale-source-line div { border-top: 1px solid var(--line); border-left: 0; padding-inline: 0; }
+  .upscale-source-line div:first-child { border-top: 0; }
+  .upscale-result > div:last-child { width: 100%; flex-direction: column; }
   .repair-command,
   .repair-review-sheet,
   .pain-point-map,

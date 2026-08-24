@@ -145,6 +145,10 @@ function providerErrorResponse(error: VisionProviderError, requestId: string) {
 
 function resolveCommercialTemplate(templateId: string, channel: string, placement: string) {
   const templates: Record<string, { id: string; scope: string }> = {
+    "model-image-repair": {
+      id: "ai_model_image_repair",
+      scope: "AI 模特母图修正：以商品参考图为真值，检查服装结构、颜色、图案、Logo、材质、人体异常、遮挡和非目标漂移。图片不承担促销表达时，缺少价格、优惠、CTA 或商业贴字不是缺陷，促销层级与商业文字可读性必须标 NOT_APPLICABLE。",
+    },
     "brand-flagship": {
       id: "brand_flagship_main_image",
       scope: "品牌旗舰商品主图：强调商品主体、品牌质感与图位适配；无促销文案时，促销层级和文字可读性可标 NOT_APPLICABLE。",
@@ -166,7 +170,7 @@ function resolveCommercialTemplate(templateId: string, channel: string, placemen
       scope: "平台商品表达：评估视觉重心、商品识别效率、关键细节呈现、原商品一致性、真实使用可信度和人群场景适配。促销信息不是默认评分前提。",
     },
   };
-  const selected = templates[templateId] ?? templates["platform-promotion"];
+  const selected = templates[templateId] ?? templates["model-image-repair"];
   return {
     id: selected.id,
     version: "0.3.0",

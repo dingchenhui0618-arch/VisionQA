@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Landing from "./landing/Landing";
 
 export const metadata: Metadata = {
-  title: "VisionQA · 服饰电商视觉质量评估",
+  title: "VisionQA · AI 模特图修正与交付",
   description:
-    "从真实感到商品表达效能，为服饰电商提供结构化评分、改图复审与营销交付。",
+    "以商品白底图为真值，为服饰电商定位并修正 AI 模特图中的商品漂移、人体异常和非目标变化。",
 };
 
 export default function Home() {
