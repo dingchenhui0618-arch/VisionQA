@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/repair-case-v0.1.schema.json",
+  "title": "VisionQA Repair Collaboration Case v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "caseId",
+    "executionMode",
+    "status",
+    "agents",
+    "handoffs",
+    "nextAction",
+    "independentModelAgentsActive",
+    "humanFinalReviewRequired"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "visionqa-repair-collaboration-v0.1" },
+    "caseId": { "type": "string", "minLength": 1 },
+    "executionMode": { "const": "LOCAL_STATE_MACHINE_NO_MODEL" },
+    "status": {
+      "enum": [
+        "NEEDS_PRODUCT_TRUTH",
+        "NEEDS_DIAGNOSIS",
+        "READY_FOR_PROVIDER",
+        "PROVIDER_BLOCKED",
+        "REPAIR_IN_PROGRESS",
+        "REPAIR_OUTPUT_READY",
+        "READY_FOR_DELIVERY",
+        "DELIVERED"
+      ]
+    },
+    "agents": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "responsibility", "status", "note"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "responsibility": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["COMPLETED", "WAITING", "BLOCKED"] },
+          "note": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "handoffs": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "artifact", "ready"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 },
+          "artifact": { "type": "string", "minLength": 1 },
+          "ready": { "type": "boolean" }
+        }
+      }
+    },
+    "nextAction": { "type": "string", "minLength": 1 },
+    "independentModelAgentsActive": { "const": false },
+    "humanFinalReviewRequired": { "const": true }
+  }
+}

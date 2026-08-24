@@ -39,6 +39,7 @@ import { WorkspaceBaseline } from "./workspace-overview";
 import { RepairWorkspace } from "./workspace-repair";
 import { projectLegacyCommercialMetrics } from "../lib/visionqa/product-expression";
 import type { UpscaleJobReceipt } from "../lib/visionqa/upscale";
+import type { RepairProviderJobSnapshot } from "../lib/visionqa/repair-provider-contract";
 import {
   appendProjectRestoreEvent,
   createLocalProject,
@@ -227,6 +228,7 @@ type StoredRepairSession = {
   humanChecks: string[];
   upscaleAssetId: string | null;
   upscaleReceipt: UpscaleJobReceipt | null;
+  providerJob?: RepairProviderJobSnapshot | null;
 };
 
 type WorkspaceProjectPayload = {
@@ -281,6 +283,17 @@ function durableDataState(
       : { kind: "fixture" };
   }
   return state;
+}
+
+function durableRepairProviderJob(
+  job: RepairProviderJobSnapshot | null,
+): RepairProviderJobSnapshot | null {
+  if (!job || job.status !== "RUNNING") return job;
+  return {
+    ...job,
+    status: "FAILED",
+    failureCode: "INTERRUPTED_RETRY_REQUIRED",
+  };
 }
 
 function durableIntakeState(
@@ -339,6 +352,7 @@ function buildWorkspaceProjectPayload({
   repairChecks,
   upscaleOutputFile,
   upscaleReceipt,
+  repairProviderJob,
 }: {
   area: WorkspaceArea;
   view: View;
@@ -358,6 +372,7 @@ function buildWorkspaceProjectPayload({
   repairChecks: string[];
   upscaleOutputFile: File | null;
   upscaleReceipt: UpscaleJobReceipt | null;
+  repairProviderJob: RepairProviderJobSnapshot | null;
 }): WorkspaceProjectPayload {
   return {
     schemaVersion: VISIONQA_PROJECT_PAYLOAD_SCHEMA_VERSION,
@@ -402,6 +417,7 @@ function buildWorkspaceProjectPayload({
         ? `upscale-output-${upscaleOutputFile.lastModified}-${upscaleOutputFile.size}`
         : null,
       upscaleReceipt,
+      providerJob: durableRepairProviderJob(repairProviderJob),
     },
   };
 }
@@ -821,6 +837,43 @@ function evaluateAsset(
   };
 }
 
+function pendingCandidateAsset(
+  candidate: BatchCandidate,
+  templateId: CommercialTemplateId,
+): EvaluatedAsset {
+  const template = commercialTemplates.find((item) => item.id === templateId)!;
+  return {
+    id: candidate.id,
+    src: candidate.src,
+    decision: "REVIEW",
+    score: 0,
+    productLabel: candidate.file.name,
+    skills: [],
+    issues: [],
+    commercialAssessment:
+      "尚未完成当前 AI 模特草图的问题诊断，不显示示例评分或商业结论。",
+    repairPrompt: "",
+    lockedAttributes: "",
+    commercial: {
+      templateId,
+      templateVersion: template.version,
+      templateName: template.name,
+      fitScore: Number.NaN,
+      fitLevel: "未评估",
+      summary: "等待当前草图的真实问题诊断。",
+      strengths: [],
+      gaps: [],
+      metrics: [],
+    },
+    scoreAvailable: false,
+    promptProvenance: null,
+    calibrationStatus: "UNCALIBRATED",
+    modelStatus: "NOT_RUN",
+    markerAvailable: false,
+    fixtureCaseId: candidate.fixtureCaseId,
+  };
+}
+
 function buildApiAsset(
   patch: UiEvaluationPatch,
   options: {
@@ -1055,6 +1108,8 @@ export function Workspace() {
   const [upscaleOutputFile, setUpscaleOutputFile] = useState<File | null>(null);
   const [upscaleReceipt, setUpscaleReceipt] =
     useState<UpscaleJobReceipt | null>(null);
+  const [repairProviderJob, setRepairProviderJob] =
+    useState<RepairProviderJobSnapshot | null>(null);
   const [projectRecord, setProjectRecord] =
     useState<VisionQaProjectRecord<WorkspaceProjectPayload> | null>(null);
   const [projectEvents, setProjectEvents] = useState<VisionQaProjectAuditEvent[]>([]);
@@ -1090,6 +1145,7 @@ export function Workspace() {
         repairChecks,
         upscaleOutputFile,
         upscaleReceipt,
+        repairProviderJob,
       }),
     [
       area,
@@ -1110,6 +1166,7 @@ export function Workspace() {
       repairChecks,
       upscaleOutputFile,
       upscaleReceipt,
+      repairProviderJob,
     ],
   );
   const projectAssets = useMemo(
@@ -1136,11 +1193,11 @@ export function Workspace() {
 
   const evaluatedAssets = useMemo(
     () => {
-      const batchResults = batchCandidates.flatMap((item) =>
-        item.result ? [item.result] : [],
+      const batchAssets = batchCandidates.map((item) =>
+        item.result ?? pendingCandidateAsset(item, commercialTemplateId),
       );
-      return batchResults.length > 0
-        ? batchResults
+      return batchAssets.length > 0
+        ? batchAssets
         : apiAsset
         ? [apiAsset]
         : assets.map((asset) => evaluateAsset(asset, commercialTemplateId));
@@ -1329,6 +1386,7 @@ export function Workspace() {
             restoredUpscaleOutput instanceof File ? restoredUpscaleOutput : null,
           );
           setUpscaleReceipt(restoredRepair?.upscaleReceipt ?? null);
+          setRepairProviderJob(restoredRepair?.providerJob ?? null);
           setLiveConsent(false);
           setLiveRunning(false);
           candidateFileRef.current = restoredCandidates[0]?.file ?? null;
@@ -1494,6 +1552,7 @@ export function Workspace() {
       setRepairChecks([]);
       setUpscaleOutputFile(null);
       setUpscaleReceipt(null);
+      setRepairProviderJob(null);
       const first = prepared[0];
       candidateFileRef.current = first.file;
       setApiAsset(null);
@@ -1537,6 +1596,7 @@ export function Workspace() {
     setRepairChecks([]);
     setUpscaleOutputFile(null);
     setUpscaleReceipt(null);
+    setRepairProviderJob(null);
     setLocalCandidate(null);
     candidateFileRef.current = null;
     setLiveConsent(false);
@@ -1831,6 +1891,12 @@ export function Workspace() {
     batchCandidates.length > 0
       ? `当前 SKU · ${batchCandidates.length} 张模特草图`
       : "AI 模特图修正示例";
+  const selectedBatchCandidate = batchCandidates.find(
+    (item) => item.id === selected.id,
+  );
+  const selectedDiagnosisReady = selectedBatchCandidate
+    ? Boolean(selectedBatchCandidate.result)
+    : dataState.kind !== "local" && dataState.kind !== "live-loading";
   const projectTitle = projectRecord?.projectName ?? batchTitle;
   const sourceLabel =
     dataState.kind === "fixture"
@@ -2079,7 +2145,10 @@ export function Workspace() {
           {area === "repair" && (
             <RepairWorkspace
               asset={selected}
-              sourceFile={batchCandidates.find((item) => item.id === selected.id)?.file ?? null}
+              sourceFile={selectedBatchCandidate?.file ?? null}
+              sourceSha256={selectedBatchCandidate?.sha256 ?? ""}
+              referenceFiles={referenceFiles}
+              diagnosisReady={selectedDiagnosisReady}
               outputFile={repairSourceAssetId === selected.id ? repairOutputFile : null}
               onOutputFileChange={(file) => {
                 setRepairOutputFile(file);
@@ -2096,6 +2165,12 @@ export function Workspace() {
                 setUpscaleOutputFile(file);
                 setUpscaleReceipt(receipt);
               }}
+              providerJob={
+                repairProviderJob?.sourceAssetId === selected.id
+                  ? repairProviderJob
+                  : null
+              }
+              onProviderJobChange={setRepairProviderJob}
               isDemo={batchCandidates.length === 0}
               onBack={() => setArea("review")}
               onContinue={() => setArea("overview")}
@@ -2724,6 +2799,7 @@ function GridWorkspace({
   onRepair: () => void;
 }) {
   const allAssetsCount = allAssets.length;
+  const diagnosisPending = selected.scoreAvailable === false;
 
   return (
     <section className="workspace" aria-label="批次审核工作台">
@@ -2742,7 +2818,9 @@ function GridWorkspace({
                 role="option"
                 aria-selected={selectedId === asset.id}
                 onClick={() => setSelectedId(asset.id)}
-                onDoubleClick={openEvidence}
+                onDoubleClick={() => {
+                  if (asset.scoreAvailable !== false) openEvidence();
+                }}
               >
                 <SafeImage
                   src={asset.src}
@@ -2752,7 +2830,7 @@ function GridWorkspace({
                   {String(asset.id).padStart(3, "0")}
                 </span>
                 <span className="asset-status">
-                  <Status value={asset.decision} />
+                  {asset.scoreAvailable === false ? "等待诊断" : <Status value={asset.decision} />}
                 </span>
                 <span className="asset-score mono">
                   {asset.scoreAvailable === false ? "--" : asset.score}
@@ -2767,24 +2845,28 @@ function GridWorkspace({
       <aside className="inspector" aria-label="当前图片判断">
         <section className={`review-decision-brief ${selected.decision.toLowerCase()}`}>
           <span>修正判断</span>
-          <Status value={selected.decision} />
+          {diagnosisPending ? <strong>等待诊断</strong> : <Status value={selected.decision} />}
           <h2>
-            {selected.decision === "PASS"
+            {diagnosisPending
+              ? "当前图片尚未形成真实问题结论"
+              : selected.decision === "PASS"
               ? "商品与人物可进入人工交付复核"
               : selected.decision === "REVIEW"
                 ? "先改图，再重新评审"
                 : "停止使用，建议重新生成"}
           </h2>
           <p>
-            {selected.issues[0]?.impact
+            {diagnosisPending
+              ? selected.commercialAssessment
+              : selected.issues[0]?.impact
               ?? "当前未记录阻断问题，但仍需人工核对商品一致性与授权范围。"}
           </p>
           <dl>
-            <div><dt>最大问题</dt><dd>{selected.issues[0]?.title ?? "未发现主要问题"}</dd></div>
+            <div><dt>最大问题</dt><dd>{diagnosisPending ? "尚未诊断" : selected.issues[0]?.title ?? "未发现主要问题"}</dd></div>
             <div><dt>适用范围</dt><dd>{selected.productLabel || "当前单图"}</dd></div>
-            <div><dt>下一步</dt><dd>{selected.decision === "PASS" ? "人工确认后交付" : selected.decision === "REVIEW" ? "进入修正与复验" : "重新生成模特草图"}</dd></div>
+            <div><dt>下一步</dt><dd>{diagnosisPending ? "完成当前图片诊断" : selected.decision === "PASS" ? "人工确认后交付" : selected.decision === "REVIEW" ? "进入修正与复验" : "重新生成模特草图"}</dd></div>
           </dl>
-          <button className="text-button" type="button" onClick={openEvidence}>查看问题证据</button>
+          <button className="text-button" type="button" disabled={diagnosisPending} onClick={openEvidence}>查看问题证据</button>
         </section>
 
         <details className="review-analysis-details">
@@ -2813,7 +2895,9 @@ function GridWorkspace({
             </span>
           </div>
           <p className="calibration-note">
-            {selected.evaluationMode === LOCAL_EVALUATION_MODE
+            {diagnosisPending
+              ? "当前客户图片等待真实诊断 · 不显示示例结果"
+              : selected.evaluationMode === LOCAL_EVALUATION_MODE
               ? "示例项目结果 · 不关联客户图片"
               : selected.evaluationMode === "LIVE_MODEL_CANARY"
                 ? `AI 评分 · ${selected.modelSnapshot} · 人工终审`
@@ -2831,12 +2915,14 @@ function GridWorkspace({
           <CommercialSummary
             result={selected.commercial}
             detailed
-            source={selected.evaluationId ? "real" : "fixture"}
+            source={diagnosisPending ? "pending" : selected.evaluationId ? "real" : "fixture"}
           />
         </div>
         <div className="inspector-section">
           <p className="inspector-kicker">
-            {selected.issues.length
+            {diagnosisPending
+              ? "尚未形成问题诊断"
+              : selected.issues.length
               ? `问题 ${String(selected.issues.length).padStart(2, "0")}`
               : "未发现阻断问题"}
           </p>
@@ -2859,15 +2945,14 @@ function GridWorkspace({
                 </button>
               ))
             ) : (
-              <p className="no-issues">
-                当前图片未记录主要问题，仍建议进行人工确认。
-              </p>
+              <p className="no-issues">{diagnosisPending ? "等待当前图片的真实问题证据。" : "当前图片未记录主要问题，仍建议进行人工确认。"}</p>
             )}
           </div>
           <button
             className="quiet-button"
             style={{ width: "100%", marginTop: "0.75rem" }}
             type="button"
+            disabled={diagnosisPending}
             onClick={openEvidence}
           >
             打开证据详情
@@ -2879,14 +2964,17 @@ function GridWorkspace({
             <button
               className="text-button"
               type="button"
+              disabled={diagnosisPending || !selected.repairPrompt}
               onClick={() => copyPrompt(selected.repairPrompt)}
             >
               复制
             </button>
           </div>
-          <p>{selected.repairPrompt.slice(0, 92)}……</p>
+          <p>{diagnosisPending ? "等待真实诊断完成后生成修正 Prompt。" : `${selected.repairPrompt.slice(0, 92)}……`}</p>
           <span className="demo-source">
-            {selected.evaluationMode === LOCAL_EVALUATION_MODE
+            {diagnosisPending
+              ? "未生成 · 不使用示例 Prompt 填充"
+              : selected.evaluationMode === LOCAL_EVALUATION_MODE
               ? "示例 Prompt · 不关联客户图片"
               : selected.evaluationMode === "LIVE_MODEL_CANARY"
                 ? "基于 AI 观察与评分规则生成"
@@ -2954,6 +3042,7 @@ function GridWorkspace({
           <button
             className="primary-button"
             type="button"
+            disabled={diagnosisPending}
             onClick={() => commitDecision(selected.decision)}
           >
             确认 {displayDecision(selected.decision)}
@@ -2961,13 +3050,14 @@ function GridWorkspace({
           <button
             className="decision-button"
             type="button"
+            disabled={diagnosisPending}
             onClick={() =>
               openOverride(selected.decision === "REJECT" ? "REVIEW" : "REJECT")
             }
           >
             人工改判
           </button>
-          <button className="quiet-button" type="button" onClick={onRepair}>
+          <button className="quiet-button" type="button" disabled={diagnosisPending} onClick={onRepair}>
             进入修正与复验
           </button>
         </div>
@@ -2983,7 +3073,7 @@ function CommercialSummary({
 }: {
   result: CommercialResult;
   detailed?: boolean;
-  source?: "fixture" | "real";
+  source?: "fixture" | "real" | "pending";
 }) {
   const template = commercialTemplates.find(
     (item) => item.id === result.templateId,
@@ -3039,7 +3129,9 @@ function CommercialSummary({
         </>
       )}
       <span className="demo-source">
-        {source === "real"
+        {source === "pending"
+          ? "等待当前图片的真实诊断 · 不使用示例相对分"
+          : source === "real"
           ? "基于当前客户标准的相对贴合度 · 需人工终审"
           : "示例项目中的模板相对分 · 不代表客户真实结果"}
       </span>

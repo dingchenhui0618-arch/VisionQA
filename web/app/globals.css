@@ -3026,6 +3026,75 @@ button:active {
   grid-template-columns: minmax(27rem, 1fr) 22.5rem;
 }
 
+.repair-agent-ledger {
+  margin-top: 2rem;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.repair-agent-ledger > header,
+.repair-agent-ledger > footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.repair-agent-ledger > header span,
+.repair-agent-ledger > footer span,
+.repair-agent-ledger > footer small {
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.repair-agent-ledger > header h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+}
+
+.repair-agent-ledger > header > strong {
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.repair-agent-ledger ol {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.repair-agent-ledger li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.875rem;
+  border-left: 1px solid var(--line);
+}
+
+.repair-agent-ledger li:first-child { border-left: 0; }
+.repair-agent-ledger li > span { color: var(--faint); font-size: 0.625rem; font-variant-numeric: tabular-nums; }
+.repair-agent-ledger li > div { display: grid; align-content: start; gap: 0.3rem; min-width: 0; }
+.repair-agent-ledger li strong { font-size: 0.75rem; }
+.repair-agent-ledger li small { color: var(--muted); font-size: 0.6875rem; line-height: 1.45; }
+.repair-agent-ledger li em { grid-column: 2; color: var(--faint); font-size: 0.625rem; font-style: normal; }
+.repair-agent-ledger li[data-status="COMPLETED"] em { color: var(--green); }
+.repair-agent-ledger li[data-status="BLOCKED"] em { color: var(--red); }
+
+.repair-agent-ledger > footer {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.repair-agent-ledger > footer strong { font-size: 0.8125rem; }
+
 .repair-command,
 .repair-comparison,
 .repair-review-sheet,
@@ -3082,6 +3151,32 @@ button:active {
 }
 
 .repair-task-actions > span { margin-left: auto; color: var(--muted); font-size: 0.78rem; }
+
+.repair-provider-consent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.repair-provider-consent label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  max-width: 46rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.repair-provider-consent input { margin-top: 0.15rem; accent-color: var(--ink); }
+.repair-provider-note,
+.repair-provider-error { margin: 0.875rem 0 0; font-size: 0.75rem; line-height: 1.55; }
+.repair-provider-note { color: var(--muted); }
+.repair-provider-error { color: var(--red); }
 .repair-comparison { overflow: hidden; }
 .repair-comparison > .section-title-row { padding: 1.5rem; margin: 0; }
 
@@ -3288,6 +3383,11 @@ button:active {
   gap: 0.5rem;
 }
 
+.upscale-result.is-blocked {
+  background: var(--canvas);
+  padding-inline: 1rem;
+}
+
 .upscale-error {
   margin: 1rem 0 0;
   color: var(--red);
@@ -3316,6 +3416,9 @@ button:active {
   .repair-prompt-row { grid-template-columns: 1fr; }
   .pain-point-rows article { grid-template-columns: 2rem 1fr 1fr; }
   .pain-point-rows article > div:nth-last-child(-n + 2) { grid-column: span 1; }
+  .repair-agent-ledger ol { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .repair-agent-ledger li:nth-child(4) { border-left: 0; }
+  .repair-agent-ledger li:nth-child(n + 4) { border-top: 1px solid var(--line); }
 }
 
 @media (max-width: 48rem) {
@@ -3327,6 +3430,7 @@ button:active {
   .comparison-stage img,
   .comparison-empty > div { height: auto; min-height: 22rem; }
   .repair-task-actions,
+  .repair-provider-consent,
   .repair-output-upload,
   .repair-handoff,
   .upscale-delivery > header,
@@ -3341,6 +3445,12 @@ button:active {
   .agent-runtime-trace li { grid-template-columns: 2rem 3.5rem minmax(0, 1fr); }
   .agent-runtime-trace li p { grid-column: 2 / -1; }
   .repair-task-actions > span { margin-left: 0; }
+  .repair-agent-ledger > header { align-items: stretch; flex-direction: column; }
+  .repair-agent-ledger ol { grid-template-columns: 1fr; }
+  .repair-agent-ledger li,
+  .repair-agent-ledger li:nth-child(4) { border-top: 1px solid var(--line); border-left: 0; }
+  .repair-agent-ledger li:first-child { border-top: 0; }
+  .repair-agent-ledger > footer { grid-template-columns: 1fr; gap: 0.35rem; }
   .channel-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .upscale-source-line,
   .upscale-methods { grid-template-columns: 1fr; }

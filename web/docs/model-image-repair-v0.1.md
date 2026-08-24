@@ -25,6 +25,36 @@ VisionQA 当前定位为“服饰电商 AI 模特图修正与交付工作台”�
 
 机器契约：[`../contracts/model-image-repair-brief-v0.1.schema.json`](../contracts/model-image-repair-brief-v0.1.schema.json)
 
+## 真实素材链与示例隔离
+
+- 一旦项目存在客户上传候选图，总览、问题诊断与修正页只使用该候选图的对象 URL；
+- 尚未完成模型诊断时建立 `NOT_RUN / scoreAvailable=false` 占位对象，不从内置示例复制图片、问题、分数或 Prompt；
+- Repair Case 同时绑定候选图 ID、SHA-256、商品真值图、诊断结果、Provider Job、改图输出、人工复验和 4K 输出；
+- 缺少商品真值或真实诊断时，即使历史项目存在改图或 4K 文件，也不能形成新的交付结论。
+
+## 千问改图 Provider v0.1
+
+首选改图适配器为阿里云百炼千问图像编辑，固定模型快照 `qwen-image-edit-max-2026-01-16`。适配器遵循以下边界：
+
+- 第一张输入始终是需要修正的 AI 模特草图，后续最多 4 张是商品真值参考；
+- `prompt_extend=false / watermark=false / n=1`，不让 Provider 自动扩写商品事实；
+- 输出临时 URL 只允许阿里云域名，并立即下载回当前浏览器 Project；
+- 不自动重试付费生成，避免重复扣费；
+- API Key、业务空间、Provider 批准、付费调用、数据范围和固定模型六项 Gate 全部满足前，POST 在读取图片前返回 403，网络请求为零；
+- 每次真实发送仍需要页面内单次确认，确认状态不写入 Project。
+
+当前没有配置或启用真实千问改图调用。机器接口：`GET/POST /api/repair-jobs`。
+
+API 参数依据：阿里云百炼《千问-图像编辑 API 参考》：<https://help.aliyun.com/zh/model-studio/qwen-image-edit-api>。
+
+## 多智能体协作骨架
+
+当前 Repair Case 使用六个稳定职责：商品真值守门员、问题诊断智能体、修正规划智能体、改图执行智能体、漂移复验智能体、清晰度交付智能体。它们共用同一个事实账本和版本链。
+
+当前实现是 `LOCAL_STATE_MACHINE_NO_MODEL`，用于验证职责、输入、产物和交接 Gate，不冒充六个独立模型正在自主对话。未来接入多个模型时继续沿用同一 Repair Case 契约，而不是让各 Agent 自由复制商品事实。
+
+机器契约：[`../contracts/repair-case-v0.1.schema.json`](../contracts/repair-case-v0.1.schema.json)
+
 ## 4K 与真实 AI 超分边界
 
 本机能力 `visionqa-browser-resample-v0.1` 使用浏览器高质量分级重采样：

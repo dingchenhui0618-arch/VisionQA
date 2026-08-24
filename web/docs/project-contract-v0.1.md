@@ -15,7 +15,7 @@
 1. 商品基准：SKU 链接、历史确认图、目标人群和使用场景；
 2. 待评审批次：候选文件、渠道、图位和 AI 生图确认；
 3. 质量评审：模型结果、失败状态和人工终审记录；
-4. 改图复审：当前阶段仍使用已有原型状态，后续版本再纳入独立 Repair Version；
+4. 修正与交付：候选来源 ID、Provider Job、改图输出、人工复验、4K 输出与处理凭证；
 5. 营销交付：当前阶段沿用既有交付契约，不新增生成能力；
 6. 项目事件：建立、恢复、阶段变化、素材变化和一般内容更新。
 
@@ -49,9 +49,9 @@ IndexedDB 数据库 `visionqa-project-store` 包含三个对象仓库：
 - 内容变化后 800ms 防抖自动保存；
 - 保存使用 `expectedRevision` 乐观并发检查，避免另一个标签页静默覆盖新版本；
 - 刷新后从 `projects + assets` 恢复工作状态，并重新创建仅当前会话有效的对象 URL；
-- `running / processing / live-loading` 等瞬时状态不会原样恢复，而会回到可安全重试的稳定状态；
+- `running / processing / live-loading` 等瞬时状态不会原样恢复，而会回到可安全重试的稳定状态；运行中的改图 Provider Job 持久化为 `FAILED / INTERRUPTED_RETRY_REQUIRED`，不会在刷新后自动重复付费调用；
 - 阿里云发送授权 `liveConsent` 永不持久化，刷新后必须重新确认；
-- 改图输出、人工漂移复验项、4K 输出和处理凭证随 Project 恢复；
+- 改图输出、来源候选、`visionqa-repair-provider-job-v0.1`、人工漂移复验项、4K 输出和处理凭证随 Project 恢复；
 - 项目事件记录恢复与内容修改，但不把技术失败写成业务质量结论。
 
 ## 当前边界

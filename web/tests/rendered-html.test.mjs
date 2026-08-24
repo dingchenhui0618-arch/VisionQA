@@ -52,6 +52,8 @@ test("keeps the focused AI model-image repair workflow in the implementation", a
   const intakeSource = await readFile(new URL("../app/workspace-intake.tsx", import.meta.url), "utf8");
   const repairSource = await readFile(new URL("../app/workspace-repair.tsx", import.meta.url), "utf8");
   const upscaleSource = await readFile(new URL("../lib/visionqa/upscale.ts", import.meta.url), "utf8");
+  const repairProviderRoute = await readFile(new URL("../app/api/repair-jobs/route.ts", import.meta.url), "utf8");
+  const repairAgentSource = await readFile(new URL("../lib/visionqa/agents/repair-orchestrator.ts", import.meta.url), "utf8");
   const deliverySource = await readFile(new URL("../app/workspace-growth.tsx", import.meta.url), "utf8");
   assert.match(workspaceSource, /type WorkspaceArea = "overview" \| "baseline" \| "intake" \| "review" \| "repair" \| "delivery"/);
   assert.match(workspaceSource, /项目总览/);
@@ -78,7 +80,14 @@ test("keeps the focused AI model-image repair workflow in the implementation", a
   assert.match(repairSource, /生成 4K 尺寸文件/);
   assert.match(upscaleSource, /AI 细节重建超分/);
   assert.match(repairSource, /未进行 AI 细节重建/);
-  assert.match(repairSource, /API 未配置/);
+  assert.match(repairSource, /同一案例协作链/);
+  assert.match(repairSource, /不冒充六个独立模型已经在线推理/);
+  assert.match(workspaceSource, /pendingCandidateAsset/);
+  assert.match(workspaceSource, /item\.result \?\? pendingCandidateAsset/);
+  assert.match(repairProviderRoute, /REPAIR_PROVIDER_NOT_AUTHORIZED/);
+  assert.match(repairProviderRoute, /DATA_TRANSFER_CONSENT_REQUIRED/);
+  assert.match(repairAgentSource, /LOCAL_STATE_MACHINE_NO_MODEL/);
+  assert.match(repairAgentSource, /independentModelAgentsActive: false/);
   assert.match(deliverySource, /对标推广博主/);
   assert.match(deliverySource, /平台营销文案/);
   assert.match(deliverySource, /信息流视频大纲/);
@@ -238,6 +247,10 @@ test("keeps Marketing Delivery Pack v0.2 and Repair Job governed", async () => {
   const repairContract = JSON.parse(await readFile(new URL("../contracts/repair-job-v0.1.schema.json", import.meta.url), "utf8"));
   assert.equal(repairContract.properties.schema_version.const, "repair-job-v0.1");
   assert.equal(repairContract.properties.human_final_review_required.const, true);
+  const repairCaseContract = JSON.parse(await readFile(new URL("../contracts/repair-case-v0.1.schema.json", import.meta.url), "utf8"));
+  assert.equal(repairCaseContract.properties.schemaVersion.const, "visionqa-repair-collaboration-v0.1");
+  assert.equal(repairCaseContract.properties.independentModelAgentsActive.const, false);
+  assert.equal(repairCaseContract.properties.humanFinalReviewRequired.const, true);
 });
 
 test("exposes the L2 tool loop without pretending the test provider is a model", async () => {

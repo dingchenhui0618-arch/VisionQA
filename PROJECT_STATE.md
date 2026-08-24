@@ -4,6 +4,19 @@
 > 最后更新：2026-08-24（Asia/Shanghai；产品已收缩为 AI 模特图修正与交付；真实改图/超分 API、Key、数据外传与付费调用仍未授权）
 > 内部代号：`VisionQA`；外部产品名：待定  
 
+## 2026-08-24 真实单图链与修正多智能体骨架
+
+- 修复 P0 素材串线：项目存在客户候选图时，总览、诊断和修正页始终使用真实候选图；未诊断时建立 `NOT_RUN / scoreAvailable=false` 占位对象，不再回退内置示例图、问题、分数或 Prompt。
+- 新增 `visionqa-repair-collaboration-v0.1`：商品真值守门员 → 问题诊断智能体 → 修正规划智能体 → 改图执行智能体 → 漂移复验智能体 → 清晰度交付智能体。六个职责共用同一 Repair Case、素材 SHA 和版本链。
+- 当前协作执行模式是 `LOCAL_STATE_MACHINE_NO_MODEL`，用于验证职责与交接 Gate；`independentModelAgentsActive=false`，不把规则状态机冒充多个独立模型已经在线协作。
+- 新增千问改图 Provider 适配层和 `/api/repair-jobs`，固定 `qwen-image-edit-max-2026-01-16`；第一张图为待修草图，后续最多 4 张为商品真值，关闭 Prompt 扩写与水印，结果临时 URL 只允许阿里云域名并立即回存本机项目。
+- 六项启用 Gate：API Key、百炼业务空间、Provider 批准、付费调用批准、`MODEL_DRAFT_AND_PRODUCT_REFERENCES` 数据范围、固定模型快照；任一缺失时 POST 在读取图片前返回 403。
+- 每次真实发送仍要求页面单次确认，确认状态不持久化；没有自动重试付费生成、自动放行或自动发布。
+- 缺少商品真值或真实诊断时，历史改图、人工勾选和 4K 文件继续保留但不得形成新的可交付结论。
+- 验收：`npm test` 106/106、`npm run lint` 0 error；新增 Schema 严格编译通过；浏览器实测真实候选图保持 Blob 来源，桌面与 390px 无页面级横向溢出，控制台 0 error；`POST /api/repair-jobs` 在未授权状态返回 403，真实外部调用与新增费用均为 0。
+- 当前 Gate：`REAL_ASSET_CHAIN_FIXED / REPAIR_CASE_CONTRACT_READY / QWEN_IMAGE_EDIT_ADAPTER_READY / REPAIR_PROVIDER_NOT_AUTHORIZED / LOCAL_MULTI_AGENT_STATE_MACHINE_READY / HUMAN_REVIEW_REQUIRED / AUTO_PUBLISH_DISABLED`。
+- 说明：[`web/docs/model-image-repair-v0.1.md`](./web/docs/model-image-repair-v0.1.md)。
+
 ## 2026-08-24 AI 模特图修正与 4K 交付调整
 
 - 产品主定位由“批量评审与营销交付”收缩为“服饰电商 AI 模特图修正与交付工作台”；目标用户是已经使用 AI 制图的美工、视觉负责人和运营验收人。

@@ -27,6 +27,8 @@ The fixed repair track is the product signature: product truth, AI model draft, 
 - Asset intake: one fixed AI-model-image task scope, one dominant neutral dropzone, and at most three same-SKU real-color image tiles.
 - Review desktop: gallery plus result-first inspector, without a complex filter rail. Review mobile: conclusion inspector before the gallery. Scores, prompts, and audit details stay collapsed until requested.
 - Repair review: provider adapter choices, exported job, before/after stage, four human drift checks, then an explicit local-4K versus AI-super-resolution boundary.
+- Repair collaboration ledger: one border-only six-step responsibility rail above the repair task. It shows shared-case handoffs and Chinese completion/waiting/blocking states; no avatars, chat bubbles, gradients, or claims that independent models are already running.
+- Unassessed candidate: the real uploaded image remains the visual source while diagnosis text, score, issues, and Prompt stay explicitly empty. Never fall back to fixture content once a customer candidate exists.
 - Status: text plus dot; never color alone.
 
 ## Content rules

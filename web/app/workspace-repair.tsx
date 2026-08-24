@@ -3,6 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { downloadBlob } from "../lib/visionqa/batch-download";
 import {
+  executeQwenRepair,
+  getRepairProviderCapability,
+  RepairProviderApiError,
+} from "../lib/visionqa/repair-provider-client";
+import {
+  createRepairProviderJob,
+  QWEN_IMAGE_EDIT_MODEL_SNAPSHOT,
+  QWEN_IMAGE_EDIT_PROVIDER_ID,
+  updateRepairProviderJob,
+  type RepairProviderCapability,
+  type RepairProviderJobSnapshot,
+} from "../lib/visionqa/repair-provider-contract";
+import { runRepairCollaboration } from "../lib/visionqa/agents/repair-orchestrator";
+import {
   AI_SUPER_RESOLUTION_CAPABILITY,
   calculate4kDeliveryDimensions,
   createLocal4kDelivery,
@@ -25,6 +39,9 @@ type RepairAsset = {
 type RepairWorkspaceProps = {
   asset: RepairAsset;
   sourceFile?: File | null;
+  sourceSha256: string;
+  referenceFiles: File[];
+  diagnosisReady: boolean;
   outputFile: File | null;
   onOutputFileChange: (file: File | null) => void;
   checks: string[];
@@ -32,14 +49,16 @@ type RepairWorkspaceProps = {
   upscaleOutputFile: File | null;
   upscaleReceipt: UpscaleJobReceipt | null;
   onUpscaleReady: (file: File, receipt: UpscaleJobReceipt) => void;
+  providerJob: RepairProviderJobSnapshot | null;
+  onProviderJobChange: (job: RepairProviderJobSnapshot | null) => void;
   isDemo: boolean;
   onBack: () => void;
   onContinue: () => void;
 };
 
 const providers = [
-  { id: "seedream", name: "Seedream", fit: "保留为图像编辑适配器候选", state: "API 未配置" },
-  { id: "qwen-image", name: "千问图像编辑", fit: "保留为阿里云链路候选", state: "改图接口未配置" },
+  { id: "qwen-image", name: "千问图像编辑", fit: "当前首选 · 同一修正链路", state: "受控适配已完成" },
+  { id: "seedream", name: "Seedream", fit: "保留为图像编辑适配器候选", state: "后续适配" },
   { id: "gpt-image", name: "GPT Image", fit: "保留为图像编辑适配器候选", state: "API 未配置" },
 ] as const;
 
@@ -53,6 +72,9 @@ const reviewChecks = [
 export function RepairWorkspace({
   asset,
   sourceFile = null,
+  sourceSha256,
+  referenceFiles,
+  diagnosisReady,
   outputFile,
   onOutputFileChange,
   checks,
@@ -60,13 +82,21 @@ export function RepairWorkspace({
   upscaleOutputFile,
   upscaleReceipt,
   onUpscaleReady,
+  providerJob,
+  onProviderJobChange,
   isDemo,
   onBack,
   onContinue,
 }: RepairWorkspaceProps) {
-  const [provider, setProvider] = useState<(typeof providers)[number]["id"]>("seedream");
-  const [taskCreated, setTaskCreated] = useState(false);
+  const [provider, setProvider] = useState<(typeof providers)[number]["id"]>("qwen-image");
   const [copied, setCopied] = useState(false);
+  const [providerCapability, setProviderCapability] = useState<
+    | { kind: "loading" }
+    | { kind: "ready"; value: RepairProviderCapability }
+    | { kind: "error"; message: string }
+  >({ kind: "loading" });
+  const [repairConsent, setRepairConsent] = useState(false);
+  const [providerRunError, setProviderRunError] = useState<string | null>(null);
   const [sourceInspection, setSourceInspection] = useState<{
     sourceKey: string;
     width: number;
@@ -83,7 +113,15 @@ export function RepairWorkspace({
   useEffect(() => () => { if (outputUrl) URL.revokeObjectURL(outputUrl); }, [outputUrl]);
 
   const selectedProvider = providers.find((item) => item.id === provider)!;
-  const reviewed = Boolean(outputFile) && checks.length === reviewChecks.length;
+  const repairPlanReady =
+    diagnosisReady &&
+    Boolean(asset.repairPrompt.trim()) &&
+    Boolean(asset.lockedAttributes.trim());
+  const workflowEvidenceReady = repairPlanReady && referenceFiles.length > 0;
+  const reviewed =
+    workflowEvidenceReady &&
+    Boolean(outputFile) &&
+    checks.length === reviewChecks.length;
   const upscaleSource = outputFile ?? sourceFile;
   const upscaleSourceKey = upscaleSource
     ? `${upscaleSource.name}-${upscaleSource.size}-${upscaleSource.lastModified}`
@@ -103,6 +141,38 @@ export function RepairWorkspace({
     activeUpscaleState.kind === "ready" ? activeUpscaleState.file : upscaleOutputFile;
   const readyUpscaleReceipt =
     activeUpscaleState.kind === "ready" ? activeUpscaleState.receipt : upscaleReceipt;
+  const collaboration = runRepairCollaboration({
+    caseId: `repair-case-${asset.id}-${sourceSha256.slice(0, 12) || "demo"}`,
+    sourceAssetId: asset.id,
+    sourceName: asset.productLabel,
+    sourceSha256,
+    referenceAssetCount: referenceFiles.length,
+    diagnosisReady,
+    issueCount: asset.issues.length,
+    repairPromptReady: Boolean(asset.repairPrompt.trim()),
+    lockedAttributeCount: asset.lockedAttributes.split("、").filter(Boolean).length,
+    providerJob,
+    repairOutputAvailable: Boolean(outputFile),
+    humanChecksCompleted: checks.length,
+    upscaleOutputAvailable: Boolean(readyUpscaleFile),
+  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getRepairProviderCapability(controller.signal)
+      .then((value) => setProviderCapability({ kind: "ready", value }))
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setProviderCapability({
+          kind: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "无法读取千问改图能力状态。",
+        });
+      });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -118,6 +188,7 @@ export function RepairWorkspace({
   }, [upscaleSource, upscaleSourceKey]);
 
   const copyPrompt = async () => {
+    if (!repairPlanReady) return;
     try {
       await navigator.clipboard.writeText(asset.repairPrompt);
       setCopied(true);
@@ -140,6 +211,8 @@ export function RepairWorkspace({
       output_supplied_by_user: Boolean(outputFile),
       human_review_checks: checks,
       human_final_review_required: true,
+      provider_job: providerJob,
+      collaboration,
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
     const anchor = document.createElement("a");
@@ -149,6 +222,119 @@ export function RepairWorkspace({
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const buildProviderJob = () => {
+    if (!sourceFile || !sourceSha256 || !repairPlanReady) return;
+    const capability =
+      providerCapability.kind === "ready" ? providerCapability.value : null;
+    const qwenSelected = provider === "qwen-image";
+    onProviderJobChange(
+      createRepairProviderJob({
+        sourceAssetId: asset.id,
+        sourceSha256,
+        providerId: qwenSelected
+          ? QWEN_IMAGE_EDIT_PROVIDER_ID
+          : provider,
+        modelSnapshot: qwenSelected
+          ? QWEN_IMAGE_EDIT_MODEL_SNAPSHOT
+          : null,
+        status: qwenSelected
+          ? capability?.liveReady
+            ? "READY"
+            : "BLOCKED_AUTHORIZATION"
+          : "ADAPTER_NOT_CONFIGURED",
+        authorizationBlockers: qwenSelected
+          ? capability?.blockers ?? ["CAPABILITY_UNAVAILABLE"]
+          : ["PROVIDER_ADAPTER_NOT_IMPLEMENTED"],
+      }),
+    );
+    setProviderRunError(null);
+    setRepairConsent(false);
+  };
+
+  const runQwenProvider = async () => {
+    if (
+      !sourceFile ||
+      !repairPlanReady ||
+      !providerJob ||
+      providerJob.providerId !== QWEN_IMAGE_EDIT_PROVIDER_ID ||
+      providerCapability.kind !== "ready" ||
+      !providerCapability.value.liveReady ||
+      !repairConsent
+    ) {
+      return;
+    }
+    onProviderJobChange(
+      updateRepairProviderJob(providerJob, {
+        status: "RUNNING",
+        authorizationBlockers: [],
+        failureCode: null,
+      }),
+    );
+    setProviderRunError(null);
+    try {
+      const result = await executeQwenRepair({
+        source: sourceFile,
+        references: referenceFiles,
+        sourceSha256,
+        prompt: asset.repairPrompt,
+      });
+      onOutputFileChange(result.file);
+      onChecksChange([]);
+      onProviderJobChange(
+        updateRepairProviderJob(providerJob, {
+          status: "SUCCEEDED",
+          authorizationBlockers: [],
+          providerRequestId: result.providerRequestId,
+          outputSource: "QWEN_BAILIAN",
+          externalNetworkUsed: true,
+          modelInferenceUsed: true,
+          imageCount: result.imageCount,
+          outputWidth: result.outputWidth,
+          outputHeight: result.outputHeight,
+          failureCode: null,
+        }),
+      );
+      setRepairConsent(false);
+    } catch (error) {
+      const code =
+        error instanceof RepairProviderApiError
+          ? error.code
+          : "REPAIR_PROVIDER_FAILED";
+      const message =
+        error instanceof Error ? error.message : "千问改图任务执行失败。";
+      const externalProviderReached = ![
+        "REPAIR_PROVIDER_NOT_AUTHORIZED",
+        "DATA_TRANSFER_CONSENT_REQUIRED",
+        "REPAIR_INPUT_TOO_LARGE",
+        "INVALID_REPAIR_INPUT",
+        "SOURCE_HASH_MISMATCH",
+      ].includes(code);
+      onProviderJobChange(
+        updateRepairProviderJob(providerJob, {
+          status: "FAILED",
+          externalNetworkUsed: externalProviderReached,
+          modelInferenceUsed: false,
+          failureCode: code,
+        }),
+      );
+      setProviderRunError(message);
+    }
+  };
+
+  const acceptExternalOutput = (file: File | null) => {
+    onOutputFileChange(file);
+    onChecksChange([]);
+    if (file && providerJob) {
+      onProviderJobChange(
+        updateRepairProviderJob(providerJob, {
+          status: "OUTPUT_SUPPLIED",
+          outputSource: "USER_SUPPLIED",
+          failureCode: null,
+        }),
+      );
+    }
   };
 
   const runLocal4kDelivery = async () => {
@@ -199,6 +385,30 @@ export function RepairWorkspace({
     );
   };
 
+  const qwenCapabilityLabel =
+    providerCapability.kind === "loading"
+      ? "正在检查授权状态"
+      : providerCapability.kind === "error"
+        ? "能力状态读取失败"
+        : providerCapability.value.liveReady
+          ? "接口就绪 · 每次发送仍需确认"
+          : `等待授权 · ${providerCapability.value.blockers.length} 项 Gate`;
+  const qwenCanRun =
+    provider === "qwen-image" &&
+    providerCapability.kind === "ready" &&
+    providerCapability.value.liveReady &&
+    providerJob?.status === "READY";
+  const collaborationStatusLabel: Record<typeof collaboration.status, string> = {
+    NEEDS_PRODUCT_TRUTH: "等待商品真值",
+    NEEDS_DIAGNOSIS: "等待问题诊断",
+    READY_FOR_PROVIDER: "可建立改图任务",
+    PROVIDER_BLOCKED: "Provider 被阻断",
+    REPAIR_IN_PROGRESS: "改图处理中",
+    REPAIR_OUTPUT_READY: "等待人工复验",
+    READY_FOR_DELIVERY: "可以生成交付文件",
+    DELIVERED: "当前案例已交付",
+  };
+
   return (
     <section className="workspace-page repair-page" aria-labelledby="repair-title">
       <header className="page-heading">
@@ -210,6 +420,30 @@ export function RepairWorkspace({
         <button className="quiet-button" type="button" onClick={onBack}>返回问题诊断</button>
       </header>
 
+      <section className="repair-agent-ledger" aria-labelledby="repair-agent-title">
+        <header>
+          <div>
+            <span>同一案例协作链</span>
+            <h2 id="repair-agent-title">六个职责，共用一份商品事实与版本记录。</h2>
+          </div>
+          <strong>{collaborationStatusLabel[collaboration.status]} · {collaboration.status}</strong>
+        </header>
+        <ol>
+          {collaboration.agents.map((item, index) => (
+            <li key={item.id} data-status={item.status}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <div><strong>{item.name}</strong><small>{item.note}</small></div>
+              <em>{item.status === "COMPLETED" ? "完成" : item.status === "WAITING" ? "等待" : "阻断"}</em>
+            </li>
+          ))}
+        </ol>
+        <footer>
+          <span>下一动作</span>
+          <strong>{collaboration.nextAction}</strong>
+          <small>当前是可追溯状态机，不冒充六个独立模型已经在线推理。</small>
+        </footer>
+      </section>
+
       <section className="repair-command" aria-labelledby="repair-command-title">
         <div className="repair-command-heading">
           <div><span>改图任务</span><h2 id="repair-command-title">选择执行方案，确认修复边界。</h2></div>
@@ -217,21 +451,32 @@ export function RepairWorkspace({
         </div>
         <div className="provider-choice-grid" role="radiogroup" aria-label="改图模型方案">
           {providers.map((item) => (
-            <button key={item.id} type="button" role="radio" aria-checked={provider === item.id} onClick={() => setProvider(item.id)}>
-              <span>{item.name}</span><p>{item.fit}</p><small>{item.state}</small>
+            <button key={item.id} type="button" role="radio" aria-checked={provider === item.id} onClick={() => { setProvider(item.id); const nextProviderId = item.id === "qwen-image" ? QWEN_IMAGE_EDIT_PROVIDER_ID : item.id; if (providerJob && providerJob.providerId !== nextProviderId) onProviderJobChange(null); setRepairConsent(false); setProviderRunError(null); }}>
+              <span>{item.name}</span><p>{item.fit}</p><small>{item.id === "qwen-image" ? qwenCapabilityLabel : item.state}</small>
             </button>
           ))}
         </div>
         <div className="repair-brief">
-          <div><span>需要修复</span><strong>{asset.issues.length ? asset.issues.map((item) => item.title).join(" / ") : "当前没有真实问题，展示任务结构"}</strong></div>
-          <div><span>必须锁定</span><strong>{asset.lockedAttributes || "等待商品基准确认"}</strong></div>
-          <div className="repair-prompt-row"><span>改图 Prompt</span><p>{asset.repairPrompt}</p><button className="text-button" type="button" onClick={() => void copyPrompt()}>{copied ? "已复制" : "复制"}</button></div>
+          <div><span>需要修复</span><strong>{asset.issues.length ? asset.issues.map((item) => item.title).join(" / ") : diagnosisReady ? "当前诊断没有可执行问题" : "尚未完成问题诊断，不使用示例问题"}</strong></div>
+          <div><span>必须锁定</span><strong>{asset.lockedAttributes || (diagnosisReady ? "等待商品真值确认" : "等待真实诊断与商品真值")}</strong></div>
+          <div className="repair-prompt-row"><span>改图 Prompt</span><p>{asset.repairPrompt || "当前图片尚未形成真实修正 Prompt。请返回问题诊断，不会用示例内容补齐。"}</p><button className="text-button" type="button" disabled={!repairPlanReady} onClick={() => void copyPrompt()}>{copied ? "已复制" : "复制"}</button></div>
         </div>
         <div className="repair-task-actions">
-          <button className="primary-button" type="button" onClick={() => setTaskCreated(true)}>建立改图任务</button>
-          <button className="quiet-button" type="button" onClick={exportJob}>导出任务 JSON</button>
-          <span>{taskCreated ? `${selectedProvider.name} 任务草案已建立，等待外部生成或 API 接入。` : "不会在未配置 API 时伪装生成成功。"}</span>
+          <button className="primary-button" type="button" disabled={!sourceFile || !sourceSha256 || !repairPlanReady || providerJob?.status === "RUNNING"} onClick={buildProviderJob}>{providerJob ? "重建改图任务" : "建立改图任务"}</button>
+          <button className="quiet-button" type="button" disabled={!providerJob} onClick={exportJob}>导出任务 JSON</button>
+          <span>{providerJob ? `${selectedProvider.name} · ${providerJob.status}` : "不会在缺少诊断或授权时伪装生成成功。"}</span>
         </div>
+        {qwenCanRun && (
+          <div className="repair-provider-consent">
+            <label><input type="checkbox" checked={repairConsent} onChange={(event) => setRepairConsent(event.currentTarget.checked)} /><span>确认本次将当前 AI 模特草图与 {referenceFiles.length} 张商品真值图发送至阿里云百炼；服务返回图会立即保存到本机项目。</span></label>
+            <button className="primary-button" type="button" disabled={!repairConsent} onClick={() => void runQwenProvider()}>调用千问生成候选</button>
+          </div>
+        )}
+        {providerJob?.status === "BLOCKED_AUTHORIZATION" && (
+          <p className="repair-provider-note" role="status">千问适配已经完成，但 API Key、业务空间、付费调用或数据范围仍有未授权项；本次网络请求为零。</p>
+        )}
+        {providerJob?.status === "RUNNING" && <p className="repair-provider-note" role="status">千问正在生成候选图，请勿重复提交付费任务。</p>}
+        {providerRunError && <p className="repair-provider-error" role="alert">{providerRunError}</p>}
       </section>
 
       <section className="repair-comparison" aria-labelledby="repair-comparison-title">
@@ -256,7 +501,7 @@ export function RepairWorkspace({
           </figure>
         </div>
         <label className="repair-output-upload">
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { onOutputFileChange(event.currentTarget.files?.[0] ?? null); onChecksChange([]); event.currentTarget.value = ""; }} />
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { acceptExternalOutput(event.currentTarget.files?.[0] ?? null); event.currentTarget.value = ""; }} />
           <strong>{outputFile ? "更换改图结果" : "上传改图结果"}</strong>
           <span>{outputFile?.name ?? "当前为半自动工作流：外部生成，VisionQA 统一复审"}</span>
         </label>
@@ -265,10 +510,10 @@ export function RepairWorkspace({
       <section className="repair-review-sheet" aria-labelledby="repair-review-title">
         <div><span>人工复审 Gate</span><h2 id="repair-review-title">不是变好看就算完成。</h2><p>四项全部确认后，才可以把改图候选作为营销内容依据。</p></div>
         <div className="repair-check-list">
-          {reviewChecks.map((check) => <label key={check}><input type="checkbox" checked={checks.includes(check)} disabled={!outputFile} onChange={() => onChecksChange(checks.includes(check) ? checks.filter((item) => item !== check) : [...checks, check])} /><span>{check}</span></label>)}
+          {reviewChecks.map((check) => <label key={check}><input type="checkbox" checked={checks.includes(check)} disabled={!outputFile || !workflowEvidenceReady} onChange={() => onChecksChange(checks.includes(check) ? checks.filter((item) => item !== check) : [...checks, check])} /><span>{check}</span></label>)}
         </div>
         <div className="repair-handoff">
-          <span>{reviewed ? "已形成一张人工确认的改图候选，可以进入清晰度交付。" : "未完成四项复验前，不生成最终交付文件。"}</span>
+          <span>{reviewed ? "已形成一张人工确认的改图候选，可以进入清晰度交付。" : !workflowEvidenceReady ? "商品真值或真实诊断 Gate 未满足，历史勾选不能形成交付结论。" : "未完成四项复验前，不生成最终交付文件。"}</span>
           <button className="quiet-button" type="button" onClick={onContinue}>返回项目总览</button>
         </div>
       </section>
@@ -280,7 +525,7 @@ export function RepairWorkspace({
             <h2 id="upscale-title">修正完成后，再生成 4K 文件。</h2>
             <p>清晰度处理不会替代商品一致性复验。当前先提供完全本机的 4K 尺寸交付，真实 AI 细节重建保留独立授权 Gate。</p>
           </div>
-          <strong>{reviewed ? "可以处理" : "等待人工复验"}</strong>
+          <strong>{reviewed ? "可以处理" : workflowEvidenceReady ? "等待人工复验" : "等待证据 Gate"}</strong>
         </header>
 
         <div className="upscale-source-line">
@@ -311,7 +556,7 @@ export function RepairWorkspace({
           </article>
         </div>
 
-        {readyUpscaleFile && readyUpscaleReceipt && (
+        {readyUpscaleFile && readyUpscaleReceipt && reviewed && (
           <div className="upscale-result" role="status">
             <div>
               <span>本机处理完成</span>
@@ -321,6 +566,15 @@ export function RepairWorkspace({
             <div>
               <button className="primary-button" type="button" onClick={() => downloadBlob(readyUpscaleFile, readyUpscaleFile.name)}>下载 4K 文件</button>
               <button className="quiet-button" type="button" onClick={() => downloadUpscaleReceipt(readyUpscaleReceipt)}>下载处理凭证</button>
+            </div>
+          </div>
+        )}
+        {readyUpscaleFile && readyUpscaleReceipt && !reviewed && (
+          <div className="upscale-result is-blocked" role="status">
+            <div>
+              <span>历史输出已保留</span>
+              <strong>{readyUpscaleFile.name}</strong>
+              <small>当前商品真值、诊断或人工复验 Gate 未满足，暂不作为可交付终稿。</small>
             </div>
           </div>
         )}
