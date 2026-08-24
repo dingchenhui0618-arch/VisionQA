@@ -85,6 +85,27 @@ test("keeps the five-stage review-repair-delivery workflow in the implementation
   assert.match(deliverySource, /生成概览/);
 });
 
+test("persists the workbench as a versioned local project with an audit trail", async () => {
+  const workspaceSource = await readFile(new URL("../app/workspace.tsx", import.meta.url), "utf8");
+  const projectStoreSource = await readFile(new URL("../lib/visionqa/project-store.ts", import.meta.url), "utf8");
+  const projectSchema = JSON.parse(await readFile(new URL("../contracts/visionqa-project-v0.1.schema.json", import.meta.url), "utf8"));
+  assert.match(workspaceSource, /loadLatestLocalProject/);
+  assert.match(workspaceSource, /createLocalProject/);
+  assert.match(workspaceSource, /saveLocalProject/);
+  assert.match(workspaceSource, /本机已保存/);
+  assert.match(workspaceSource, /本机项目记录/);
+  assert.match(workspaceSource, /不会上传客户图片/);
+  assert.match(projectStoreSource, /visionqa-project-v0\.1/);
+  assert.match(projectStoreSource, /visionqa-workspace-project-payload-v0\.1/);
+  assert.match(projectStoreSource, /LOCAL_INDEXED_DB/);
+  assert.match(projectStoreSource, /PROJECTS_STORE = "projects"/);
+  assert.match(projectStoreSource, /ASSETS_STORE = "assets"/);
+  assert.match(projectStoreSource, /EVENTS_STORE = "events"/);
+  assert.match(projectStoreSource, /expectedRevision/);
+  assert.equal(projectSchema.properties.schemaVersion.const, "visionqa-project-v0.1");
+  assert.equal(projectSchema.properties.storageMode.const, "LOCAL_INDEXED_DB");
+});
+
 test("keeps the batch and evidence workflow behind quality review", async () => {
   const workspaceSource = await readFile(
     new URL("../app/workspace.tsx", import.meta.url),
@@ -114,7 +135,8 @@ test("keeps the consent gate, review launch, and separate marketing delivery", a
   assert.match(workspaceSource, /type="file"/);
   assert.match(workspaceSource, /候选图与历史参考图才会发送至阿里云百炼/);
   assert.match(workspaceSource, /开始真实批次评分/);
-  assert.match(workspaceSource, /应用不保存图片/);
+  assert.match(workspaceSource, /服务端不留存原图/);
+  assert.match(workspaceSource, /本机项目会保存工作集/);
   assert.match(workspaceSource, /最多 10 张/);
   assert.match(workspaceSource, /商品 SKU 链接/);
   assert.match(workspaceSource, /确认 AI 生成/);

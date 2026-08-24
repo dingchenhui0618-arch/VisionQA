@@ -38,6 +38,17 @@ import { WorkspaceLogin } from "./workspace-login";
 import { WorkspaceBaseline } from "./workspace-overview";
 import { RepairWorkspace } from "./workspace-repair";
 import { projectLegacyCommercialMetrics } from "../lib/visionqa/product-expression";
+import {
+  appendProjectRestoreEvent,
+  createLocalProject,
+  loadLatestLocalProject,
+  saveLocalProject,
+  VISIONQA_PROJECT_PAYLOAD_SCHEMA_VERSION,
+  type VisionQaProjectAssetRecord,
+  type VisionQaProjectAuditEvent,
+  type VisionQaProjectMaterialCounts,
+  type VisionQaProjectRecord,
+} from "../lib/visionqa/project-store";
 
 type Decision = "PASS" | "REVIEW" | "REJECT";
 type View = "grid" | "evidence";
@@ -196,6 +207,254 @@ type BatchCandidate = {
   result?: EvaluatedAsset;
   error?: string;
 };
+
+type StoredEvaluatedAsset = Omit<EvaluatedAsset, "src">;
+
+type StoredBatchCandidate = Omit<
+  BatchCandidate,
+  "file" | "src" | "result" | "status"
+> & {
+  assetId: string;
+  status: "ready" | "done" | "error";
+  result?: StoredEvaluatedAsset;
+};
+
+type WorkspaceProjectPayload = {
+  schemaVersion: typeof VISIONQA_PROJECT_PAYLOAD_SCHEMA_VERSION;
+  area: WorkspaceArea;
+  view: View;
+  commercialTemplateId: CommercialTemplateId;
+  selectedId: number;
+  auditEntries: AuditEntry[];
+  dataState: Exclude<DataState, { kind: "loading" } | { kind: "live-loading" }>;
+  localCandidate: LocalCandidate | null;
+  intakeState: Exclude<IntakeState, { kind: "processing" }>;
+  submissionContext: SubmissionContext;
+  promptCopyCount: number;
+  customerProfile: CustomerProfileInput;
+  referenceAssetIds: string[];
+  batchCandidates: StoredBatchCandidate[];
+};
+
+type ProjectPersistenceState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "saving"; revision: number }
+  | { kind: "saved"; revision: number; updatedAt: string }
+  | { kind: "error"; message: string };
+
+type ProjectAssetInput = Omit<
+  VisionQaProjectAssetRecord,
+  "schemaVersion" | "projectId" | "updatedAt"
+>;
+
+function durableDataState(
+  state: DataState,
+  candidate: LocalCandidate | null,
+): WorkspaceProjectPayload["dataState"] {
+  if (state.kind === "loading") {
+    return {
+      kind: "fallback",
+      evaluationId: state.evaluationId,
+      message: "上次读取在页面关闭前尚未完成，请重新获取正式评估。",
+    };
+  }
+  if (state.kind === "live-loading") {
+    return candidate
+      ? {
+          kind: "local",
+          candidateName: candidate.name,
+          candidateTraceId: candidate.traceId,
+          fixtureCaseId: candidate.fixtureCaseId,
+        }
+      : { kind: "fixture" };
+  }
+  return state;
+}
+
+function durableIntakeState(
+  state: IntakeState,
+  candidateCount: number,
+): WorkspaceProjectPayload["intakeState"] {
+  if (state.kind !== "processing") return state;
+  return candidateCount > 0 ? { kind: "ready" } : { kind: "idle" };
+}
+
+function stripEvaluatedAsset(asset: EvaluatedAsset): StoredEvaluatedAsset {
+  return {
+    id: asset.id,
+    decision: asset.decision,
+    score: asset.score,
+    productLabel: asset.productLabel,
+    skills: asset.skills,
+    issues: asset.issues,
+    commercialAssessment: asset.commercialAssessment,
+    repairPrompt: asset.repairPrompt,
+    lockedAttributes: asset.lockedAttributes,
+    commercial: asset.commercial,
+    evaluationId: asset.evaluationId,
+    resultVersion: asset.resultVersion,
+    scoreAvailable: asset.scoreAvailable,
+    promptProvenance: asset.promptProvenance,
+    calibrationStatus: asset.calibrationStatus,
+    modelStatus: asset.modelStatus,
+    markerAvailable: asset.markerAvailable,
+    evaluationMode: asset.evaluationMode,
+    fixtureCaseId: asset.fixtureCaseId,
+    persistedEvaluation: asset.persistedEvaluation,
+    providerId: asset.providerId,
+    modelSnapshot: asset.modelSnapshot,
+    providerLatencyMs: asset.providerLatencyMs,
+    referenceCount: asset.referenceCount,
+  };
+}
+
+function buildWorkspaceProjectPayload({
+  area,
+  view,
+  commercialTemplateId,
+  selectedId,
+  auditEntries,
+  dataState,
+  localCandidate,
+  intakeState,
+  submissionContext,
+  promptCopyCount,
+  customerProfile,
+  referenceFiles,
+  batchCandidates,
+}: {
+  area: WorkspaceArea;
+  view: View;
+  commercialTemplateId: CommercialTemplateId;
+  selectedId: number;
+  auditEntries: AuditEntry[];
+  dataState: DataState;
+  localCandidate: LocalCandidate | null;
+  intakeState: IntakeState;
+  submissionContext: SubmissionContext;
+  promptCopyCount: number;
+  customerProfile: CustomerProfileInput;
+  referenceFiles: File[];
+  batchCandidates: BatchCandidate[];
+}): WorkspaceProjectPayload {
+  return {
+    schemaVersion: VISIONQA_PROJECT_PAYLOAD_SCHEMA_VERSION,
+    area,
+    view,
+    commercialTemplateId,
+    selectedId,
+    auditEntries,
+    dataState: durableDataState(dataState, localCandidate),
+    localCandidate,
+    intakeState: durableIntakeState(intakeState, batchCandidates.length),
+    submissionContext,
+    promptCopyCount,
+    customerProfile,
+    referenceAssetIds: referenceFiles.map(
+      (file, index) => `reference-${index}-${file.lastModified}-${file.size}`,
+    ),
+    batchCandidates: batchCandidates.map((candidate) => ({
+      id: candidate.id,
+      assetId: `candidate-${candidate.sha256}`,
+      sha256: candidate.sha256,
+      traceId: candidate.traceId,
+      fixtureCaseId: candidate.fixtureCaseId,
+      status: candidate.status === "running" ? "ready" : candidate.status,
+      selected: candidate.selected,
+      result: candidate.result
+        ? stripEvaluatedAsset(candidate.result)
+        : undefined,
+      error:
+        candidate.status === "running"
+          ? "上次分析在页面关闭前尚未完成，请重新发起。"
+          : candidate.error,
+    })),
+  };
+}
+
+function buildProjectAssets(
+  referenceFiles: File[],
+  batchCandidates: BatchCandidate[],
+): ProjectAssetInput[] {
+  return [
+    ...referenceFiles.map((file, index): ProjectAssetInput => ({
+      assetId: `reference-${index}-${file.lastModified}-${file.size}`,
+      role: "REFERENCE",
+      position: index,
+      fileName: file.name,
+      mimeType: file.type,
+      byteSize: file.size,
+      lastModified: file.lastModified,
+      sha256: null,
+      file,
+    })),
+    ...batchCandidates.map((candidate, index): ProjectAssetInput => ({
+      assetId: `candidate-${candidate.sha256}`,
+      role: "CANDIDATE",
+      position: index,
+      fileName: candidate.file.name,
+      mimeType: candidate.file.type,
+      byteSize: candidate.file.size,
+      lastModified: candidate.file.lastModified,
+      sha256: candidate.sha256,
+      file: candidate.file,
+    })),
+  ];
+}
+
+function projectMaterialCounts(
+  referenceFiles: File[],
+  batchCandidates: BatchCandidate[],
+  auditEntries: AuditEntry[],
+): VisionQaProjectMaterialCounts {
+  return {
+    references: referenceFiles.length,
+    candidates: batchCandidates.length,
+    completedEvaluations: batchCandidates.filter((candidate) => candidate.result)
+      .length,
+    humanReviews: new Set(auditEntries.map((entry) => entry.assetId)).size,
+  };
+}
+
+function projectContentSignature(
+  payload: WorkspaceProjectPayload,
+  assets: ProjectAssetInput[],
+): string {
+  return JSON.stringify({
+    payload,
+    assets: assets.map((asset) => ({
+      assetId: asset.assetId,
+      role: asset.role,
+      position: asset.position,
+      fileName: asset.fileName,
+      mimeType: asset.mimeType,
+      byteSize: asset.byteSize,
+      lastModified: asset.lastModified,
+      sha256: asset.sha256,
+    })),
+  });
+}
+
+function isWorkspaceProjectPayload(value: unknown): value is WorkspaceProjectPayload {
+  if (!value || typeof value !== "object") return false;
+  const payload = value as Partial<WorkspaceProjectPayload>;
+  return (
+    payload.schemaVersion === VISIONQA_PROJECT_PAYLOAD_SCHEMA_VERSION &&
+    Array.isArray(payload.referenceAssetIds) &&
+    Array.isArray(payload.batchCandidates) &&
+    Array.isArray(payload.auditEntries) &&
+    !!payload.customerProfile &&
+    !!payload.submissionContext
+  );
+}
+
+function logicalAssetId(asset: VisionQaProjectAssetRecord): string {
+  const prefix = `${asset.projectId}:`;
+  return asset.assetId.startsWith(prefix)
+    ? asset.assetId.slice(prefix.length)
+    : asset.assetId;
+}
 
 const defaultCustomerProfile: CustomerProfileInput = {
   styles: ["简约通勤"],
@@ -622,7 +881,7 @@ function DataStateNotice({ state }: { state: DataState }) {
   if (state.kind === "live-loading") {
     return (
       <div className="data-state-notice loading" aria-live="polite">
-        正在分析 {state.candidateName}。图片会发送至阿里云百炼，本应用不保存图片。
+        正在分析 {state.candidateName}。图片会发送至阿里云百炼；服务端不留存原图，本机项目会保存当前工作集。
       </div>
     );
   }
@@ -729,8 +988,68 @@ export function Workspace() {
   const [customerProfile, setCustomerProfile] =
     useState<CustomerProfileInput>(defaultCustomerProfile);
   const [batchCandidates, setBatchCandidates] = useState<BatchCandidate[]>([]);
+  const [projectRecord, setProjectRecord] =
+    useState<VisionQaProjectRecord<WorkspaceProjectPayload> | null>(null);
+  const [projectEvents, setProjectEvents] = useState<VisionQaProjectAuditEvent[]>([]);
+  const [projectPersistence, setProjectPersistence] =
+    useState<ProjectPersistenceState>({ kind: "idle" });
   const localObjectUrl = useRef<string | null>(null);
   const candidateFileRef = useRef<File | null>(null);
+  const batchCandidatesRef = useRef<BatchCandidate[]>([]);
+  const projectRecordRef =
+    useRef<VisionQaProjectRecord<WorkspaceProjectPayload> | null>(null);
+  const projectInitializedRef = useRef(false);
+  const lastSavedSignatureRef = useRef("");
+  const projectSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  const projectPayload = useMemo(
+    () =>
+      buildWorkspaceProjectPayload({
+        area,
+        view,
+        commercialTemplateId,
+        selectedId,
+        auditEntries,
+        dataState,
+        localCandidate,
+        intakeState,
+        submissionContext,
+        promptCopyCount,
+        customerProfile,
+        referenceFiles,
+        batchCandidates,
+      }),
+    [
+      area,
+      view,
+      commercialTemplateId,
+      selectedId,
+      auditEntries,
+      dataState,
+      localCandidate,
+      intakeState,
+      submissionContext,
+      promptCopyCount,
+      customerProfile,
+      referenceFiles,
+      batchCandidates,
+    ],
+  );
+  const projectAssets = useMemo(
+    () => buildProjectAssets(referenceFiles, batchCandidates),
+    [referenceFiles, batchCandidates],
+  );
+  const projectCounts = useMemo(
+    () => projectMaterialCounts(referenceFiles, batchCandidates, auditEntries),
+    [referenceFiles, batchCandidates, auditEntries],
+  );
+  const projectSignature = useMemo(
+    () => projectContentSignature(projectPayload, projectAssets),
+    [projectPayload, projectAssets],
+  );
+  useEffect(() => {
+    batchCandidatesRef.current = batchCandidates;
+  }, [batchCandidates]);
 
   const evaluatedAssets = useMemo(
     () => {
@@ -797,6 +1116,9 @@ export function Workspace() {
   useEffect(
     () => () => {
       if (localObjectUrl.current) URL.revokeObjectURL(localObjectUrl.current);
+      batchCandidatesRef.current.forEach((candidate) =>
+        URL.revokeObjectURL(candidate.src),
+      );
     },
     [],
   );
@@ -832,6 +1154,202 @@ export function Workspace() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!previewOpen || projectInitializedRef.current) return;
+    projectInitializedRef.current = true;
+    setProjectPersistence({ kind: "loading" });
+
+    const initializeProject = async () => {
+      try {
+        const loaded = await loadLatestLocalProject<WorkspaceProjectPayload>();
+        if (loaded) {
+          if (!isWorkspaceProjectPayload(loaded.project.payload)) {
+            throw new Error("本机项目使用了当前版本不支持的内容契约。");
+          }
+          const payload = loaded.project.payload;
+          const assetMap = new Map(
+            loaded.assets.map((asset) => [logicalAssetId(asset), asset]),
+          );
+          const restoredReferences = payload.referenceAssetIds.flatMap((assetId) => {
+            const asset = assetMap.get(assetId);
+            return asset?.file instanceof File ? [asset.file] : [];
+          });
+          const restoredCandidates = payload.batchCandidates.flatMap(
+            (candidate): BatchCandidate[] => {
+              const asset = assetMap.get(candidate.assetId);
+              if (!asset || !(asset.file instanceof File)) return [];
+              const src = URL.createObjectURL(asset.file);
+              return [
+                {
+                  id: candidate.id,
+                  file: asset.file,
+                  src,
+                  sha256: candidate.sha256,
+                  traceId: candidate.traceId,
+                  fixtureCaseId: candidate.fixtureCaseId,
+                  status: candidate.status,
+                  selected: candidate.selected,
+                  result: candidate.result
+                    ? { ...candidate.result, src }
+                    : undefined,
+                  error: candidate.error,
+                },
+              ];
+            },
+          );
+          const restoredAssetInputs: ProjectAssetInput[] = loaded.assets.map(
+            (asset) => ({
+              assetId: logicalAssetId(asset),
+              role: asset.role,
+              position: asset.position,
+              fileName: asset.fileName,
+              mimeType: asset.mimeType,
+              byteSize: asset.byteSize,
+              lastModified: asset.lastModified,
+              sha256: asset.sha256,
+              file: asset.file,
+            }),
+          );
+
+          setArea(payload.area);
+          setView(payload.view);
+          setCommercialTemplateId(payload.commercialTemplateId);
+          setSelectedId(payload.selectedId);
+          setAuditEntries(payload.auditEntries);
+          setApiAsset(null);
+          setDataState(payload.dataState);
+          setLocalCandidate(payload.localCandidate);
+          setIntakeState(payload.intakeState);
+          setSubmissionContext(payload.submissionContext);
+          setPromptCopyCount(payload.promptCopyCount);
+          setCustomerProfile(payload.customerProfile);
+          setReferenceFiles(restoredReferences);
+          setBatchCandidates(restoredCandidates);
+          setLiveConsent(false);
+          setLiveRunning(false);
+          candidateFileRef.current = restoredCandidates[0]?.file ?? null;
+          projectRecordRef.current = loaded.project;
+          setProjectRecord(loaded.project);
+          lastSavedSignatureRef.current = projectContentSignature(
+            payload,
+            restoredAssetInputs,
+          );
+          const restoreEvent = await appendProjectRestoreEvent(loaded.project);
+          setProjectEvents([...loaded.events, restoreEvent]);
+          setProjectPersistence({
+            kind: "saved",
+            revision: loaded.project.revision,
+            updatedAt: loaded.project.updatedAt,
+          });
+          return;
+        }
+
+        const snapshot = {
+          payload: projectPayload,
+          assets: projectAssets,
+          counts: projectCounts,
+          signature: projectSignature,
+        };
+        const dateLabel = new Intl.DateTimeFormat("zh-CN", {
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date());
+        const created = await createLocalProject({
+          projectName: `本机服饰项目 · ${dateLabel}`,
+          stage: snapshot.payload.area,
+          payload: snapshot.payload,
+          materialCounts: snapshot.counts,
+          assets: snapshot.assets,
+        });
+        projectRecordRef.current = created.project;
+        setProjectRecord(created.project);
+        setProjectEvents(created.events);
+        lastSavedSignatureRef.current = snapshot.signature;
+        setProjectPersistence({
+          kind: "saved",
+          revision: created.project.revision,
+          updatedAt: created.project.updatedAt,
+        });
+      } catch (error) {
+        projectInitializedRef.current = false;
+        setProjectPersistence({
+          kind: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "本机项目初始化失败，请检查浏览器存储权限。",
+        });
+      }
+    };
+
+    void initializeProject();
+  }, [
+    previewOpen,
+    projectAssets,
+    projectCounts,
+    projectPayload,
+    projectSignature,
+  ]);
+
+  useEffect(() => {
+    if (
+      !previewOpen ||
+      !projectRecordRef.current ||
+      projectSignature === lastSavedSignatureRef.current
+    ) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const payload = projectPayload;
+      const assets = projectAssets;
+      const counts = projectCounts;
+      const signature = projectSignature;
+      const currentRevision = projectRecordRef.current?.revision ?? 0;
+      setProjectPersistence({ kind: "saving", revision: currentRevision });
+      projectSaveQueueRef.current = projectSaveQueueRef.current
+        .catch(() => undefined)
+        .then(async () => {
+          const current = projectRecordRef.current;
+          if (!current || signature === lastSavedSignatureRef.current) return;
+          try {
+            const saved = await saveLocalProject({
+              projectId: current.projectId,
+              expectedRevision: current.revision,
+              projectName: current.projectName,
+              stage: payload.area,
+              payload,
+              materialCounts: counts,
+              assets,
+            });
+            projectRecordRef.current = saved.project;
+            setProjectRecord(saved.project);
+            setProjectEvents(saved.events);
+            lastSavedSignatureRef.current = signature;
+            setProjectPersistence({
+              kind: "saved",
+              revision: saved.project.revision,
+              updatedAt: saved.project.updatedAt,
+            });
+          } catch (error) {
+            setProjectPersistence({
+              kind: "error",
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "本机自动保存失败。",
+            });
+          }
+        });
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [
+    previewOpen,
+    projectAssets,
+    projectCounts,
+    projectPayload,
+    projectSignature,
+  ]);
 
   const loadBatchCandidates = async (files: File[]) => {
     if (files.length === 0) {
@@ -1199,6 +1717,7 @@ export function Workspace() {
     batchCandidates.length > 0
       ? `客户批次 · ${batchCandidates.length} 张`
       : "夏季服饰示例项目";
+  const projectTitle = projectRecord?.projectName ?? batchTitle;
   const sourceLabel =
     dataState.kind === "fixture"
       ? "内置示例项目"
@@ -1235,8 +1754,13 @@ export function Workspace() {
         </a>
         <div className="rail-project">
           <span>当前项目</span>
-          <strong>{batchTitle}</strong>
+          <strong>{projectTitle}</strong>
           <small>{sourceLabel}</small>
+          {projectRecord && (
+            <small className="rail-project-id">
+              {projectRecord.projectId.slice(0, 8)} · v{projectRecord.revision}
+            </small>
+          )}
         </div>
         <nav aria-label="工作台导航">
           {(Object.keys(areaLabel) as WorkspaceArea[]).map((item, index) => (
@@ -1262,7 +1786,7 @@ export function Workspace() {
         <header className="workspace-topbar">
           <div>
             <span>{areaLabel[area]}</span>
-            <strong>{batchTitle}</strong>
+            <strong>{projectTitle}</strong>
           </div>
           <div className="topbar-actions">
             {area === "review" && (
@@ -1288,6 +1812,7 @@ export function Workspace() {
                 </select>
               </label>
             )}
+            <ProjectSaveStatus state={projectPersistence} />
             <DataSourceBadge state={dataState} />
             {area === "review" && (
               <div className="view-switch" aria-label="评审视图">
@@ -1326,7 +1851,7 @@ export function Workspace() {
         <div className="workspace-content">
           {area === "overview" && (
             <ProjectOverview
-              batchTitle={batchTitle}
+              batchTitle={projectTitle}
               sourceLabel={sourceLabel}
               coverSrc={selected.src}
               referenceCount={referenceFiles.length}
@@ -1334,6 +1859,9 @@ export function Workspace() {
               candidateCount={batchCandidates.length}
               completedCount={batchResultCount}
               reviewedCount={new Set(auditEntries.map((entry) => entry.assetId)).size}
+              projectRecord={projectRecord}
+              projectEvents={projectEvents}
+              projectPersistence={projectPersistence}
               onNavigate={setArea}
             />
           )}
@@ -1469,6 +1997,29 @@ export function Workspace() {
   );
 }
 
+function ProjectSaveStatus({ state }: { state: ProjectPersistenceState }) {
+  const label =
+    state.kind === "loading"
+      ? "正在恢复本机项目"
+      : state.kind === "saving"
+        ? `保存中 · v${state.revision}`
+        : state.kind === "saved"
+          ? `本机已保存 · v${state.revision}`
+          : state.kind === "error"
+            ? "本机保存失败"
+            : "等待建立项目";
+  return (
+    <span
+      className={`project-save-status is-${state.kind}`}
+      role="status"
+      title={state.kind === "error" ? state.message : undefined}
+    >
+      <i aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
+
 function ProjectOverview({
   batchTitle,
   sourceLabel,
@@ -1478,6 +2029,9 @@ function ProjectOverview({
   candidateCount,
   completedCount,
   reviewedCount,
+  projectRecord,
+  projectEvents,
+  projectPersistence,
   onNavigate,
 }: {
   batchTitle: string;
@@ -1488,6 +2042,9 @@ function ProjectOverview({
   candidateCount: number;
   completedCount: number;
   reviewedCount: number;
+  projectRecord: VisionQaProjectRecord<WorkspaceProjectPayload> | null;
+  projectEvents: VisionQaProjectAuditEvent[];
+  projectPersistence: ProjectPersistenceState;
   onNavigate: (area: WorkspaceArea) => void;
 }) {
   const hasBaseline = referenceCount > 0 || skuCount > 0;
@@ -1558,6 +2115,56 @@ function ProjectOverview({
           ))}
         </div>
       </section>
+
+      {projectRecord && (
+        <section className="project-history" aria-labelledby="project-history-title">
+          <header>
+            <div>
+              <span>本机项目记录</span>
+              <h2 id="project-history-title">可恢复，也能说明发生过什么。</h2>
+            </div>
+            <ProjectSaveStatus state={projectPersistence} />
+          </header>
+          <dl>
+            <div>
+              <dt>项目标识</dt>
+              <dd>{projectRecord.projectId.slice(0, 8)}</dd>
+            </div>
+            <div>
+              <dt>内容版本</dt>
+              <dd>v{projectRecord.revision}</dd>
+            </div>
+            <div>
+              <dt>保存位置</dt>
+              <dd>当前浏览器</dd>
+            </div>
+            <div>
+              <dt>最近更新</dt>
+              <dd>{new Date(projectRecord.updatedAt).toLocaleString("zh-CN")}</dd>
+            </div>
+          </dl>
+          <ol aria-label="最近项目事件">
+            {projectEvents
+              .slice(-4)
+              .reverse()
+              .map((event) => (
+                <li key={event.eventId}>
+                  <span>{String(event.sequence).padStart(2, "0")}</span>
+                  <div>
+                    <strong>{event.summary}</strong>
+                    <small>
+                      {new Date(event.createdAt).toLocaleString("zh-CN")} · v
+                      {event.toRevision}
+                    </small>
+                  </div>
+                </li>
+              ))}
+          </ol>
+          <p>
+            本阶段仅保存在当前设备与浏览器中，不会上传客户图片；清除站点数据会同时清除本机项目。
+          </p>
+        </section>
+      )}
     </section>
   );
 }
@@ -1738,7 +2345,7 @@ function CustomerWorkflow({
               ))}</ul>
             </div>
           )}
-          <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured} onChange={(event) => setLiveConsent(event.target.checked)} /><span>我确认本批候选图与 {referenceFiles.length} 张历史参考可发送至阿里云百炼。应用不保存图片，所有结果必须人工终审。</span></label>
+          <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured} onChange={(event) => setLiveConsent(event.target.checked)} /><span>我确认本批候选图与 {referenceFiles.length} 张历史参考可发送至阿里云百炼。服务端不留存原图，本机项目会保存工作集；所有结果必须人工终审。</span></label>
         </section>
 
       </div>

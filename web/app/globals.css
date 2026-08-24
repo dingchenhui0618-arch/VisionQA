@@ -4778,6 +4778,149 @@ h3 {
   line-height: 1.65;
 }
 
+.project-save-status {
+  min-height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0 0.625rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 620;
+  white-space: nowrap;
+}
+
+.project-save-status i {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.project-save-status.is-saved i {
+  background: var(--green);
+}
+
+.project-save-status.is-loading i,
+.project-save-status.is-saving i {
+  background: var(--blue);
+}
+
+.project-save-status.is-error {
+  border-color: color-mix(in srgb, var(--red) 36%, var(--line));
+  color: var(--red);
+}
+
+.project-save-status.is-error i {
+  background: var(--red);
+}
+
+.rail-project-id {
+  font-family: var(--font-geist-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-history {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line-strong);
+}
+
+.project-history > header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.project-history > header span:not(.project-save-status) {
+  color: var(--faint);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+
+.project-history h2 {
+  margin: 0.5rem 0 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.025em;
+}
+
+.project-history dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 1.5rem 0 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.project-history dl div {
+  min-width: 0;
+  padding: 1rem;
+  border-left: 1px solid var(--line);
+}
+
+.project-history dl div:first-child {
+  border-left: 0;
+}
+
+.project-history dt {
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.project-history dd {
+  margin: 0.375rem 0 0;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-history ol {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.project-history li {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.project-history li > span {
+  color: var(--faint);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.6875rem;
+}
+
+.project-history li div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.project-history li strong {
+  font-size: 0.8125rem;
+}
+
+.project-history li small,
+.project-history > p {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.55;
+}
+
+.project-history > p {
+  margin: 1rem 0 0;
+}
+
 .baseline-stage-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 20.5rem;
@@ -5065,6 +5208,23 @@ h3 {
 
   .overview-batch-facts {
     grid-row: 3;
+  }
+
+  .project-history > header {
+    display: grid;
+    align-items: start;
+  }
+
+  .project-history dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-history dl div:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .project-history dl div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
   }
 
   .review-page .inspector {

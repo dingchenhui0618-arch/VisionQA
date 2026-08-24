@@ -1,8 +1,19 @@
 # VisionQA 项目状态
 
 > 这是本项目的首要状态入口。每次阶段交付、评审结论或方向变化后更新。  
-> 最后更新：2026-08-20（Asia/Shanghai；千问营销 Provider 适配层已实现；Key、数据外传与付费调用仍未授权）
+> 最后更新：2026-08-24（Asia/Shanghai；本机 Project 持久化已实现；真实登录、Key、数据外传与付费调用仍未授权）
 > 内部代号：`VisionQA`；外部产品名：待定  
+
+## 2026-08-24 本机 Project 业务对象 v0.1
+
+- 新增 `visionqa-project-v0.1`：工作台不再只依赖 React 临时状态，SKU 基准、候选批次、评审结果、人工记录和当前阶段归属于稳定 Project ID。
+- IndexedDB 使用 `projects / assets / events` 三个对象仓库；素材以浏览器 `File` 保存，页面对象 URL 不写入持久层。
+- 第一次进入内部预览会恢复最近项目或建立新项目；内容变化 800ms 自动保存，刷新后可恢复，内容版本使用乐观并发检查递增。
+- 新增只追加事件：项目建立、恢复、阶段切换、素材变化和一般内容更新；项目总览显示项目 ID、版本和最近记录。
+- 运行中状态会降级为安全可重试状态；阿里云图片发送授权不会跨刷新保留，避免把历史同意扩张为新一次外传授权。
+- 仍保留内部测试登录，不接真实账户、租户、云同步、项目列表或支付；图片不会因项目自动保存发送到服务端或第三方。
+- 当前 Gate：`LOCAL_PROJECT_PERSISTENCE_READY / REFRESH_RESTORE_READY / AUDIT_EVENT_READY / REAL_LOGIN_DEFERRED / CLOUD_SYNC_DISABLED / HUMAN_REVIEW_REQUIRED / AUTO_PASS_DISABLED`。
+- 契约说明：[`web/docs/project-contract-v0.1.md`](./web/docs/project-contract-v0.1.md)。
 
 ## 2026-08-20 商品表达效能契约与本地营销智能体
 

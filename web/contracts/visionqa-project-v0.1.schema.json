@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/visionqa-project-v0.1.schema.json",
+  "title": "VisionQA Project v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "projectName",
+    "scenario",
+    "storageMode",
+    "revision",
+    "stage",
+    "createdAt",
+    "updatedAt",
+    "payload",
+    "materialCounts"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "visionqa-project-v0.1" },
+    "projectId": { "type": "string", "minLength": 1 },
+    "projectName": { "type": "string", "minLength": 1 },
+    "scenario": { "const": "fashion_ecommerce_ai_model_image" },
+    "storageMode": { "const": "LOCAL_INDEXED_DB" },
+    "revision": { "type": "integer", "minimum": 1 },
+    "stage": {
+      "enum": [
+        "overview",
+        "baseline",
+        "intake",
+        "review",
+        "repair",
+        "delivery"
+      ]
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "required": ["schemaVersion"],
+      "properties": {
+        "schemaVersion": {
+          "const": "visionqa-workspace-project-payload-v0.1"
+        }
+      }
+    },
+    "materialCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "references",
+        "candidates",
+        "completedEvaluations",
+        "humanReviews"
+      ],
+      "properties": {
+        "references": { "type": "integer", "minimum": 0 },
+        "candidates": { "type": "integer", "minimum": 0 },
+        "completedEvaluations": { "type": "integer", "minimum": 0 },
+        "humanReviews": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

@@ -22,6 +22,7 @@ The fixed five-stage material track is the product signature: baseline SKU, revi
 - Login split: black product promise panel and white account panel; preview access is explicit and separate from real authentication.
 - Workbench shell: persistent overview plus five-stage rail above 1024px, sticky horizontal stage navigation at and below 1024px.
 - Project overview: one next-action focal surface, one truthful project visual, four factual counters, and a linear stage ledger. On mobile, the action appears before the image.
+- Project persistence: compact text-and-dot save state in the top bar; project ID, revision, storage scope, and the four latest audit events live at the bottom of Project overview instead of becoming a new navigation module.
 - Baseline: SKU links and confirmed product-image references remain the primary canvas; customer strategy and targeting live in a sticky side inspector with progressively disclosed controls.
 - Asset intake: one dominant neutral dropzone followed by real-color image tiles.
 - Review desktop: gallery plus result-first inspector, without a complex filter rail. Review mobile: conclusion inspector before the gallery. Scores, prompts, and audit details stay collapsed until requested.
