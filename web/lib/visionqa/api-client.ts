@@ -3,17 +3,10 @@ import {
   type EvaluationApiEnvelope,
   type UiEvaluationPatch,
 } from "./ui-adapter";
-
-export class VisionQaApiError extends Error {
-  constructor(
-    message: string,
-    readonly code: string,
-    readonly retryable: boolean,
-  ) {
-    super(message);
-    this.name = "VisionQaApiError";
-  }
-}
+import {
+  parseVisionQaApiError,
+} from "./api-error";
+export { parseVisionQaApiError, VisionQaApiError } from "./api-error";
 
 export type LiveModelCapability = {
   configured: boolean;
@@ -21,8 +14,12 @@ export type LiveModelCapability = {
   modelSnapshot: string;
   maxImageBytes: number;
   maxTotalRequests: number;
+  dispatchedRequests: number;
+  remainingRequests: number;
   budgetCurrency: "CNY";
   budgetMinorUnits: number;
+  attemptTimeoutMs: number;
+  maxCompletionTokens: number;
   imagePersistence: "NONE";
   resultPersistence: "BROWSER_ONLY";
   reviewPolicy: "HUMAN_REVIEW_REQUIRED";
@@ -108,19 +105,6 @@ async function prepareLiveUploadFile(file: File): Promise<File> {
   return file;
 }
 
-async function parseError(response: Response): Promise<VisionQaApiError> {
-  const body = (await response.json().catch(() => null)) as
-    | {
-        error?: { code?: string; message?: string; retryable?: boolean };
-      }
-    | null;
-  return new VisionQaApiError(
-    body?.error?.message || `API 请求失败（HTTP ${response.status}）`,
-    body?.error?.code || "API_REQUEST_FAILED",
-    Boolean(body?.error?.retryable),
-  );
-}
-
 export async function getEvaluation(
   evaluationId: string,
   signal?: AbortSignal,
@@ -133,7 +117,7 @@ export async function getEvaluation(
       cache: "no-store",
     },
   );
-  if (!response.ok) throw await parseError(response);
+  if (!response.ok) throw await parseVisionQaApiError(response);
   return adaptEvaluationEnvelope(
     (await response.json()) as EvaluationApiEnvelope,
   );
@@ -144,15 +128,19 @@ export async function getLiveModelCapability(): Promise<LiveModelCapability> {
     headers: { accept: "application/json" },
     cache: "no-store",
   });
-  if (!response.ok) throw await parseError(response);
+  if (!response.ok) throw await parseVisionQaApiError(response);
   const body = (await response.json()) as {
     configured: boolean;
     provider_id: string;
     model_snapshot: string;
     max_image_bytes: number;
     max_total_requests: number;
+    dispatched_requests: number;
+    remaining_requests: number;
     budget_currency: "CNY";
     budget_minor_units: number;
+    attempt_timeout_ms: number;
+    max_completion_tokens: number;
     image_persistence: "NONE";
     result_persistence: "BROWSER_ONLY";
     review_policy: "HUMAN_REVIEW_REQUIRED";
@@ -164,8 +152,12 @@ export async function getLiveModelCapability(): Promise<LiveModelCapability> {
     modelSnapshot: body.model_snapshot,
     maxImageBytes: body.max_image_bytes,
     maxTotalRequests: body.max_total_requests,
+    dispatchedRequests: body.dispatched_requests,
+    remainingRequests: body.remaining_requests,
     budgetCurrency: body.budget_currency,
     budgetMinorUnits: body.budget_minor_units,
+    attemptTimeoutMs: body.attempt_timeout_ms,
+    maxCompletionTokens: body.max_completion_tokens,
     imagePersistence: body.image_persistence,
     resultPersistence: body.result_persistence,
     reviewPolicy: body.review_policy,
@@ -182,11 +174,13 @@ export async function evaluateLiveCandidate(input: {
   referenceStatus: "complete" | "missing";
   provenanceStatus: "confirmed_ai" | "confirmed_real" | "unknown";
   commercialTemplateId: string;
+  requestId?: string;
   signal?: AbortSignal;
 }): Promise<{
   patch: UiEvaluationPatch;
   provider: LiveEvaluationProvider;
   candidateTraceId: string;
+  requestId: string;
 }> {
   const candidate = await prepareLiveUploadFile(input.file);
   const references = await Promise.all(
@@ -214,21 +208,25 @@ export async function evaluateLiveCandidate(input: {
     skuLinks: [],
   }));
   form.set("consent", "confirmed");
+  const requestId = input.requestId ?? crypto.randomUUID();
   const response = await fetch("/api/live-evaluate", {
     method: "POST",
+    headers: { "x-request-id": requestId },
     body: form,
     signal: input.signal,
     cache: "no-store",
   });
-  if (!response.ok) throw await parseError(response);
+  if (!response.ok) throw await parseVisionQaApiError(response);
   const body = (await response.json()) as EvaluationApiEnvelope & {
     provider: LiveEvaluationProvider;
     candidate: { trace_id: string };
+    request_id: string;
   };
   return {
     patch: adaptEvaluationEnvelope(body),
     provider: body.provider,
     candidateTraceId: body.candidate.trace_id,
+    requestId: body.request_id || requestId,
   };
 }
 
@@ -263,7 +261,7 @@ export async function createOverride(input: {
       }),
     },
   );
-  if (!response.ok) throw await parseError(response);
+  if (!response.ok) throw await parseVisionQaApiError(response);
   const body = (await response.json()) as {
     override_id: string;
     idempotent_replay: boolean;

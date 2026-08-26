@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   createGovernedQwenImageEditProvider,
   getQwenImageEditReadiness,
+  QWEN_IMAGE_EDIT_MAX_REFERENCES,
   QwenImageEditProvider,
   QwenImageEditProviderError,
 } from "../lib/visionqa/providers/qwen-image-edit.ts";
@@ -34,7 +35,30 @@ test("Qwen image edit fails closed before API key and paid-call authorization", 
   );
 });
 
-test("Qwen image edit sends the candidate first, locks the model, and downloads the temporary output", async () => {
+test("Qwen image edit limits one repair source to two selected product-truth references", async () => {
+  assert.equal(QWEN_IMAGE_EDIT_MAX_REFERENCES, 2);
+  const provider = new QwenImageEditProvider(
+    "test-secret",
+    "workspace-1234",
+    async () => new Response("not reached", { status: 500 }),
+  );
+  await assert.rejects(
+    () => provider.edit({
+      source: { bytes: new Uint8Array([1]), mimeType: "image/jpeg" },
+      references: [
+        { bytes: new Uint8Array([2]), mimeType: "image/png" },
+        { bytes: new Uint8Array([3]), mimeType: "image/png" },
+        { bytes: new Uint8Array([4]), mimeType: "image/png" },
+      ],
+      prompt: "修正商品结构。",
+    }),
+    (error: unknown) =>
+      error instanceof QwenImageEditProviderError &&
+      error.code === "INVALID_INPUT",
+  );
+});
+
+test("Qwen image edit sends product truth first and the model draft last to preserve its canvas", async () => {
   const calls: Array<{ url: string; init?: RequestInit }> = [];
   const provider = createGovernedQwenImageEditProvider(
     authorizedEnvironment,
@@ -91,9 +115,11 @@ test("Qwen image edit sends the candidate first, locks the model, and downloads 
   assert.equal(body.parameters.n, 1);
   assert.equal(body.parameters.prompt_extend, false);
   assert.equal(body.parameters.watermark, false);
-  assert.equal(body.input.messages[0].content[0].image.startsWith("data:image/jpeg;base64,"), true);
-  assert.equal(body.input.messages[0].content[1].image.startsWith("data:image/png;base64,"), true);
-  assert.match(body.input.messages[0].content[2].text, /第一张图是需要修正的 AI 模特草图/);
+  assert.equal(body.input.messages[0].content[0].image.startsWith("data:image/png;base64,"), true);
+  assert.equal(body.input.messages[0].content[1].image.startsWith("data:image/jpeg;base64,"), true);
+  assert.match(body.input.messages[0].content[2].text, /图2是唯一需要编辑的AI模特母版/);
+  assert.match(body.input.messages[0].content[2].text, /禁止改成服装白底图、商品特写/);
+  assert.match(body.parameters.negative_prompt, /移除人物/);
   assert.equal(JSON.stringify(body).includes("test-secret"), false);
   assert.equal(result.providerRequestId, "req-image-edit-1");
   assert.equal(result.outputBytes.byteLength, 4);

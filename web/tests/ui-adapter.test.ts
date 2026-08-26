@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { parseVisionQaApiError } from "../lib/visionqa/api-error.ts";
 import { adaptEvaluationEnvelope } from "../lib/visionqa/ui-adapter.ts";
 import type { EvaluationResultV03 } from "../lib/visionqa/contracts.ts";
 
@@ -111,4 +112,32 @@ test("known live issue codes are rendered with Chinese business labels", async (
 
   assert.equal(ui.issues[0].title, "缺少促销信息层");
   assert.equal(ui.issues[0].rule, "缺少促销信息层");
+});
+test("API errors retain the local request id and timeout evidence", async () => {
+  const error = await parseVisionQaApiError(
+    Response.json(
+      {
+        error: {
+          code: "LIVE_MODEL_TIMEOUT",
+          message: "模型响应超时。",
+          request_id: "request-timeout-001",
+          retryable: true,
+          details: {
+            phase: "PROVIDER_WAIT",
+            timeout_ms: 180_000,
+            product_conclusion_formed: false,
+          },
+        },
+      },
+      { status: 504 },
+    ),
+  );
+
+  assert.equal(error.code, "LIVE_MODEL_TIMEOUT");
+  assert.equal(error.requestId, "request-timeout-001");
+  assert.deepEqual(error.details, {
+    phase: "PROVIDER_WAIT",
+    timeout_ms: 180_000,
+    product_conclusion_formed: false,
+  });
 });

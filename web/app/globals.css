@@ -381,7 +381,9 @@ button:active {
 .batch-queue li label > div,
 .batch-queue li label > img { width: 2rem !important; height: 2rem !important; object-fit: cover; border-radius: 0.25rem; }
 .batch-queue li label > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.batch-queue li small { grid-column: 1 / -1; padding-bottom: var(--space-1); color: var(--red); }
+.batch-queue li small { grid-column: 1 / -1; padding-bottom: var(--space-1); overflow-wrap: anywhere; }
+.batch-queue li .queue-error { color: var(--red); }
+.batch-queue li .queue-attempt { color: var(--muted); }
 .queue-status { color: var(--muted); white-space: nowrap; }
 .queue-status.running { color: var(--blue); }
 .queue-status.done { color: var(--green); }
@@ -3142,6 +3144,60 @@ button:active {
 .repair-prompt-row { grid-column: 1 / -1; display: grid; grid-template-columns: 7rem minmax(0, 1fr) auto; gap: 1rem; border-top: 1px solid var(--line); }
 .repair-prompt-row p { margin: 0; color: var(--muted); font-size: 0.84rem; line-height: 1.65; }
 
+.repair-reference-selector {
+  display: grid;
+  gap: 0.875rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.repair-reference-selector > div:first-child {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 0.35rem 1rem;
+}
+
+.repair-reference-selector > div:first-child > span,
+.repair-reference-selector > small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.repair-reference-selector > div:first-child > strong { font-size: 0.875rem; }
+.repair-reference-selector > div:first-child > p {
+  grid-column: 2;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.repair-reference-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.repair-reference-list label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 3rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.repair-reference-list label[data-selected="true"] { border-color: var(--ink); }
+.repair-reference-list label:has(input:disabled) { cursor: not-allowed; opacity: 0.5; }
+.repair-reference-list input { accent-color: var(--ink); }
+.repair-reference-list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; }
+.repair-reference-list small { color: var(--muted); font-size: 0.7rem; }
+.repair-reference-list > p { margin: 0; color: var(--muted); font-size: 0.8rem; }
+
 .repair-task-actions {
   display: flex;
   align-items: center;
@@ -3194,6 +3250,15 @@ button:active {
 .comparison-stage figcaption span { color: var(--faint); font-size: 0.68rem; letter-spacing: .08em; }
 .comparison-stage figcaption strong { font-size: 0.8rem; }
 .comparison-stage img { display: block; width: 100%; height: 32rem; object-fit: contain; background: #e8e8e8; }
+.repair-output-blocked {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--red) 7%, var(--surface));
+  color: var(--red);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
 .comparison-empty > div { display: grid; place-content: center; min-height: 32rem; padding: 2rem; text-align: center; }
 .comparison-empty p { max-width: 24rem; color: var(--muted); font-size: 0.84rem; line-height: 1.6; }
 
@@ -3426,6 +3491,9 @@ button:active {
   .comparison-stage,
   .pain-point-rows article { grid-template-columns: 1fr; }
   .provider-choice-grid button { min-height: auto; }
+  .repair-reference-selector > div:first-child { grid-template-columns: 1fr; }
+  .repair-reference-selector > div:first-child > p { grid-column: 1; }
+  .repair-reference-list { grid-template-columns: 1fr; }
   .comparison-stage figure { border-right: 0; border-bottom: 1px solid var(--line-strong); }
   .comparison-stage img,
   .comparison-empty > div { height: auto; min-height: 22rem; }

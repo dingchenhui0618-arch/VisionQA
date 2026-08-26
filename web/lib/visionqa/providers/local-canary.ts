@@ -17,9 +17,12 @@ import {
 export const LOCAL_CANARY_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const LOCAL_CANARY_MAX_REFERENCE_IMAGES = 4;
 export const LOCAL_CANARY_MAX_TOTAL_IMAGE_BYTES = 14 * 1024 * 1024;
-export const LOCAL_CANARY_MAX_TOTAL_REQUESTS = 10;
+// Local manual-test mode: keep a finite process-level guard, but do not lock
+// the workbench after the first failed request. Paid calls still require an
+// explicit per-send confirmation and are never retried automatically.
+export const LOCAL_CANARY_MAX_TOTAL_REQUESTS = 15;
 export const LOCAL_CANARY_MAX_CONCURRENCY = 1;
-export const LOCAL_CANARY_BUDGET_MINOR_UNITS = 2_000;
+export const LOCAL_CANARY_BUDGET_MINOR_UNITS = 200;
 
 type Environment = Record<string, string | undefined>;
 
@@ -29,6 +32,8 @@ export type LocalCanaryReadiness = {
   modelSnapshot: string;
   maxImageBytes: number;
   maxTotalRequests: number;
+  dispatchedRequests: number;
+  remainingRequests: number;
   budgetCurrency: "CNY";
   budgetMinorUnits: number;
   missing: string[];
@@ -79,6 +84,11 @@ export function getLocalCanaryReadiness(
     modelSnapshot: QWEN_BAILIAN_MODEL_SNAPSHOT,
     maxImageBytes: LOCAL_CANARY_MAX_IMAGE_BYTES,
     maxTotalRequests: LOCAL_CANARY_MAX_TOTAL_REQUESTS,
+    dispatchedRequests,
+    remainingRequests: Math.max(
+      0,
+      LOCAL_CANARY_MAX_TOTAL_REQUESTS - dispatchedRequests,
+    ),
     budgetCurrency: "CNY",
     budgetMinorUnits: LOCAL_CANARY_BUDGET_MINOR_UNITS,
     missing,

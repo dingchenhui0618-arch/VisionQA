@@ -1,162 +1,274 @@
-# PROGRESS
+# VisionQA 当前产品与项目进度
 
-> 历史执行记录。当前状态请以根目录 [`PROJECT_STATE.md`](./PROJECT_STATE.md) 为准。
+> 用途：供产品负责人、开发者与后续 Codex 任务快速恢复项目上下文。
+> 当前事实入口：本文件负责“现在是什么、已经做到哪里、下一步做什么”；详细阶段证据继续查看 [`PROJECT_STATE.md`](./PROJECT_STATE.md)。
+> 最后整理：2026-08-26（Asia/Shanghai；ImageGen 修正金标准与受控真值闭环已建立）
+> 当前代码基线：`codex/visionqa-phase3-qwen` / `48de5d6860ac8a609b268c7c5899109f0e32d677`
 
-## 当前目标
+## 1. 一句话产品定位
 
-在没有真实客户素材的前提下，完成可评审、可实现、可验证的 VisionQA 第一阶段规格。
+VisionQA 是一个面向服饰电商的 **AI 模特图修正与交付工作台**：以真实商品图为真值，对 AI 美工生成的模特图进行问题诊断、受控改图、修改前后复验和 4K 文件交付。
 
-## 已完成
+它当前不是批量打分器、通用生图工具、通用营销文案工具，也不是已经完成商业验证的公开 SaaS。
 
-- 项目策划书 v0.1 评审；
-- 冻结首个场景：服饰电商 AI 模特商品图质检；
-- 多 Agent 职责、交接和验收规则；
-- 缺陷分类 taxonomy v0.1；
-- PASS / REVIEW / REJECT 发布门禁 v0.1；
-- provider-neutral 评估结果 JSON Schema；
-- 评估结果示例；
-- 离线技术验证计划；
-- 双人独立标注与分歧裁决协议；
-- 12 条模拟 case manifest；
-- baseline 与 Go / No-Go 计划；
-- 策划书 v0.2 执行版；
-- 真实客户素材获取规范；
-- 外部产品名暂缓，VisionQA 仅作内部代号。
-- TECH-001 最小离线评测执行器：
-  - provider-neutral `Evaluator` Protocol；
-  - 无外部 API、无密钥的 `SimulationEvaluator`；
-  - 模型观察层与确定性规则决策层分离；
-  - `evaluate-dataset` CLI；
-  - JSONL 运行产物；
-  - 12 条 simulation case 合同测试。
-- TECH-002 离线验证与静态报告：
-  - `validate-manifest` 检查 JSONL、唯一 case ID、必填字段和 taxonomy 精确代码；
-  - `render-report` 生成单文件静态 HTML 批次报告；
-  - 报告包含分流汇总、逐 case 观察证据和不可移除的 simulation 警示；
-  - 动态内容进行 HTML 转义。
+## 2. 产品处于客户流程中的位置
 
-## 正在进行
+客户已有生产流程：
 
-- 全项目文档一致性校验；
-- 等待真实素材后开展模型观察能力验证与阈值标定。
+`服装生产 → 拍摄商品白底图 → 美工生成 AI 模特图 → 详情页/促销排版 → 运营上架与推广`
 
-## 下一步
+VisionQA 插入在 AI 模特图生成之后、详情页与促销排版之前：
 
-1. 为模型失败状态补充独立合同夹具；
-2. 真实素材到位后建立试标集与盲测集；
-3. 接入首个真实 evaluator adapter 前进行隐私、成本与日志评审；
-4. 使用真实多人标注重新标定阈值。
+`商品白底真值 + AI 模特草图 → 发现错误 → 修正错误 → 前后复验 → 4K 交付`
 
-## 最大风险
+当前目标用户：
 
-当前没有真实客户素材和实际审核基线，因此所有严重度边界、置信度阈值与效果指标仍是假设。
+- 已经使用 AI 制图的服饰电商美工；
+- 负责商品视觉一致性的视觉负责人；
+- 负责最终上架验收的电商运营。
 
-## TECH-001 实际验证记录（2026-07-28）
+当前最核心的客户价值不是“代替美工”，而是减少商品结构错误、反复返工、运营验收沟通和不合格图片流入详情页。
 
-本次运行完全基于 `datasets/simulation_manifest_v0.1.jsonl` 中的人造预期观察，只验证合同、控制流与门禁逻辑，不代表模型准确率、召回率或商业可用性。
+## 3. 当前四步主流程
 
-### 测试命令
+### 第一步：建立商品真值
 
-```powershell
-$env:PYTHONPATH='D:\VisionQA\src'
-python -m unittest discover -s tests -v
-```
+用户上传或登记：
 
-实际结果：
+- 商品白底正面、背面、侧面和关键细节图；
+- 官方 Logo、字标或已确认稿；
+- SKU 链接、商品名称及不可修改属性；
+- 必要的人群、场景和渠道信息。
 
-```text
-Ran 8 tests in 0.029s
-OK
-```
+SKU 链接当前只作为用户输入保存，尚未抓取和解析时不得冒充已核验商品事实。
 
-测试覆盖全部 12 条 simulation case，并单独验证：
+### 第二步：上传 AI 模特草图
 
-- Blocker 不被其他维度软分抵消；
-- 信息不足进入 `REVIEW`；
-- 模型观察层不包含发布决策；
-- 门禁引用的 observation 均存在；
-- 输出 JSONL 可逐行解析；
-- 模拟执行成本标记为 `NOT_APPLICABLE`。
+- 当前一次任务只处理同一 SKU、同一用途的图片；
+- 建议一次处理 1 张，最多 3 张 AI 模特母图；
+- 用户需要确认图片是否为 AI 生成；
+- 模特母图不承担促销表达，缺少价格、优惠、CTA 或商业贴字不得成为打回原因。
 
-### CLI 命令
+### 第三步：问题诊断
 
-```powershell
-$env:PYTHONPATH='D:\VisionQA\src'
-python -m visionqa.cli evaluate-dataset `
-  --manifest datasets\simulation_manifest_v0.1.jsonl `
-  --output runs\tech-001\evaluation-results.jsonl `
-  --dataset-version simulation-0.1
-```
+主要检查：
 
-实际结果：
+- 商品颜色、版型、结构和比例漂移；
+- 面料纹理、图案、Logo 和关键细节错误；
+- 明显人体异常、遮挡和不自然接触；
+- 与商品真值不一致；
+- 修改或生成造成的非目标区域变化。
 
-```json
-{"count": 12, "decisions": {"PASS": 1, "REJECT": 6, "REVIEW": 5}, "run_id": "run_20260728T053234Z"}
-```
+诊断结果应给出证据、影响范围、可修复性和建议动作。综合分只用于内部排序与诊断，硬性 SKU、授权和安全 Gate 可以覆盖分数。
 
-附加解析检查：
+对外状态固定为：`PASS / CONDITIONAL_PASS / REWORK / REGENERATE / BLOCKED`。真实结果始终要求人工终审，自动放行关闭。
 
-```text
-JSONL_PARSE_OK 12
-DECISIONS {'PASS': 1, 'REVIEW': 5, 'REJECT': 6}
-MODEL_DECISION_FIELDS 0
-OVERALL_SCORE_NON_NULL 0
-```
+### 第四步：修正、复验与交付
 
-运行产物写入 `runs/tech-001/evaluation-results.jsonl`，`runs/` 已加入 `.gitignore`。
+- 基于同一 Repair Case 建立改图任务；
+- 生成或上传修正后的图片；
+- 展示修改前后对比；
+- 人工确认商品一致性、人体自然度、非目标漂移和交付可用性；
+- 人工确认后生成本机 4K 尺寸文件与处理凭证。
 
-## TECH-002 实际验证记录（2026-07-28）
+当前 4K 能力是浏览器本机高质量分级重采样，只提升像素尺寸，不宣称重建了原图不存在的细节。真实 AI 超分尚未接入。
 
-### 全量测试
+## 4. 当前已经实现的产品能力
 
-```powershell
-$env:PYTHONPATH='D:\VisionQA\src'
-python -m unittest discover -s tests -v
-```
+### 2026-08-26 修正金标准 v0.1
 
-实际结果：
+- 已找回历史 ImageGen 成功方法：模特成片是唯一编辑底图，商品图仅作 SKU 结构校验；人物、镜头、构图、背景与非目标区域作为硬性不变量重复冻结。
+- 内置 ImageGen 已对 `SYN-VQA-BURGUNDY-TROUSERS-001` 完成一次局部修正：保留 1024×1536 完整模特画幅并移除画面左侧（模特右腿）的错误翻盖工装口袋。
+- 结果保存为 `data/synthetic_demo_sku_burgundy_trousers_v0.1/imagegen-repair-gold-v0.1.png`；工作台实际上传后通过 `repair-output-gate-v0.1`，进入“等待逐项确认”，没有退化为商品特写。
+- 新增严格受限的“载入受控样例真值”：只有候选 SHA-256、候选数量与商品真值板同时匹配已登记合成案例才开放。它是人工预设测试事实，不是千问诊断、商业分数或客户证据。
+- 当前工程验证：99/99 项自动化测试、生产构建与 ESLint 全部通过。
 
-```text
-Ran 12 tests in 0.152s
-OK
-```
+| 能力 | 当前状态 | 事实边界 |
+|---|---|---|
+| 黑白灰工作台与侧边导航 | 已实现 | 首页与工作台均为本地可运行原型 |
+| 内部测试登录入口 | 已实现 | 不验证账号和密码，不是正式身份系统 |
+| 商品真值与候选图上传 | 已实现 | 图片保存在当前浏览器 Project |
+| 真实素材与示例素材隔离 | 已实现 | 客户图存在时禁止回退示例图、示例问题和示例分数 |
+| 单图问题诊断界面 | 已实现 | 未运行真实模型时显示 `NOT_RUN`，不伪造结果 |
+| 促销信息误判修复 | 已实现 | 非促销模特母图不会因缺少价格、优惠、CTA 被打回 |
+| Repair Case v0.1 | 已实现 | 绑定候选图、SHA-256、真值、诊断、改图、复验和 4K 版本链 |
+| 六职责修正协作链 | 已实现为状态机 | `LOCAL_STATE_MACHINE_NO_MODEL`，不是六个独立模型 Agent |
+| 千问图像编辑适配器 | 代码与 Gate 已实现 | 真实 Key、付费调用与 Provider 启用仍关闭 |
+| 修改前后对比与人工复验 | 已实现 | 最终放行必须由人工完成 |
+| 本机 4K 尺寸交付 | 已实现 | `detailReconstruction=false`，不是 AI 细节超分 |
+| 本机 Project 保存和恢复 | 已实现 | IndexedDB，仅恢复最近一个本机项目 |
+| Project 版本与事件记录 | 已实现 | 保存版本、素材变化、阶段切换和恢复事件 |
+| 商品表达效能契约 | 已实现 | 营销和商业价值不再以促销贴字为主要判断依据 |
+| 营销智能体与交付契约 | 代码保留 | 已退出当前主导航，不是当前核心交付 |
+| 云端账号、租户和跨设备同步 | 未实现 | 继续保留本地内部原型 |
+| 真实 AI 超分 | 未实现 | 待选择本地模型或外部 Provider |
+| GPT Image 2 改图/生成 | 未实现 | 只完成架构讨论，尚无代码和 Key |
+| DeepSeek 调度 | 未实现 | 只确定为候选方向，尚未接入 |
+| Codex CLI 服务器编排 | 暂缓 | 保留为后续框架候选，不作为当前 L2 核心依赖 |
 
-旧测试全部复跑通过；新增测试覆盖非法 taxonomy issue code、重复 `case_id`、HTML 动态内容转义，以及 simulation 报告不得冒充真实准确率。
+## 5. Project 业务对象
 
-### Manifest 校验
+当前工作台已经不再只依赖 React 临时状态。`visionqa-project-v0.1` 使用 IndexedDB 保存：
 
-```powershell
-python -m visionqa.cli validate-manifest `
-  --manifest datasets\simulation_manifest_v0.1.jsonl
-```
+- `projects`：项目主记录、阶段、内容版本和更新时间；
+- `assets`：商品真值、AI 模特草图、改图输出和 4K 输出文件；
+- `events`：项目建立、恢复、阶段切换、素材变化和内容更新事件。
 
-实际结果：
+当前支持：
 
-```json
-{"count": 12, "simulation_only": true, "valid": true}
-```
+- 稳定 Project ID；
+- 800ms 防抖自动保存；
+- 乐观并发版本检查；
+- 页面刷新后恢复最近项目；
+- 中断中的模型任务恢复为安全可重试状态；
+- 改图发送授权不会跨刷新保留；
+- 改图输出、人工复验、4K 文件和凭证可随项目恢复。
 
-### 重新评估并渲染报告
+当前限制：
 
-```powershell
-python -m visionqa.cli evaluate-dataset `
-  --manifest datasets\simulation_manifest_v0.1.jsonl `
-  --output runs\tech-002\evaluation-results.jsonl `
-  --dataset-version simulation-0.1
+- 只有最近一个本机项目，没有项目列表、归档、导入和导出；
+- 清除浏览器站点数据会清除本机项目；
+- 没有跨设备、云备份、客户隔离、评审员签名和正式账号体系；
+- IndexedDB 保存成功不等于云端业务持久化已经完成。
 
-python -m visionqa.cli render-report `
-  --input runs\tech-002\evaluation-results.jsonl `
-  --output runs\tech-002\batch-report.html
-```
+## 6. 当前模型与 Provider 状态
 
-实际结果：
+| 职责 | 当前模型/方案 | 状态 |
+|---|---|---|
+| 商品图视觉诊断 | `qwen3-vl-plus-2025-12-19` | 现有质量内核与适配代码保留；真实启用状态以运行 Gate 为准 |
+| 图片修正 | `qwen-image-edit-max-2026-01-16` | 受控适配器完成，真实调用未授权启用 |
+| 营销内容 | `qwen3.7-plus-2026-05-26` | 适配器完成，当前退出主流程且真实调用关闭 |
+| 4K 尺寸交付 | `visionqa-browser-resample-v0.1` | 已实现，本机运行，无 API 费用 |
+| 真实 AI 超分 | Real-ESRGAN / SwinIR 或外部 Provider | 未选择、未实现 |
+| L2 调度大脑 | DeepSeek V4-Flash 候选 | 已讨论，未实现、未验证 |
+| 高质量生成/改图 | GPT Image 2 候选 | 已讨论，未实现、未授权 Key |
 
-```text
-evaluation: count=12; PASS=1; REVIEW=5; REJECT=6
-report: count=12; PASS=1; REVIEW=5; REJECT=6; simulation_only=true
-HTML_PARSE_OK 6858
-SIMULATION_WARNING_PRESENT True
-CASE_SECTION_COUNT 12
-```
+完整 SKU 可以保留多张商品真值图；千问改图单次调用按 Provider 契约收敛为“1 张待修图 + 用户选择的最多 2 张相关真值图”，总输入不超过 3 张。
 
-报告位于 `runs/tech-002/batch-report.html`。该报告只展示模拟合同和门禁控制流，不包含真实图片分析，也不提供任何模型准确率结论。
+本机 `web/.env.local` 已保存 DeepSeek 与千问凭据并被 Git 忽略；只确认配置状态，不记录密钥值。千问真实改图的付费、数据范围、Provider 和固定模型启用 Gate 仍关闭，因此当前真实外部调用和新增费用为 0。
+
+## 7. 智能体方向：当前决定
+
+最终愿景仍然可以是多智能体协作系统，但当前 L2 不建设复杂的自治 Agent 集群。
+
+当前推荐结构：
+
+`固定业务状态机 + 一个受控调度模型 + 多个专业工具 + 人工 Gate`
+
+六个修正角色继续保留为稳定职责和提示词模块，但暂不拆成六个常驻独立 Agent。这样可以先验证真实业务价值，同时保留未来升级接口。
+
+候选后续结构：
+
+1. VisionQA 后端拥有 Project、事实账本、权限、预算、任务状态和审计；
+2. DeepSeek V4-Flash 只负责规划、选择工具和整理结果；
+3. 千问 VL 负责商品图视觉诊断；
+4. GPT Image 2 或千问 Image Edit 负责图片生成/修正；
+5. 本地超分工具负责 4K 细节交付；
+6. 人工负责最终复验与放行。
+
+Codex CLI 只作为未来可替换的 Agent Harness 候选。当前不要为“多智能体”提前 Fork Codex、建设 Agent 自由对话、长期记忆、自成长系统或复杂集群。
+
+## 8. 当前明确不做的内容
+
+- 不扩展到服饰以外的品类；
+- 不恢复以批量评分为核心的产品定位；
+- 不因模特母图缺少促销信息而打回；
+- 不做自动放行、自动发布或爆款承诺；
+- 不建立公开注册、支付和复杂租户系统；
+- 不建设达人爬虫和未经核验的账号推荐；
+- 不把示例、测试 Provider 或规则草案冒充真实模型结果；
+- 不让大模型直接接触、输出或自行管理 API Key；
+- 不为每个角色配置一套独立 Key。
+
+## 9. 当前授权边界
+
+用户已授权在项目范围内自主进行代码实现、测试、QA、文档更新和本地素材读取测试。
+
+必须由用户确认的事项：
+
+- API Key 的创建、保存、启用和轮换；
+- 真实付费模型调用及预算；
+- 支付模块；
+- 首次启用外部 Provider 时允许发送的数据范围与留存策略；
+- 重大不可逆的商业或部署决策。
+
+任何 Key 不得粘贴到聊天、前端代码、Git 仓库、日志、Prompt 或模型上下文中。模型只能提出工具调用，由 VisionQA 服务端读取密钥并执行。
+
+## 10. 当前证据边界
+
+以下四类证据必须分开：
+
+1. **工程可运行**：构建、测试、界面和状态机可以运行；
+2. **模型有效**：真实素材上的诊断、修正和复验达到可接受质量；
+3. **客户采用**：美工或运营实际接受并使用交付图片；
+4. **商业成立**：产生真实付款、复购或再次提交。
+
+当前已有较充分的工程可运行证据，但还没有足够的真实改图模型效果、客户采用和付款证据。历史 40 张 Qwen 校准的 Gate 一致率为 32.5%，因此 `AUTO_PASS_DISABLED` 继续生效。
+
+## 11. 下一阶段优先级
+
+当前不继续增加功能模块，下一里程碑是跑通 **一个完整真实 SKU、至少一张 AI 模特图的真实修正闭环**。真实 AI 超分、正式账号、云端项目列表和租户隔离均后移。
+
+建议顺序：
+
+1. 固定一套真实本地完整 SKU 真值图与 AI 模特草图作为首个 Repair Case；
+2. 为每次改图选择最相关的最多 2 张商品真值参考；
+3. 使用现有本地状态机跑通诊断、修正规划、前后复验和 4K 交付；
+4. 在获得 Key 与付费授权后启用一个真实改图 Provider；
+5. 对千问 Image Edit 与 GPT Image 2 做小规模 A/B，不同时建设多条复杂链路；
+6. 记录每次 Prompt、模型快照、费用、输出、人工选择和失败原因；
+7. 只有固定流程明显无法处理动态任务时，再接入 DeepSeek 调度；
+8. 只有出现长任务恢复、动态工具选择或多角色并行的真实需求时，再评估 Codex CLI。
+
+当前等待产品负责人补充真实 SKU 商品真值与待修 AI 模特图；在合成样例的诊断链稳定前，不进入真实改图或客户素材外发。
+
+当前已建立一套可重复使用的合成内部测试 SKU：`data/synthetic_demo_sku_burgundy_trousers_v0.1/`。商品真值板和带单一受控错误的 AI 模特图已保存到本机 Project v30；该样例不需要真实 SKU 链接，也不能冒充客户或商业证据。
+
+两次合成真实诊断均未形成有效结果。首次因路由重试与单次额度冲突，页面只保留了 `LIVE_MODEL_CANARY_LIMIT_REACHED`；修复为永不自动重试后，第二次严格只调度 1 个 `qwen3-vl-plus-2025-12-19` 请求，并在 45 秒后记录 `LIVE_MODEL_TIMEOUT`。这两次都不是商品质量结论，实际费用仍以阿里云模型监控／账单为准。
+
+产品负责人随后明确授权重新开放本地人工体验测试。诊断改为当前服务进程最多 15 次、并发 1、无自动重试；千问诊断与千问改图现有授权 Gate 均已开启。每次发送仍须人工勾选具体图片，改图仍要求重新确认参考图，人工终审和自动放行关闭保持不变。当前 2 元字段只是授权／预算记录，不能读取实时账单或充当绝对止损器；实际用量必须在阿里云控制台核对。
+
+连续人工测试再次稳定触发 45 秒超时后，已确认基础网络可用，主要问题是本地总等待时间过短。诊断等待现调整为 180 秒，固定 `max_completion_tokens=2400`，仍保持单次请求和零自动重试。每次运行都会生成同一个可发送给百炼的本地 Request ID，并在 Project 中记录开始／结束时间、耗时、技术状态、Provider Request ID 与 Token 用量（若上游返回）。超时统一标记为技术失败，不形成商品结论；每次结束后自动撤销发送勾选。
+
+首张真实千问改图虽然返回成功，但输出把全身模特图重构为裤装特写，属于严重主体与构图漂移，不能视为有效改图。根因包括：多图输入中把商品真值放在最后，而千问官方契约规定输出宽高比以最后一张图为准；同时旧 Prompt 没有把“模特母版的完整人物与构图”设为最高优先级。现已调整为商品真值参考在前、待修模特母版最后，并明确参考图只提供服装事实，禁止继承其构图。新增完全本机的 `repair-output-gate-v0.1`，根据画幅与低分辨率构图指纹拦截大幅漂移；被拦截结果只供排查，不进入人工复审、4K 或交付。
+
+首个真实闭环的完成标准：
+
+- 商品真值完整且来源明确；
+- 诊断问题可由人工复核；
+- 修正图解决目标问题；
+- 商品结构和非目标区域没有不可接受漂移；
+- 4K 文件可下载并带处理凭证；
+- 全链路可在 Project 中恢复和追溯；
+- 没有自动放行、隐藏费用或无来源事实。
+
+## 12. 当前主要风险
+
+- 真实改图 Provider 尚未启用，工程闭环不等于模型效果闭环；
+- 商品一致性修复可能引入新的非目标漂移；
+- 当前 4K 只是像素重采样，低清细节不会凭空恢复；
+- 本机单项目存储还不满足正式客户数据隔离与云备份需求；
+- 过早建设多智能体和 Codex 编排会放大工程量，但不会自动提高图片交付质量；
+- 营销功能过早回归主流程会再次稀释“AI 模特图修正”这一核心价值。
+
+## 13. 后续任务接手顺序
+
+后续 Codex 或开发者进入项目时，按以下顺序读取：
+
+1. [`PROGRESS.md`](./PROGRESS.md)：当前产品、功能、边界与下一步；
+2. [`PROJECT_STATE.md`](./PROJECT_STATE.md)：详细阶段记录和验证证据；
+3. [`web/PRODUCT.md`](./web/PRODUCT.md)：前端产品语义与设计原则；
+4. [`web/docs/model-image-repair-v0.1.md`](./web/docs/model-image-repair-v0.1.md)：AI 模特图修正流程；
+5. [`web/docs/project-contract-v0.1.md`](./web/docs/project-contract-v0.1.md)：本机 Project 持久化契约；
+6. [`web/AGENT_ARCHITECTURE.md`](./web/AGENT_ARCHITECTURE.md)：现有 L2 与营销智能体历史实现；
+7. [`web/AUTHORIZATION_BOUNDARY.md`](./web/AUTHORIZATION_BOUNDARY.md)：授权、Key 和付费边界。
+
+## 14. Git 与工作区状态
+
+- 真实仓库：`D:\VisionQA`；
+- 真实 Web 应用：`D:\VisionQA\web`；
+- 当前分支：`codex/visionqa-phase3-qwen`；
+- 当前远端基线：`48de5d6860ac8a609b268c7c5899109f0e32d677`；
+- 当前存在未纳入本次文档整理的工作区内容：`web/aliyun-fc/src/dependency-loader.mjs`、`deploy/`、`web/artifacts/`；不得擅自覆盖、删除或混入无关提交。
+
+大型阶段完成后继续遵循：只暂存确认过的路径、运行对应测试、检查敏感信息、提交到功能分支并同步私有 GitHub 仓库。

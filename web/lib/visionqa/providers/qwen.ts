@@ -6,6 +6,7 @@ import {
 import {
   QWEN_BAILIAN_DEFINITION,
 } from "./registry.ts";
+import { LIVE_EVALUATION_MAX_COMPLETION_TOKENS } from "../live-evaluation-contract.ts";
 import {
   assertProviderObservationDraft,
   VisionProviderError,
@@ -446,6 +447,7 @@ export function buildQwenCompatibleRequestBody(
     ],
     response_format: { type: "json_object" },
     enable_thinking: false,
+    max_completion_tokens: LIVE_EVALUATION_MAX_COMPLETION_TOKENS,
   };
 }
 

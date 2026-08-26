@@ -1,0 +1,48 @@
+{
+  "schema_version": "visionqa-repair-gold-v0.1",
+  "case_id": "SYN-VQA-BURGUNDY-TROUSERS-001",
+  "evidence_mode": "SYNTHETIC_INTERNAL_TEST_ONLY",
+  "edit_target": "ai-model-draft-controlled-defect.png",
+  "sku_truth_reference": "product-truth-grid.png",
+  "output": "imagegen-repair-gold-v0.1.png",
+  "execution": {
+    "provider": "Codex built-in ImageGen",
+    "mode": "precise-object-edit",
+    "generated_at": "2026-08-26T18:14:23+08:00",
+    "external_api_key_required": false
+  },
+  "target_change": "只移除画面左侧（模特右腿）大腿外侧错误增加的矩形翻盖工装口袋，并恢复连续纵向微褶面料。",
+  "frozen_invariants": [
+    "同一完整成年男性模特身份与脸部",
+    "同一姿势、手部与全身构图",
+    "同一白色上衣、黑色抽绳、裤型、鞋",
+    "同一浅灰背景、镜头、光线、阴影与 2:3 画幅",
+    "除错误口袋区域外不改变商品和场景"
+  ],
+  "prompt": "Image 1 is the only edit target and sole composition authority. Image 2 is SKU truth reference only. Remove only the rectangular cargo flap pocket at viewer-left on the model's right outer thigh, reconstruct uninterrupted burgundy fine vertical ribbed fabric, and freeze the exact full-body model, identity, face, pose, hands, clothing, drawstring, trousers, shoes, background, lighting, camera, crop and canvas. Never return a garment-only image, close-up, crop or reframed scene.",
+  "human_visual_review": {
+    "status": "CANDIDATE_ACCEPTED_FOR_WORKBENCH_REVIEW",
+    "confirmed": [
+      "完整模特、头部、双腿与双鞋仍在原画幅内",
+      "错误翻盖口袋已移除",
+      "输出仍为 1024 x 1536",
+      "工作台本机构图漂移 Gate 允许进入人工复审"
+    ],
+    "not_claimed": [
+      "未宣称像素级非目标区域完全不变",
+      "未宣称真实客户采用",
+      "未宣称模型准确率或商业效果"
+    ]
+  },
+  "local_composition_gate_metrics": {
+    "fingerprint_grid": "24x36",
+    "aspect_ratio_drift": 0,
+    "mean_pixel_difference": 0.005981,
+    "changed_cell_ratio": 0,
+    "decision": "ALLOW_HUMAN_REVIEW"
+  },
+  "sha256": {
+    "edit_target": "D57A189C93CB209818EB5AF0F9A427E846041CB4618337B1760895E9A72A7C9E",
+    "output": "3F25FB89B15E463941C087BC8C593031C3530979ABF3E328A9A23A1189C36EBE"
+  }
+}

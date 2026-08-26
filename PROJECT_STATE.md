@@ -1,15 +1,71 @@
 # VisionQA 项目状态
 
 > 这是本项目的首要状态入口。每次阶段交付、评审结论或方向变化后更新。  
-> 最后更新：2026-08-24（Asia/Shanghai；产品已收缩为 AI 模特图修正与交付；真实改图/超分 API、Key、数据外传与付费调用仍未授权）
+> 最后更新：2026-08-26（Asia/Shanghai；ImageGen 修正金标准与受控真值闭环已建立）
 > 内部代号：`VisionQA`；外部产品名：待定  
+
+## 2026-08-26 完整 SKU 真实修正闭环准备
+
+### 2026-08-26 ImageGen 修正金标准与受控闭环
+
+- 已从历史会话恢复正确的 ImageGen 编辑契约：最后/主编辑图必须是唯一人物、画幅、镜头与构图母版；商品真值只验证 SKU 结构；Prompt 必须逐项冻结脸、姿势、手部、服装非目标区域、背景、光线和画幅。
+- 内置 ImageGen 对当前合成样例完成局部修正，输出 `imagegen-repair-gold-v0.1.png`：保留完整成年男性模特与 1024×1536 画幅，只移除画面左侧（模特右腿）错误翻盖口袋。
+- 输出 SHA-256 为 `3F25FB89B15E463941C087BC8C593031C3530979ABF3E328A9A23A1189C36EBE`；实际上传工作台后通过本机构图漂移 Gate，并显示“等待逐项确认”。24×36 粗粒度指纹复算为 `aspect_ratio_drift=0 / mean_pixel_difference=0.005981 / changed_cell_ratio=0`，显著低于 `0.18 / 0.55` 阈值。这只证明候选可以进入人工复审，不等于像素级无漂移或最终交付通过。
+- 新增 `SYNTHETIC_GROUND_TRUTH` 内部诊断模式和“载入受控样例真值”按钮。入口同时锁定唯一候选、已知源图 SHA-256 与指定商品真值板，普通客户图片不能使用；不调用模型、不产生商业分数，也不冒充千问结果。
+- 金标准来源、Prompt、不变量、人工确认与未宣称事项记录在 `repair-gold-v0.1.json`；README 与 `sku-facts.json` 已统一使用“画面左侧（模特右腿）”，消除左右歧义。
+- 浏览器在刷新本地页面时被 Codex 内置 URL 安全策略拦截，因此新增按钮的最终点击链由自动化契约、构建与 lint 验证，未使用 CDP 或其他方式绕过；此前金标准上传与漂移 Gate 验收已在真实工作台完成。
+- 工程验证：99/99 项自动化测试、生产构建与 ESLint 全部通过；没有再次触发千问诊断或千问改图付费请求。
+
+- 当前优先级冻结为：完整 SKU 商品真值 → AI 模特草图 → 真实诊断 → 真实改图 → 前后人工复验 → 本机交付。
+- 真实 AI 超分、正式账号、云端项目列表、租户隔离和服务器测试版均后移；客户测试人员由产品负责人继续寻找。
+- DeepSeek 与千问 Key、千问 Workspace ID 已保存到本机 `web/.env.local` 并由 Git 忽略；本轮只核验 `SET/MISSING`，未读取、输出或提交密钥值。
+- 产品负责人已明确授权重新开放本地人工体验测试；千问诊断与千问改图的现有 Provider、付费、数据范围和固定模型 Gate 当前均已开启。
+- 根据当前千问图像编辑契约，Project 可以保留完整 SKU 的多张商品真值图；每次改图由用户明确选择最多 2 张最相关真值图，加 1 张待修图，总输入不超过 3 张。
+- 修正页新增本次参考图选择器；选择变化后清除单次发送确认，未选择商品真值图时不能建立或运行千问改图任务。
+- DeepSeek V4-Flash 保留为未来受控调度候选，不强行进入首个固定修正闭环；先用真实业务结果证明是否存在动态规划需求。
+- 验收：`npm run lint`、生产构建、15 项页面/Schema 检查和 92 项 TypeScript/运行时测试通过；生产模式浏览器验收覆盖工作台、Gate、桌面与 390px，页面无横向溢出，控制台 0 error / 0 warning。
+- 当前允许产品负责人在本机逐次手动测试；每次发送仍必须确认具体候选图与参考图。创建计费资源、充值、扩大到客户素材或服务器自动运行仍需重新确认。
+- 当前 Gate：`LOCAL_KEYS_CONFIGURED / LOCAL_MANUAL_TEST_MODE_ENABLED / DIAGNOSIS_AND_QWEN_REPAIR_READY / PER_SEND_CONSENT_REQUIRED / HUMAN_REVIEW_REQUIRED / AUTO_PASS_DISABLED`。
+
+### 2026-08-26 合成商品真值样例 v0.1
+
+- 在用户当前没有真实 SKU 链接的情况下，建立 `SYN-VQA-BURGUNDY-TROUSERS-001` 合成内部测试 SKU；SKU 链接保持为可选输入，不伪造远程商品页面或真实在售事实。
+- 商品真值板包含同一条深酒红微褶男士运动长裤的正面、背面、侧面和腰头/面料细节；锁定深酒红、直筒裤型、纵向微褶、中腰松紧腰头、中央黑色抽绳、两侧缝口袋、无工装口袋、无 Logo 和直筒裤脚。
+- 待修 AI 模特图故意增加一个受控错误：画面左侧（模特右腿）大腿外侧出现商品真值不存在的矩形翻盖工装口袋；其余商品身份要求保持不变。
+- 素材与事实契约位于 `data/synthetic_demo_sku_burgundy_trousers_v0.1/`，README 明确标记 `SYNTHETIC_INTERNAL_TEST_ONLY`，不得冒充真实客户、真实 SKU、模型准确率或商业证据。
+- 商品真值板与待修图已写入本机 Project，图片来源确认为 AI 生成；第二次诊断失败状态已保存到 Project v30，当前停在问题诊断 Gate。
+- 用户已批准首次合成样例诊断：仅发送上述两张合成图片与结构化事实，预算上限 2 元，恰好执行 1 次 `qwen3-vl-plus-2025-12-19` 真实诊断，不执行改图。对应本机 Canary 硬限制已收紧为 200 分 / 1 次请求 / 并发 1。
+- 首次真实诊断请求进入 Provider 分发阶段，但没有形成有效结果。页面最终记录 `LIVE_MODEL_CANARY_LIMIT_REACHED`；该状态不是商品质量结论，也不能证明模型效果。
+- 根因是路由仍允许 `maxAttempts=2`，而本机 Canary 硬上限已收紧为 1 次。第一次请求发生可重试错误后，第二次尝试被本地额度 Gate 拦截，并覆盖了首个错误；因此当前无法确认百炼是否完成推理，费用以阿里云账单为准，不宣称为 0。
+- 已修正为付费本机 Canary `maxAttempts=1`，禁止自动重试；能力接口新增 `dispatched_requests / remaining_requests`，页面在剩余请求为 0 时禁用发送确认和诊断按钮。相关 Provider 测试 18/18、Lint 与生产构建通过。
+- 用户随后明确批准第二次合成样例诊断：仍仅发送相同两张合成图片与结构化事实，只调用一次固定快照，累计测试预算目标仍为 2 元，不执行改图或重试。
+- 第二次运行前能力接口确认 `configured=true / dispatched_requests=0 / remaining_requests=1 / budget_minor_units=200 / max_concurrency=1`。页面恰好点击一次后，服务端计数变为 `dispatched_requests=1 / remaining_requests=0`；45 秒后页面保存 `LIVE_MODEL_TIMEOUT`，没有形成诊断输出、Token 用量或 Provider Request ID。
+- 超时不等于未计费：请求已经进入 Provider 分发，但本地在收到百炼响应前终止等待，因此当前只能记录“实际费用待阿里云模型监控／账单确认”。[阿里云模型监控文档](https://help.aliyun.com/zh/model-studio/model-telemetry/)说明单次用量日志存在分钟级延迟，普通调用统计可能约一小时后出现；未取得证据前不继续第三次调用。
+- 第二次结束后已立即关闭 `VISION_LOCAL_CANARY_ALLOW_LOCALHOST / VISION_LOCAL_CANARY_ENABLED / VISION_PAID_CALLS_ENABLED / VISION_DATA_PROCESSING_APPROVED / EXPLICIT_RUN_APPROVAL`，重启后复验 `configured=false`；未执行改图。
+- 当前结论：`TWO_LIVE_DIAGNOSIS_ATTEMPTS_NO_VALID_RESULT / SECOND_ATTEMPT_SINGLE_DISPATCH_TIMEOUT / ACTUAL_COST_PENDING_ALIYUN_BILLING_EVIDENCE / PROVIDER_GATE_CLOSED / THIRD_ATTEMPT_NOT_AUTHORIZED`。
+- 产品负责人随后要求“全部重新开启，暂时不用锁定”，用于实际手动测试用户体验。诊断进程级上限由 1 调整为 15，并发继续为 1，自动重试继续关闭；千问改图四项授权 Gate 同步开启。
+- 复验：诊断能力接口为 `configured=true / remaining_requests=15`；改图能力接口为 `live_ready=true / blockers=[]`。页面授权勾选框可点击，勾选后“开始 AI 问题诊断”可用；没有替用户触发新模型调用。
+- 安全边界：当前 `budget_minor_units=200` 是授权记录与界面提示，不是阿里云实时账单止损器；人工连续调用可能产生超出记录值的费用，必须由产品负责人自行控制点击并核对控制台账单。人工终审、每次发送确认、自动发布关闭和自动放行关闭不变。
+- 当前结论更新为：`LOCAL_MANUAL_TEST_MODE_ENABLED / DIAGNOSIS_ALLOWANCE_15_PER_PROCESS / QWEN_REPAIR_LIVE_READY / PER_SEND_CONSENT_REQUIRED / HUMAN_REVIEW_REQUIRED / AUTO_PASS_DISABLED`。
+- 随后的人工诊断仍稳定在 45 秒处返回 `LIVE_MODEL_TIMEOUT`。只读排查确认 `dashscope.aliyuncs.com` DNS/TLS/443 正常，最小 HTTP 请求约 516ms 返回；当前进程已有请求进入 Provider 分发，因此不是按钮、基础网络或商品质量 Gate 导致。
+- 根因收敛为本地 `attemptTimeoutMs=45_000` 对“两张视觉图片 + 严格结构化 JSON”过短。已建立 `live-evaluation-contract.ts`，将单次总等待调整为 180 秒，并固定 `max_completion_tokens=2400`；继续 `maxAttempts=1`，不自动重试付费请求。
+- API 客户端现在在发送前生成 Request ID，并同时用于本地错误响应和 `X-DashScope-Request-Id`；成功或失败都可在本机 Project 保存请求编号、开始／结束时间、耗时、错误码、Provider Request ID 与 Token 用量。超时响应附 `PROVIDER_WAIT / timeout_ms=180000 / product_conclusion_formed=false`。
+- 工作台将超时显示为“技术失败，不代表商品图不合格”，历史 45 秒超时记录也会迁移为该语义。按钮运行态说明“最长约 3 分钟”，每次完成或失败后自动取消发送授权，下一次必须重新勾选。
+- 工程验证：生产构建通过，95 项测试全部通过，ESLint 0 error；未为验证触发新的付费模型调用。
+- 当前结论：`TIMEOUT_ROOT_CAUSE_LOCAL_CUTOFF / WAIT_180_SECONDS / OUTPUT_TOKENS_2400 / REQUEST_TRACE_PERSISTED / NO_AUTO_RETRY / TECHNICAL_FAILURE_IS_NOT_PRODUCT_CONCLUSION`。
+- 首次千问改图 Provider 请求成功并返回图片，但人工查看发现输出从全身 AI 模特图变成裤装局部特写，人物、镜头与整体构图均丢失；这是 Provider 输出漂移，不是前端裁切。对比区使用 `object-fit: contain`，已如实显示返回文件。
+- 根因：旧请求把待修模特图放第一张、商品真值板放最后一张；[阿里云千问图像编辑 API](https://help.aliyun.com/zh/model-studio/qwen-image-edit-api)明确多图输入的输出宽高比以最后一张为准，商品真值板因此错误主导画幅和重构倾向。旧 Prompt 对“唯一构图母版”约束也不足。
+- 已把输入顺序调整为“商品真值参考在前，待修 AI 模特母版最后”，并按图号明确：前序图片只校对服装事实，最后一张是唯一人物、画幅、镜头与构图依据；负向 Prompt 新增服装白底图、商品特写、裁切／移除人物、改变景别／姿态／背景等禁止项。
+- 新增 `repair-output-gate-v0.1`：浏览器本机比较原图与输出的画幅比例、粗粒度像素差和变化区域占比。触发大幅漂移时 Provider Job 标记 `FAILED / REPAIR_OUTPUT_MAJOR_DRIFT`，图片可在对比区查看但不能进入人工确认、4K 或交付；该复验不外传图片、不增加模型费用。
+- 验证：97 项自动化测试全部通过，生产构建通过，ESLint 0 error，修正工作台浏览器控制台 0 error / warning；本轮没有再次调用付费改图模型。
+- 当前结论：`FIRST_REPAIR_OUTPUT_REJECTED_MAJOR_DRIFT / SOURCE_IMAGE_LAST / PRODUCT_TRUTH_REFERENCE_ONLY / LOCAL_COMPOSITION_DRIFT_GATE_ACTIVE / HUMAN_DELIVERY_BLOCKED_ON_DRIFT`。
 
 ## 2026-08-24 真实单图链与修正多智能体骨架
 
 - 修复 P0 素材串线：项目存在客户候选图时，总览、诊断和修正页始终使用真实候选图；未诊断时建立 `NOT_RUN / scoreAvailable=false` 占位对象，不再回退内置示例图、问题、分数或 Prompt。
 - 新增 `visionqa-repair-collaboration-v0.1`：商品真值守门员 → 问题诊断智能体 → 修正规划智能体 → 改图执行智能体 → 漂移复验智能体 → 清晰度交付智能体。六个职责共用同一 Repair Case、素材 SHA 和版本链。
 - 当前协作执行模式是 `LOCAL_STATE_MACHINE_NO_MODEL`，用于验证职责与交接 Gate；`independentModelAgentsActive=false`，不把规则状态机冒充多个独立模型已经在线协作。
-- 新增千问改图 Provider 适配层和 `/api/repair-jobs`，固定 `qwen-image-edit-max-2026-01-16`；第一张图为待修草图，后续最多 4 张为商品真值，关闭 Prompt 扩写与水印，结果临时 URL 只允许阿里云域名并立即回存本机项目。
+- 新增千问改图 Provider 适配层和 `/api/repair-jobs`，固定 `qwen-image-edit-max-2026-01-16`；完整 SKU 可保留多张真值图，每次由用户选择最多 2 张相关参考，第一张图为待修草图，总输入不超过 3 张；关闭 Prompt 扩写与水印，结果临时 URL 只允许阿里云域名并立即回存本机项目。
 - 六项启用 Gate：API Key、百炼业务空间、Provider 批准、付费调用批准、`MODEL_DRAFT_AND_PRODUCT_REFERENCES` 数据范围、固定模型快照；任一缺失时 POST 在读取图片前返回 403。
 - 每次真实发送仍要求页面单次确认，确认状态不持久化；没有自动重试付费生成、自动放行或自动发布。
 - 缺少商品真值或真实诊断时，历史改图、人工勾选和 4K 文件继续保留但不得形成新的可交付结论。

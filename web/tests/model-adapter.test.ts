@@ -25,6 +25,10 @@ import {
 } from "../lib/visionqa/providers/qwen.ts";
 import { assertProviderImages } from "../lib/visionqa/providers/image-preflight.ts";
 import {
+  LIVE_EVALUATION_ATTEMPT_TIMEOUT_MS,
+  LIVE_EVALUATION_MAX_COMPLETION_TOKENS,
+} from "../lib/visionqa/live-evaluation-contract.ts";
+import {
   QWEN_BAILIAN_DEFINITION,
   QWEN_BAILIAN_PROVIDER_ID,
   QWEN_CANARY_APPROVAL,
@@ -117,8 +121,8 @@ const localCanaryEnv = {
   EXPLICIT_RUN_APPROVAL: "true",
   VISION_MODEL: QWEN_BAILIAN_MODEL_SNAPSHOT,
   VISION_BUDGET_CURRENCY: "CNY",
-  VISION_BUDGET_LIMIT_MINOR_UNITS: "2000",
-  VISION_LOCAL_CANARY_MAX_TOTAL_REQUESTS: "10",
+  VISION_BUDGET_LIMIT_MINOR_UNITS: "200",
+  VISION_LOCAL_CANARY_MAX_TOTAL_REQUESTS: "15",
   VISION_MAX_CONCURRENCY: "1",
   DASHSCOPE_API_KEY: "fake-local-canary-key-must-not-appear",
 } as const;
@@ -284,6 +288,14 @@ test("local Base64 canary stays disabled until every explicit gate and API key e
   assert.equal(fetchCalls, 0);
 });
 
+test("local Base64 canary exposes the manual-test request allowance", () => {
+  const readiness = getLocalCanaryReadiness(localCanaryEnv);
+  assert.equal(readiness.maxTotalRequests, 15);
+  assert.equal(readiness.dispatchedRequests, 0);
+  assert.equal(readiness.remainingRequests, 15);
+  assert.equal(readiness.budgetMinorUnits, 200);
+});
+
 test("local Base64 canary sends the candidate and approved references to the fixed Qwen snapshot", async () => {
   let fetchCalls = 0;
   const adapter = createLocalCanaryQwenAdapter(localCanaryEnv, {
@@ -296,6 +308,7 @@ test("local Base64 canary sends the candidate and approved references to the fix
       );
       const body = JSON.parse(String(init?.body)) as {
         model: string;
+        max_completion_tokens: number;
         messages: Array<{
           content: Array<{
             type: string;
@@ -304,6 +317,10 @@ test("local Base64 canary sends the candidate and approved references to the fix
         }>;
       };
       assert.equal(body.model, QWEN_BAILIAN_MODEL_SNAPSHOT);
+      assert.equal(
+        body.max_completion_tokens,
+        LIVE_EVALUATION_MAX_COMPLETION_TOKENS,
+      );
       assert.ok(
         body.messages[0].content.some(
           (item) =>
@@ -775,4 +792,9 @@ test("retry policy retries only classified transient failures", async () => {
     { sleep: async () => undefined, random: () => 0 },
   );
   assert.equal(attempts, 3);
+});
+
+test("live evaluation uses a three-minute bounded wait contract", () => {
+  assert.equal(LIVE_EVALUATION_ATTEMPT_TIMEOUT_MS, 180_000);
+  assert.equal(LIVE_EVALUATION_MAX_COMPLETION_TOKENS, 2_400);
 });

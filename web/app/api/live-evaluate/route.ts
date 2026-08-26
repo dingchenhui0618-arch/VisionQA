@@ -13,6 +13,10 @@ import {
   LOCAL_CANARY_MAX_REFERENCE_IMAGES,
 } from "../../../lib/visionqa/providers/local-canary";
 import { applyContextGate } from "../../../lib/visionqa/context-gate";
+import {
+  LIVE_EVALUATION_ATTEMPT_TIMEOUT_MS,
+  LIVE_EVALUATION_MAX_COMPLETION_TOKENS,
+} from "../../../lib/visionqa/live-evaluation-contract";
 import { orchestrateVisionEvaluation } from "../../../lib/visionqa/providers/orchestrator";
 import { VisionProviderError } from "../../../lib/visionqa/providers/types";
 
@@ -90,7 +94,7 @@ function providerErrorResponse(error: VisionProviderError, requestId: string) {
     TIMEOUT: {
       status: 504,
       code: "LIVE_MODEL_TIMEOUT",
-      message: "模型分析超时，本次没有形成结果。",
+      message: "模型在 3 分钟内没有返回完整诊断。本次属于技术超时，不代表商品图不合格。",
     },
     NETWORK: {
       status: 502,
@@ -140,6 +144,13 @@ function providerErrorResponse(error: VisionProviderError, requestId: string) {
     requestId,
     mapped.status,
     error.retryable,
+    error.code === "TIMEOUT"
+      ? {
+          phase: "PROVIDER_WAIT",
+          timeout_ms: LIVE_EVALUATION_ATTEMPT_TIMEOUT_MS,
+          product_conclusion_formed: false,
+        }
+      : undefined,
   );
 }
 
@@ -230,8 +241,12 @@ export async function GET(request: Request) {
       model_snapshot: readiness.modelSnapshot,
       max_image_bytes: readiness.maxImageBytes,
       max_total_requests: readiness.maxTotalRequests,
+      dispatched_requests: readiness.dispatchedRequests,
+      remaining_requests: readiness.remainingRequests,
       budget_currency: readiness.budgetCurrency,
       budget_minor_units: readiness.budgetMinorUnits,
+      attempt_timeout_ms: LIVE_EVALUATION_ATTEMPT_TIMEOUT_MS,
+      max_completion_tokens: LIVE_EVALUATION_MAX_COMPLETION_TOKENS,
       requires_per_image_consent: true,
       image_persistence: "NONE",
       result_persistence: "BROWSER_ONLY",
@@ -390,7 +405,13 @@ export async function POST(request: Request) {
         promptVersion: "vision-observer-0.3.0-calibrated",
       },
       request.signal,
-      { maxAttempts: 2, attemptTimeoutMs: 45_000 },
+      // A paid local canary attempt is never retried automatically. Retrying
+      // can both duplicate cost and hide the original provider failure behind
+      // the local request cap.
+      {
+        maxAttempts: 1,
+        attemptTimeoutMs: LIVE_EVALUATION_ATTEMPT_TIMEOUT_MS,
+      },
     );
     const result = applyContextGate(outcome.result, missingContext);
     const validation = validateEvaluationResultV03(result);

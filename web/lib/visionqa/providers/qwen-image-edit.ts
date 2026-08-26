@@ -10,7 +10,9 @@ export const QWEN_IMAGE_EDIT_API_KEY_ENV =
 export const QWEN_IMAGE_EDIT_WORKSPACE_ENV =
   "VISION_REPAIR_QWEN_WORKSPACE_ID" as const;
 export const QWEN_IMAGE_EDIT_MAX_SOURCE_BYTES = 10 * 1024 * 1024;
-export const QWEN_IMAGE_EDIT_MAX_REFERENCES = 4;
+// Provider contract: one source image plus at most two product-truth images
+// (three input images total).
+export const QWEN_IMAGE_EDIT_MAX_REFERENCES = 2;
 export const QWEN_IMAGE_EDIT_MAX_OUTPUT_BYTES = 20 * 1024 * 1024;
 
 type Environment = Record<string, string | undefined>;
@@ -241,16 +243,24 @@ export class QwenImageEditProvider {
       );
     }
 
+    // Qwen derives the output aspect ratio from the LAST input image. Product
+    // truth references therefore come first and the model draft must be last;
+    // otherwise a truth board can accidentally become the new composition.
+    const sourceImageNumber = input.references.length + 1;
+    const referenceImageNumbers = input.references
+      .map((_, index) => `图${index + 1}`)
+      .join("、");
     const content: Array<{ image: string } | { text: string }> = [
+      ...input.references.map((reference) => ({ image: bytesToDataUrl(reference) })),
       { image: bytesToDataUrl(input.source) },
-      ...input.references.map((reference) => ({
-        image: bytesToDataUrl(reference),
-      })),
       {
         text:
-          `第一张图是需要修正的 AI 模特草图，后续图片是商品真值参考。` +
-          `只修改明确问题区域，保持非目标区域、商品颜色、版型、图案、Logo、文字与材质不变。` +
-          `不得新增促销信息、价格、折扣、品牌文字或未提供的商品细节。${input.prompt}`,
+          `${referenceImageNumbers || "前序图片"}仅是商品真值参考，只用于核对服装颜色、版型、口袋、图案、Logo与材质，禁止采用这些参考图的背景、裁切、镜头或商品摆放方式。` +
+          `图${sourceImageNumber}是唯一需要编辑的AI模特母版，也是唯一的构图、画幅和人物身份依据。` +
+          `输出必须保持图${sourceImageNumber}的同一位完整模特、面部、发型、姿势、手脚、白色上衣、背景、相机机位、景别、人物大小、画布比例和像素方向。` +
+          `只能在诊断明确指出的服装局部做最小修改；除目标局部外，其余像素级视觉内容应尽量保持不变。` +
+          `禁止改成服装白底图、商品特写、局部裁切、无人物图或重新摆拍；禁止放大裤子、移除人物、改变全身构图。` +
+          `不得新增促销信息、价格、折扣、品牌文字或未提供的商品细节。具体局部任务：${input.prompt}`,
       },
     ];
 
@@ -268,7 +278,7 @@ export class QwenImageEditProvider {
           parameters: {
             n: 1,
             negative_prompt:
-              "商品颜色漂移，版型变化，图案变化，Logo错误，文字错误，多余手指，肢体变形，过度磨皮，过度锐化",
+              "服装白底图，商品特写，局部特写，裁切人物，移除人物，无人物，改变构图，改变景别，改变相机机位，改变人物大小，改变姿势，改变面部，改变发型，改变背景，商品颜色漂移，版型变化，图案变化，Logo错误，文字错误，多余手指，肢体变形，过度磨皮，过度锐化",
             prompt_extend: false,
             watermark: false,
           },

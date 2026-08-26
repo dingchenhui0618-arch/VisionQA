@@ -17,6 +17,10 @@ import {
 } from "../lib/visionqa/repair-provider-contract";
 import { runRepairCollaboration } from "../lib/visionqa/agents/repair-orchestrator";
 import {
+  validateRepairOutputFiles,
+  type RepairOutputGateResult,
+} from "../lib/visionqa/repair-output-gate";
+import {
   AI_SUPER_RESOLUTION_CAPABILITY,
   calculate4kDeliveryDimensions,
   createLocal4kDelivery,
@@ -96,7 +100,13 @@ export function RepairWorkspace({
     | { kind: "error"; message: string }
   >({ kind: "loading" });
   const [repairConsent, setRepairConsent] = useState(false);
+  const [selectedReferenceKeys, setSelectedReferenceKeys] = useState<string[]>([]);
+  const [referenceSelectionTouched, setReferenceSelectionTouched] = useState(false);
   const [providerRunError, setProviderRunError] = useState<string | null>(null);
+  const [blockedOutput, setBlockedOutput] = useState<{
+    file: File;
+    gate: RepairOutputGateResult;
+  } | null>(null);
   const [sourceInspection, setSourceInspection] = useState<{
     sourceKey: string;
     width: number;
@@ -109,10 +119,38 @@ export function RepairWorkspace({
     | { kind: "error"; sourceKey: string; message: string }
   >({ kind: "idle" });
 
-  const outputUrl = useMemo(() => outputFile ? URL.createObjectURL(outputFile) : "", [outputFile]);
+  const previewOutputFile = outputFile ?? blockedOutput?.file ?? null;
+  const outputUrl = useMemo(
+    () => previewOutputFile ? URL.createObjectURL(previewOutputFile) : "",
+    [previewOutputFile],
+  );
   useEffect(() => () => { if (outputUrl) URL.revokeObjectURL(outputUrl); }, [outputUrl]);
 
   const selectedProvider = providers.find((item) => item.id === provider)!;
+  const referenceOptions = useMemo(
+    () =>
+      referenceFiles.map((file) => ({
+        key: `${file.name}-${file.size}-${file.lastModified}`,
+        file,
+      })),
+    [referenceFiles],
+  );
+  const maxProviderReferences =
+    providerCapability.kind === "ready"
+      ? providerCapability.value.maxReferenceImages
+      : 2;
+  const availableReferenceKeys = new Set(referenceOptions.map((item) => item.key));
+  const retainedReferenceKeys = selectedReferenceKeys
+    .filter((key) => availableReferenceKeys.has(key))
+    .slice(0, maxProviderReferences);
+  const effectiveReferenceKeys =
+    referenceSelectionTouched || retainedReferenceKeys.length > 0
+      ? retainedReferenceKeys
+      : referenceOptions.slice(0, maxProviderReferences).map((item) => item.key);
+  const selectedReferenceFiles = referenceOptions
+    .filter((item) => effectiveReferenceKeys.includes(item.key))
+    .slice(0, maxProviderReferences)
+    .map((item) => item.file);
   const repairPlanReady =
     diagnosisReady &&
     Boolean(asset.repairPrompt.trim()) &&
@@ -210,6 +248,7 @@ export function RepairWorkspace({
       locked_attributes: asset.lockedAttributes.split("、").filter(Boolean),
       output_supplied_by_user: Boolean(outputFile),
       human_review_checks: checks,
+      selected_product_truth_files: selectedReferenceFiles.map((file) => file.name),
       human_final_review_required: true,
       provider_job: providerJob,
       collaboration,
@@ -225,7 +264,12 @@ export function RepairWorkspace({
   };
 
   const buildProviderJob = () => {
-    if (!sourceFile || !sourceSha256 || !repairPlanReady) return;
+    if (
+      !sourceFile ||
+      !sourceSha256 ||
+      !repairPlanReady ||
+      (provider === "qwen-image" && selectedReferenceFiles.length === 0)
+    ) return;
     const capability =
       providerCapability.kind === "ready" ? providerCapability.value : null;
     const qwenSelected = provider === "qwen-image";
@@ -253,6 +297,11 @@ export function RepairWorkspace({
     setRepairConsent(false);
   };
 
+  const inspectRepairOutput = async (file: File) => {
+    if (!sourceFile) throw new Error("缺少原始 AI 模特母版，无法执行漂移复验。");
+    return validateRepairOutputFiles(sourceFile, file);
+  };
+
   const runQwenProvider = async () => {
     if (
       !sourceFile ||
@@ -276,10 +325,36 @@ export function RepairWorkspace({
     try {
       const result = await executeQwenRepair({
         source: sourceFile,
-        references: referenceFiles,
+        references: selectedReferenceFiles,
         sourceSha256,
         prompt: asset.repairPrompt,
       });
+      const outputGate = await inspectRepairOutput(result.file);
+      if (outputGate.decision === "BLOCK_MAJOR_DRIFT") {
+        setBlockedOutput({ file: result.file, gate: outputGate });
+        onOutputFileChange(null);
+        onChecksChange([]);
+        onProviderJobChange(
+          updateRepairProviderJob(providerJob, {
+            status: "FAILED",
+            authorizationBlockers: [],
+            providerRequestId: result.providerRequestId,
+            outputSource: "QWEN_BAILIAN",
+            externalNetworkUsed: true,
+            modelInferenceUsed: true,
+            imageCount: result.imageCount,
+            outputWidth: result.outputWidth,
+            outputHeight: result.outputHeight,
+            failureCode: "REPAIR_OUTPUT_MAJOR_DRIFT",
+          }),
+        );
+        setProviderRunError(
+          `${outputGate.summary} 该图片只保留用于排查，不能进入人工交付确认。`,
+        );
+        setRepairConsent(false);
+        return;
+      }
+      setBlockedOutput(null);
       onOutputFileChange(result.file);
       onChecksChange([]);
       onProviderJobChange(
@@ -323,17 +398,38 @@ export function RepairWorkspace({
     }
   };
 
-  const acceptExternalOutput = (file: File | null) => {
-    onOutputFileChange(file);
+  const acceptExternalOutput = async (file: File | null) => {
     onChecksChange([]);
-    if (file && providerJob) {
-      onProviderJobChange(
-        updateRepairProviderJob(providerJob, {
-          status: "OUTPUT_SUPPLIED",
-          outputSource: "USER_SUPPLIED",
-          failureCode: null,
-        }),
-      );
+    if (!file) {
+      setBlockedOutput(null);
+      onOutputFileChange(null);
+      return;
+    }
+    try {
+      const outputGate = await inspectRepairOutput(file);
+      if (outputGate.decision === "BLOCK_MAJOR_DRIFT") {
+        setBlockedOutput({ file, gate: outputGate });
+        onOutputFileChange(null);
+        setProviderRunError(
+          `${outputGate.summary} 该图片已被拦截，不能进入人工交付确认。`,
+        );
+        return;
+      }
+      setBlockedOutput(null);
+      setProviderRunError(null);
+      onOutputFileChange(file);
+      if (providerJob) {
+        onProviderJobChange(
+          updateRepairProviderJob(providerJob, {
+            status: "OUTPUT_SUPPLIED",
+            outputSource: "USER_SUPPLIED",
+            failureCode: null,
+          }),
+        );
+      }
+    } catch {
+      setProviderRunError("无法完成改图候选的本机构图漂移检查，该图片未进入交付候选。");
+      onOutputFileChange(null);
     }
   };
 
@@ -397,7 +493,23 @@ export function RepairWorkspace({
     provider === "qwen-image" &&
     providerCapability.kind === "ready" &&
     providerCapability.value.liveReady &&
+    selectedReferenceFiles.length > 0 &&
+    selectedReferenceFiles.length <= providerCapability.value.maxReferenceImages &&
     providerJob?.status === "READY";
+
+  const toggleReference = (key: string) => {
+    setRepairConsent(false);
+    setReferenceSelectionTouched(true);
+    setSelectedReferenceKeys(() => {
+      if (effectiveReferenceKeys.includes(key)) {
+        return effectiveReferenceKeys.filter((item) => item !== key);
+      }
+      if (effectiveReferenceKeys.length >= maxProviderReferences) {
+        return effectiveReferenceKeys;
+      }
+      return [...effectiveReferenceKeys, key];
+    });
+  };
   const collaborationStatusLabel: Record<typeof collaboration.status, string> = {
     NEEDS_PRODUCT_TRUTH: "等待商品真值",
     NEEDS_DIAGNOSIS: "等待问题诊断",
@@ -461,14 +573,40 @@ export function RepairWorkspace({
           <div><span>必须锁定</span><strong>{asset.lockedAttributes || (diagnosisReady ? "等待商品真值确认" : "等待真实诊断与商品真值")}</strong></div>
           <div className="repair-prompt-row"><span>改图 Prompt</span><p>{asset.repairPrompt || "当前图片尚未形成真实修正 Prompt。请返回问题诊断，不会用示例内容补齐。"}</p><button className="text-button" type="button" disabled={!repairPlanReady} onClick={() => void copyPrompt()}>{copied ? "已复制" : "复制"}</button></div>
         </div>
+        <div className="repair-reference-selector">
+          <div>
+            <span>本次改图参考</span>
+            <strong>从完整 SKU 中选择最多 {maxProviderReferences} 张最相关真值图</strong>
+            <p>完整 SKU 可以保留更多商品图；单次模型调用只发送待修图和当前选中的真值图。正面模特图优先选正面白底图，再补一张关键细节或侧面图。</p>
+          </div>
+          <div className="repair-reference-list" role="group" aria-label="本次发送的商品真值图">
+            {referenceOptions.length ? referenceOptions.map(({ key, file }) => {
+              const selected = effectiveReferenceKeys.includes(key);
+              const disabled = !selected && effectiveReferenceKeys.length >= maxProviderReferences;
+              return (
+                <label key={key} data-selected={selected}>
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    disabled={disabled}
+                    onChange={() => toggleReference(key)}
+                  />
+                  <span>{file.name}</span>
+                  <small>{(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                </label>
+              );
+            }) : <p>请先在商品真值阶段上传完整 SKU 参考图。</p>}
+          </div>
+          <small>已选择 {selectedReferenceFiles.length}/{maxProviderReferences} 张；选择变化后需要重新确认发送。</small>
+        </div>
         <div className="repair-task-actions">
-          <button className="primary-button" type="button" disabled={!sourceFile || !sourceSha256 || !repairPlanReady || providerJob?.status === "RUNNING"} onClick={buildProviderJob}>{providerJob ? "重建改图任务" : "建立改图任务"}</button>
+          <button className="primary-button" type="button" disabled={!sourceFile || !sourceSha256 || !repairPlanReady || (provider === "qwen-image" && selectedReferenceFiles.length === 0) || providerJob?.status === "RUNNING"} onClick={buildProviderJob}>{providerJob ? "重建改图任务" : "建立改图任务"}</button>
           <button className="quiet-button" type="button" disabled={!providerJob} onClick={exportJob}>导出任务 JSON</button>
           <span>{providerJob ? `${selectedProvider.name} · ${providerJob.status}` : "不会在缺少诊断或授权时伪装生成成功。"}</span>
         </div>
         {qwenCanRun && (
           <div className="repair-provider-consent">
-            <label><input type="checkbox" checked={repairConsent} onChange={(event) => setRepairConsent(event.currentTarget.checked)} /><span>确认本次将当前 AI 模特草图与 {referenceFiles.length} 张商品真值图发送至阿里云百炼；服务返回图会立即保存到本机项目。</span></label>
+            <label><input type="checkbox" checked={repairConsent} onChange={(event) => setRepairConsent(event.currentTarget.checked)} /><span>确认本次将当前 AI 模特草图与 {selectedReferenceFiles.length} 张已选商品真值图发送至阿里云百炼；完整 SKU 中其他图片不会发送，服务返回图会立即保存到本机项目。</span></label>
             <button className="primary-button" type="button" disabled={!repairConsent} onClick={() => void runQwenProvider()}>调用千问生成候选</button>
           </div>
         )}
@@ -482,7 +620,7 @@ export function RepairWorkspace({
       <section className="repair-comparison" aria-labelledby="repair-comparison-title">
         <div className="section-title-row">
           <div><span>修改前后对比</span><h2 id="repair-comparison-title">把外部改图结果带回同一张审片台。</h2></div>
-          <strong>{reviewed ? "人工复审完成" : outputFile ? "等待逐项确认" : "等待改图结果"}</strong>
+          <strong>{reviewed ? "人工复审完成" : blockedOutput ? "已拦截 · 主体或构图漂移" : outputFile ? "等待逐项确认" : "等待改图结果"}</strong>
         </div>
         <div className="comparison-stage">
           <figure>
@@ -491,19 +629,24 @@ export function RepairWorkspace({
             <img src={asset.src} alt={`${asset.productLabel} 修改前`} />
           </figure>
           <figure className={!outputUrl ? "comparison-empty" : undefined}>
-            <figcaption><span>AFTER</span><strong>改图候选</strong></figcaption>
+            <figcaption><span>AFTER</span><strong>{blockedOutput ? "未通过漂移 Gate" : "改图候选"}</strong></figcaption>
             {outputUrl ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={outputUrl} alt={`${asset.productLabel} 修改后候选`} />
+                {blockedOutput && (
+                  <p className="repair-output-blocked" role="alert">
+                    主体或整体构图变化过大，疑似重新生成而非局部修正。该结果不可进入交付复审。
+                  </p>
+                )}
               </>
             ) : <div><strong>尚无改图结果</strong><p>可先在 Seedream、千问或 GPT 中执行任务，再上传结果进行对比复审。</p></div>}
           </figure>
         </div>
         <label className="repair-output-upload">
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { acceptExternalOutput(event.currentTarget.files?.[0] ?? null); event.currentTarget.value = ""; }} />
-          <strong>{outputFile ? "更换改图结果" : "上传改图结果"}</strong>
-          <span>{outputFile?.name ?? "当前为半自动工作流：外部生成，VisionQA 统一复审"}</span>
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { void acceptExternalOutput(event.currentTarget.files?.[0] ?? null); event.currentTarget.value = ""; }} />
+          <strong>{previewOutputFile ? "更换改图结果" : "上传改图结果"}</strong>
+          <span>{blockedOutput ? `${blockedOutput.file.name} · 已拦截` : outputFile?.name ?? "当前为半自动工作流：外部生成，VisionQA 统一复审"}</span>
         </label>
       </section>
 

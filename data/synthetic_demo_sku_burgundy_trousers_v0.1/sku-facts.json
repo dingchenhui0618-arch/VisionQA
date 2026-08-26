@@ -1,0 +1,36 @@
+{
+  "schema_version": "visionqa-synthetic-sku-v0.1",
+  "sku_id": "SYN-VQA-BURGUNDY-TROUSERS-001",
+  "evidence_mode": "SYNTHETIC_INTERNAL_TEST_ONLY",
+  "product_name": "深酒红微褶男士运动长裤",
+  "category": "男士运动长裤",
+  "verified_facts": {
+    "color": "深酒红",
+    "silhouette": "直筒长裤",
+    "fabric": "纵向微褶技术面料",
+    "waistband": "中腰松紧腰头",
+    "drawcord": "腰头中央黑色抽绳",
+    "pockets": "两侧缝口袋，无工装口袋",
+    "hem": "直筒平口裤脚",
+    "branding": "无 Logo、无字标"
+  },
+  "locked_attributes": [
+    "深酒红颜色",
+    "直筒裤型",
+    "纵向微褶方向与密度",
+    "中腰松紧腰头",
+    "中央黑色抽绳",
+    "两侧缝口袋",
+    "无工装口袋",
+    "无 Logo 与文字",
+    "直筒平口裤脚"
+  ],
+  "controlled_defect": {
+    "location": "画面左侧（模特右腿）大腿外侧",
+    "issue": "错误增加矩形翻盖工装口袋",
+    "expected_action": "只移除错误工装口袋，并恢复连续一致的深酒红纵向微褶面料"
+  },
+  "repair_prompt": "只移除画面左侧（模特右腿）大腿外侧错误增加的矩形翻盖工装口袋，恢复该区域连续一致的深酒红纵向微褶技术面料。保持人物、姿势、背景、裤子颜色、直筒版型、松紧腰头、中央黑色抽绳、原有侧缝口袋、裤脚和所有非目标区域完全不变。不得新增 Logo、文字、价格、促销信息或其他口袋。",
+  "human_final_review_required": true,
+  "auto_pass_enabled": false
+}

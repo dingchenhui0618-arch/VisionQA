@@ -18,6 +18,7 @@ import {
   VisionQaApiError,
 } from "../lib/visionqa/api-client";
 import type { UiEvaluationPatch } from "../lib/visionqa/ui-adapter";
+import type { LiveEvaluationAttemptRecord } from "../lib/visionqa/live-evaluation-contract";
 import {
   appendLocalFeedback,
   candidateTraceId,
@@ -40,6 +41,10 @@ import { RepairWorkspace } from "./workspace-repair";
 import { projectLegacyCommercialMetrics } from "../lib/visionqa/product-expression";
 import type { UpscaleJobReceipt } from "../lib/visionqa/upscale";
 import type { RepairProviderJobSnapshot } from "../lib/visionqa/repair-provider-contract";
+import {
+  SYNTHETIC_TROUSERS_CASE_ID,
+  isSyntheticTrousersGroundTruthEligible,
+} from "../lib/visionqa/synthetic-ground-truth";
 import {
   appendProjectRestoreEvent,
   createLocalProject,
@@ -115,7 +120,10 @@ type EvaluatedAsset = Asset & {
   calibrationStatus?: "DEMO" | "UNCALIBRATED" | "CALIBRATED";
   modelStatus?: string;
   markerAvailable?: boolean;
-  evaluationMode?: typeof LOCAL_EVALUATION_MODE | "LIVE_MODEL_CANARY";
+  evaluationMode?:
+    | typeof LOCAL_EVALUATION_MODE
+    | "LIVE_MODEL_CANARY"
+    | "SYNTHETIC_GROUND_TRUTH";
   fixtureCaseId?: string;
   persistedEvaluation?: boolean;
   providerId?: string;
@@ -142,7 +150,14 @@ type DataState =
       modelSnapshot: string;
       latencyMs: number;
     }
-  | { kind: "live-error"; candidateName: string; message: string }
+  | { kind: "synthetic-ground-truth"; caseId: string }
+  | {
+      kind: "live-error";
+      candidateName: string;
+      message: string;
+      errorCode?: string;
+      requestId?: string | null;
+    }
   | { kind: "fallback"; evaluationId: string; message: string };
 
 type AuditEntry = {
@@ -158,7 +173,10 @@ type AuditEntry = {
   candidateTraceId?: string;
   candidateSha256?: string;
   candidateName?: string;
-  evaluationMode?: typeof LOCAL_EVALUATION_MODE | "LIVE_MODEL_CANARY";
+  evaluationMode?:
+    | typeof LOCAL_EVALUATION_MODE
+    | "LIVE_MODEL_CANARY"
+    | "SYNTHETIC_GROUND_TRUTH";
   fixtureCaseId?: string;
   reasonCode?: string;
   evidenceNote?: string;
@@ -208,6 +226,7 @@ type BatchCandidate = {
   selected: boolean;
   result?: EvaluatedAsset;
   error?: string;
+  lastAttempt?: LiveEvaluationAttemptRecord;
 };
 
 type StoredEvaluatedAsset = Omit<EvaluatedAsset, "src">;
@@ -405,6 +424,15 @@ function buildWorkspaceProjectPayload({
         candidate.status === "running"
           ? "上次分析在页面关闭前尚未完成，请重新发起。"
           : candidate.error,
+      lastAttempt:
+        candidate.lastAttempt?.status === "RUNNING"
+          ? {
+              ...candidate.lastAttempt,
+              status: "FAILED",
+              finishedAt: new Date().toISOString(),
+              errorCode: "INTERRUPTED_RETRY_REQUIRED",
+            }
+          : candidate.lastAttempt,
     })),
     repairSession: {
       schemaVersion: "visionqa-repair-session-v0.1",
@@ -874,13 +902,71 @@ function pendingCandidateAsset(
   };
 }
 
+function syntheticTrousersGroundTruthAsset(
+  candidate: BatchCandidate,
+  templateId: CommercialTemplateId,
+): EvaluatedAsset {
+  const template = commercialTemplates.find((item) => item.id === templateId)!;
+  return {
+    id: candidate.id,
+    src: candidate.src,
+    decision: "REVIEW",
+    score: Number.NaN,
+    scoreAvailable: false,
+    productLabel: candidate.file.name,
+    skills: [],
+    issues: [
+      {
+        id: "synthetic-controlled-cargo-pocket",
+        title: "裤腿多出翻盖工装口袋",
+        skill: "商品一致性",
+        severity: "Major",
+        observation:
+          "画面左侧（模特右腿）大腿外侧出现矩形翻盖工装口袋；商品真值板显示该 SKU 只有两侧斜插袋，不存在工装贴袋。",
+        impact: "改变了裤装结构与 SKU 身份，不能直接作为该商品的模特图交付。",
+        rule: "只移除错误口袋并恢复连续纵向微褶面料，人物与所有非目标区域保持不变。",
+        marker: { x: 29, y: 58 },
+      },
+    ],
+    commercialAssessment:
+      "这是合成受控样例的人工预设真值，只验证修正闭环，不代表模型准确率或客户结论。",
+    repairPrompt:
+      "只移除画面左侧（模特右腿）大腿外侧错误增加的矩形翻盖工装口袋，恢复该区域连续一致的深酒红纵向微褶技术面料。保持同一人物身份、脸部、发型、表情、姿势、手部、白色上衣、黑色抽绳、背景、镜头、画幅、裤子颜色、直筒版型、松紧腰头、原有侧缝口袋、裤脚、鞋和所有非目标区域完全不变。不得裁切、拉近或变成商品特写，不得新增 Logo、文字、促销信息、接缝或其他口袋。",
+    lockedAttributes:
+      "同一完整模特与全身构图、深酒红颜色、直筒裤型、纵向微褶、松紧腰头、中央黑色抽绳、两侧斜插袋、无工装口袋、无 Logo 与文字、直筒裤脚、白鞋与浅灰背景",
+    commercial: {
+      templateId,
+      templateVersion: template.version,
+      templateName: template.name,
+      fitScore: Number.NaN,
+      fitLevel: "未评估",
+      summary:
+        "合成内部测试只提供已知结构缺陷，不进行商业分数推断。",
+      strengths: [],
+      gaps: ["画面左侧（模特右腿）多出商品真值不存在的翻盖工装口袋"],
+      metrics: [],
+    },
+    promptProvenance: "synthetic-ground-truth-v0.1",
+    calibrationStatus: "UNCALIBRATED",
+    modelStatus: "HUMAN_GROUND_TRUTH",
+    markerAvailable: true,
+    evaluationMode: "SYNTHETIC_GROUND_TRUTH",
+    fixtureCaseId: SYNTHETIC_TROUSERS_CASE_ID,
+    persistedEvaluation: false,
+    referenceCount: 1,
+  };
+}
+
 function buildApiAsset(
   patch: UiEvaluationPatch,
   options: {
     src?: string;
     productLabel?: string;
     persistedEvaluation?: boolean;
-    evaluationMode?: typeof LOCAL_EVALUATION_MODE | "LIVE_MODEL_CANARY";
+    evaluationMode?:
+      | typeof LOCAL_EVALUATION_MODE
+      | "LIVE_MODEL_CANARY"
+      | "SYNTHETIC_GROUND_TRUTH";
     providerId?: string;
     modelSnapshot?: string;
     providerLatencyMs?: number;
@@ -956,6 +1042,8 @@ function DataSourceBadge({ state }: { state: DataState }) {
   const label =
     state.kind === "live"
       ? "AI 评分完成"
+      : state.kind === "synthetic-ground-truth"
+        ? "合成样例真值"
       : state.kind === "live-loading"
         ? "AI 评分中"
         : state.kind === "live-error"
@@ -1000,10 +1088,20 @@ function DataStateNotice({ state }: { state: DataState }) {
     );
   }
   if (state.kind === "live-error") {
+    if (state.errorCode === "LIVE_MODEL_TIMEOUT") {
+      return (
+        <div className="data-state-notice error" role="alert">
+          <strong>模型响应超时，未形成商品结论。</strong>{" "}
+          系统已等待 3 分钟并保留当前图片；这属于技术失败，不代表商品图不合格。
+          {state.requestId ? ` 请求记录 ${state.requestId.slice(0, 8)}。` : ""}
+          如需重试，请重新确认本次发送授权。
+        </div>
+      );
+    }
     return (
       <div className="data-state-notice error" role="alert">
-        {state.candidateName} 未形成有效诊断：{state.message}。未完成图片仍保留在当前任务中，
-        可以重新发起分析。
+        {state.candidateName} 未形成有效诊断：{state.message}。未完成图片仍保留在当前任务中；
+        再次外发前需要重新确认授权、剩余次数与预算。
       </div>
     );
   }
@@ -1012,6 +1110,14 @@ function DataStateNotice({ state }: { state: DataState }) {
       <div className="data-state-notice local" role="status">
         已载入 {state.candidateName}。AI 模特草图正在本机等待，尚未发送到模型，也没有生成诊断结论。
         确认商品真值和发送授权后即可开始分析。
+      </div>
+    );
+  }
+  if (state.kind === "synthetic-ground-truth") {
+    return (
+      <div className="data-state-notice real" role="status">
+        已载入合成受控样例 {state.caseId} 的人工预设真值。该结论只用于验证修正闭环，
+        不是模型诊断、客户证据或准确率证据。
       </div>
     );
   }
@@ -1333,7 +1439,10 @@ export function Workspace() {
                   result: candidate.result
                     ? { ...candidate.result, src }
                     : undefined,
-                  error: candidate.error,
+                  error: candidate.error?.startsWith("LIVE_MODEL_TIMEOUT")
+                    ? "LIVE_MODEL_TIMEOUT：历史调用发生技术超时，没有形成商品结论；不代表商品图不合格。"
+                    : candidate.error,
+                  lastAttempt: candidate.lastAttempt,
                 },
               ];
             },
@@ -1369,7 +1478,19 @@ export function Workspace() {
           setSelectedId(payload.selectedId);
           setAuditEntries(payload.auditEntries);
           setApiAsset(null);
-          setDataState(payload.dataState);
+          const restoredTimeout = restoredCandidates.find((candidate) =>
+            candidate.error?.startsWith("LIVE_MODEL_TIMEOUT"),
+          );
+          setDataState(
+            payload.dataState.kind === "live-error" && restoredTimeout
+              ? {
+                  ...payload.dataState,
+                  message: "历史调用发生技术超时，没有形成商品结论",
+                  errorCode: "LIVE_MODEL_TIMEOUT",
+                  requestId: restoredTimeout.lastAttempt?.requestId ?? null,
+                }
+              : payload.dataState,
+          );
           setLocalCandidate(payload.localCandidate);
           setIntakeState(payload.intakeState);
           setSubmissionContext(payload.submissionContext);
@@ -1605,6 +1726,39 @@ export function Workspace() {
     setIntakeState({ kind: "idle" });
   };
 
+  const syntheticGroundTruthEligible =
+    isSyntheticTrousersGroundTruthEligible({
+      candidateCount: batchCandidates.length,
+      candidateSha256: batchCandidates[0]?.sha256,
+      referenceFileNames: referenceFiles.map((file) => file.name),
+    });
+
+  const loadSyntheticGroundTruth = () => {
+    if (!syntheticGroundTruthEligible) {
+      setToast("当前素材不是已登记的合成受控样例，不能载入测试真值。");
+      return;
+    }
+    const candidate = batchCandidates[0];
+    const result = syntheticTrousersGroundTruthAsset(
+      candidate,
+      commercialTemplateId,
+    );
+    setBatchCandidates((current) =>
+      current.map((item) =>
+        item.id === candidate.id
+          ? { ...item, status: "done", result, error: undefined }
+          : item,
+      ),
+    );
+    setApiAsset(result);
+    setSelectedId(candidate.id);
+    setDataState({
+      kind: "synthetic-ground-truth",
+      caseId: SYNTHETIC_TROUSERS_CASE_ID,
+    });
+    setToast("已载入合成样例人工真值；这不是模型诊断结果。");
+  };
+
   const runLiveEvaluation = async () => {
     const file = candidateFileRef.current;
     if (!file || !localCandidate) {
@@ -1636,11 +1790,35 @@ export function Workspace() {
     setDataState({ kind: "live-loading", candidateName: `${queue.length} 张候选图` });
     try {
       let lastResult: EvaluatedAsset | null = null;
+      let lastFailure: {
+        code: string;
+        message: string;
+        requestId: string | null;
+      } | null = null;
       let completed = 0;
       for (const item of queue) {
+        const requestId = crypto.randomUUID();
+        const startedAt = new Date().toISOString();
+        const startedAtMs = Date.now();
         setBatchCandidates((current) => current.map((candidate) =>
           candidate.id === item.id
-            ? { ...candidate, status: "running", error: undefined }
+            ? {
+                ...candidate,
+                status: "running",
+                error: undefined,
+                lastAttempt: {
+                  requestId,
+                  status: "RUNNING",
+                  startedAt,
+                  finishedAt: null,
+                  elapsedMs: null,
+                  errorCode: null,
+                  retryable: false,
+                  providerRequestId: null,
+                  inputTokens: null,
+                  outputTokens: null,
+                },
+              }
             : candidate,
         ));
         try {
@@ -1653,6 +1831,7 @@ export function Workspace() {
             referenceStatus: referenceFiles.length > 0 ? "complete" : "missing",
             provenanceStatus: submissionContext.provenanceStatus,
             commercialTemplateId,
+            requestId,
           });
           const result = buildApiAsset(live.patch, {
             id: item.id,
@@ -1669,18 +1848,59 @@ export function Workspace() {
           completed += 1;
           setBatchCandidates((current) => current.map((candidate) =>
             candidate.id === item.id
-              ? { ...candidate, status: "done", result, traceId: live.candidateTraceId }
+              ? {
+                  ...candidate,
+                  status: "done",
+                  result,
+                  traceId: live.candidateTraceId,
+                  lastAttempt: {
+                    requestId: live.requestId,
+                    status: "SUCCEEDED",
+                    startedAt,
+                    finishedAt: new Date().toISOString(),
+                    elapsedMs: Date.now() - startedAtMs,
+                    errorCode: null,
+                    retryable: false,
+                    providerRequestId: live.provider.providerRequestId,
+                    inputTokens: live.provider.usage.inputTokens,
+                    outputTokens: live.provider.usage.outputTokens,
+                  },
+                }
               : candidate,
           ));
           setApiAsset(result);
           setSelectedId(item.id);
         } catch (error) {
-          const message = error instanceof VisionQaApiError
-            ? `${error.code}：${error.message}`
-            : "真实模型分析失败";
+          const apiError = error instanceof VisionQaApiError ? error : null;
+          const code = apiError?.code ?? "LIVE_MODEL_FAILED";
+          const resolvedRequestId = apiError?.requestId ?? requestId;
+          const message = apiError
+            ? `${apiError.code}：${apiError.message}`
+            : "LIVE_MODEL_FAILED：真实模型分析失败，本次没有形成商品结论。";
+          lastFailure = {
+            code,
+            message: apiError?.message ?? "真实模型分析失败，本次没有形成商品结论。",
+            requestId: resolvedRequestId,
+          };
           setBatchCandidates((current) => current.map((candidate) =>
             candidate.id === item.id
-              ? { ...candidate, status: "error", error: message }
+              ? {
+                  ...candidate,
+                  status: "error",
+                  error: message,
+                  lastAttempt: {
+                    requestId: resolvedRequestId,
+                    status: code === "LIVE_MODEL_TIMEOUT" ? "TIMEOUT" : "FAILED",
+                    startedAt,
+                    finishedAt: new Date().toISOString(),
+                    elapsedMs: Date.now() - startedAtMs,
+                    errorCode: code,
+                    retryable: apiError?.retryable ?? false,
+                    providerRequestId: null,
+                    inputTokens: null,
+                    outputTokens: null,
+                  },
+                }
               : candidate,
           ));
         }
@@ -1699,7 +1919,9 @@ export function Workspace() {
         setDataState({
           kind: "live-error",
           candidateName: "当前批次",
-          message: "所有图片均未形成有效结果",
+          message: lastFailure?.message ?? "所有图片均未形成有效结果",
+          errorCode: lastFailure?.code,
+          requestId: lastFailure?.requestId,
         });
         setToast("当前批次没有形成有效结果，请查看队列错误。");
       }
@@ -1716,6 +1938,10 @@ export function Workspace() {
       setToast(message);
     } finally {
       setLiveRunning(false);
+      setLiveConsent(false);
+      getLiveModelCapability()
+        .then(setLiveCapability)
+        .catch(() => setLiveCapability(null));
       window.setTimeout(() => setToast(null), 4200);
     }
   };
@@ -1903,6 +2129,8 @@ export function Workspace() {
       ? "内置示例项目"
       : dataState.kind === "live"
         ? "AI 诊断完成，等待人工确认"
+        : dataState.kind === "synthetic-ground-truth"
+          ? "合成样例真值，等待人工复验"
         : dataState.kind === "local"
           ? "客户图片仅在本机等待"
           : dataState.kind === "live-loading"
@@ -2099,6 +2327,8 @@ export function Workspace() {
                 setLiveConsent={setLiveConsent}
                 liveRunning={liveRunning}
                 onRunLive={runLiveEvaluation}
+                syntheticGroundTruthEligible={syntheticGroundTruthEligible}
+                onLoadSyntheticGroundTruth={loadSyntheticGroundTruth}
                 referenceFiles={referenceFiles}
                 setReferenceFiles={setReferenceFiles}
                 customerProfile={customerProfile}
@@ -2402,7 +2632,7 @@ function BatchWaitingState({
         {running
           ? `系统正在按顺序分析 ${count} 张 AI 模特草图，首张结果完成后会在这里显示。`
           : errorCount > 0
-            ? "请查看上方队列中的失败原因，确认后可以重新发起评分。"
+            ? "请查看上方队列中的失败原因；再次外发前需要重新确认授权、剩余次数与预算。"
             : `已载入 ${count} 张 AI 模特草图。确认商品真值和授权后，点击“开始 AI 问题诊断”。`}
       </p>
       <small>在真实诊断完成前，本区域不会显示示例分数或模拟结论。</small>
@@ -2422,6 +2652,8 @@ function CustomerWorkflow({
   setLiveConsent,
   liveRunning,
   onRunLive,
+  syntheticGroundTruthEligible,
+  onLoadSyntheticGroundTruth,
   referenceFiles,
   setReferenceFiles,
   customerProfile,
@@ -2440,6 +2672,8 @@ function CustomerWorkflow({
   setLiveConsent: (value: boolean) => void;
   liveRunning: boolean;
   onRunLive: () => Promise<void>;
+  syntheticGroundTruthEligible: boolean;
+  onLoadSyntheticGroundTruth: () => void;
   referenceFiles: File[];
   setReferenceFiles: (files: File[]) => void;
   customerProfile: CustomerProfileInput;
@@ -2475,7 +2709,7 @@ function CustomerWorkflow({
 
       <div className="workflow-sections">
         <section className="workflow-block">
-          <header><span className="workflow-step mono">01</span><div><h2>商品真值与 SKU</h2><p>最多 4 张白底图、官方确认稿或关键细节图会随模特草图进入模型。</p></div></header>
+          <header><span className="workflow-step mono">01</span><div><h2>商品真值与 SKU</h2><p>Project 可保存最多 4 张白底图、官方确认稿或关键细节图；每次改图只发送用户选中的最多 2 张相关真值图。</p></div></header>
           <div className="workflow-actions">
             <label className="secondary-file-button">
               <input type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={processing}
@@ -2540,9 +2774,19 @@ function CustomerWorkflow({
                 onChange={(event) => { void onSelect(Array.from(event.currentTarget.files ?? [])); event.currentTarget.value = ""; }} />
               {state.kind === "processing" ? "正在建立任务" : batchCandidates.length ? "更换模特草图" : "选择 AI 模特草图"}
             </label>
-            <button className="primary-button" type="button" disabled={processing || !candidate || !liveConsent || !liveCapability?.configured} onClick={() => void onRunLive()}>
-              {liveRunning ? `正在诊断 ${completed + 1}/${batchCandidates.length}` : "开始 AI 问题诊断"}
+            <button className="primary-button" type="button" disabled={processing || !candidate || !liveConsent || !liveCapability?.configured || liveCapability.remainingRequests < 1} onClick={() => void onRunLive()}>
+              {liveRunning ? `正在诊断 ${completed + 1}/${batchCandidates.length} · 最长约 3 分钟` : "开始 AI 问题诊断"}
             </button>
+            {syntheticGroundTruthEligible && completed === 0 && (
+              <button
+                className="quiet-button"
+                type="button"
+                disabled={processing}
+                onClick={onLoadSyntheticGroundTruth}
+              >
+                载入受控样例真值
+              </button>
+            )}
             {batchCandidates.length > 0 && <button className="quiet-button" type="button" disabled={processing} onClick={onRestore}>清空批次</button>}
           </div>
           {batchCandidates.length > 0 && (
@@ -2552,12 +2796,18 @@ function CustomerWorkflow({
                 <li key={item.id}>
                   <label><input type="checkbox" checked={item.selected} onChange={() => toggleBatchSelection(item.id)} /><SafeImage src={item.src} alt={item.file.name} /><span title={item.file.name}>{item.file.name}</span></label>
                   <span className={`queue-status ${item.status}`}>{item.status === "ready" ? "等待诊断" : item.status === "running" ? "诊断中" : item.status === "done" ? `${item.result?.scoreAvailable === false ? "待人工" : item.result?.score} · ${item.result?.decision}` : "失败"}</span>
-                  {item.error && <small>{item.error}</small>}
+                  {item.error && <small className="queue-error">{item.error}</small>}
+                  {item.lastAttempt && (
+                    <small className="queue-attempt mono">
+                      请求 {item.lastAttempt.requestId.slice(0, 8)} · {item.lastAttempt.status === "RUNNING" ? "等待模型" : item.lastAttempt.status === "SUCCEEDED" ? "已完成" : item.lastAttempt.status === "TIMEOUT" ? "技术超时" : "技术失败"}
+                      {typeof item.lastAttempt.elapsedMs === "number" ? ` · ${(item.lastAttempt.elapsedMs / 1000).toFixed(1)} 秒` : ""}
+                    </small>
+                  )}
                 </li>
               ))}</ul>
             </div>
           )}
-          <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured} onChange={(event) => setLiveConsent(event.target.checked)} /><span>我确认当前 AI 模特草图与 {referenceFiles.length} 张商品真值图可发送至阿里云百炼。服务端不留存原图，本机项目会保存工作集；所有结果必须人工终审。</span></label>
+          <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured || liveCapability.remainingRequests < 1} onChange={(event) => setLiveConsent(event.target.checked)} /><span>我确认当前 AI 模特草图与 {referenceFiles.length} 张商品真值图可发送至阿里云百炼。服务端不留存原图，本机项目会保存工作集；所有结果必须人工终审。</span></label>
         </section>
 
       </div>
@@ -2899,6 +3149,8 @@ function GridWorkspace({
               ? "当前客户图片等待真实诊断 · 不显示示例结果"
               : selected.evaluationMode === LOCAL_EVALUATION_MODE
               ? "示例项目结果 · 不关联客户图片"
+              : selected.evaluationMode === "SYNTHETIC_GROUND_TRUTH"
+                ? "合成受控样例人工真值 · 非模型结果"
               : selected.evaluationMode === "LIVE_MODEL_CANARY"
                 ? `AI 评分 · ${selected.modelSnapshot} · 人工终审`
               : selected.evaluationId
