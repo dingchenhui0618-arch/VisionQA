@@ -3731,6 +3731,45 @@ h3 {
   line-height: 1.5;
 }
 
+.rail-experience {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--line);
+}
+
+.rail-experience > span {
+  color: var(--faint);
+  font-size: 0.6875rem;
+  font-weight: 680;
+}
+
+.rail-experience button {
+  min-height: 2.25rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.5rem;
+  background: var(--surface-raised);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.rail-experience button:last-of-type {
+  border-color: #171717;
+  background: #171717;
+  color: #ffffff;
+}
+
+.rail-experience small {
+  color: var(--faint);
+  font-size: 0.625rem;
+}
+
 .workspace-frame,
 .workspace-content {
   min-width: 0;

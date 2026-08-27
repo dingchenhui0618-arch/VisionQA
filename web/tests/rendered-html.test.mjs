@@ -212,6 +212,9 @@ test("keeps evidence-led analysis internal while customer results stay problem-l
   assert.match(workspaceSource, /内部分析、Prompt 与审计细节/);
   assert.match(workspaceSource, /问题与建议/);
   assert.match(workspaceSource, /确认问题并进入修正/);
+  assert.match(workspaceSource, /从头体验开衫案例/);
+  assert.match(workspaceSource, /查看完整修正结果/);
+  assert.match(workspaceSource, /不调用模型 · 不产生费用/);
   assert.match(workspaceSource, /综合评分/);
   assert.match(workspaceSource, /视觉重心/);
   assert.match(workspaceSource, /原商品一致性/);

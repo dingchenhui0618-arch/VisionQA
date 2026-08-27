@@ -291,6 +291,20 @@ type ProjectAssetInput = Omit<
   "schemaVersion" | "projectId" | "updatedAt"
 >;
 
+const CARDIGAN_EXPERIENCE_CASE_ID = "SYN-VQA-GRAY-CARDIGAN-001";
+const CARDIGAN_EXPERIENCE_ISSUE =
+  "画面左侧／穿着者右胸多出商品真值中不存在的黑色五瓣花刺绣；只删除这枚错误刺绣，保留画面右侧／穿着者左胸的正确刺绣、四颗纽扣、人物和其他区域。";
+
+async function publicImageFile(url: string, name: string): Promise<File> {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`无法载入本地体验素材：${name}`);
+  const blob = await response.blob();
+  return new File([blob], name, {
+    type: blob.type || "image/png",
+    lastModified: Date.now(),
+  });
+}
+
 function durableDataState(
   state: DataState,
   candidate: LocalCandidate | null,
@@ -1810,6 +1824,101 @@ export function Workspace() {
     setIntakeState({ kind: "idle" });
   };
 
+  const loadCardiganExperienceCase = async (
+    mode: "start" | "complete",
+  ) => {
+    setIntakeState({ kind: "processing", candidateName: "开衫体验案例" });
+    try {
+      const [truthFile, candidateFile, repairedFile] = await Promise.all([
+        publicImageFile("/fashion/demo-cardigan-truth.png", "product-truth-grid.png"),
+        publicImageFile("/fashion/demo-cardigan-defect.png", "ai-model-draft-controlled-defect.png"),
+        publicImageFile("/fashion/demo-cardigan-repaired.png", "qwen3-repair-candidate-v0.1.png"),
+      ]);
+      batchCandidates.forEach((item) => URL.revokeObjectURL(item.src));
+      const sha256 = await sha256Blob(candidateFile);
+      const candidate: BatchCandidate = {
+        id: 1,
+        file: candidateFile,
+        src: URL.createObjectURL(candidateFile),
+        sha256,
+        traceId: candidateTraceId(sha256),
+        fixtureCaseId: CARDIGAN_EXPERIENCE_CASE_ID,
+        status: "ready",
+        selected: true,
+      };
+      const result = mode === "complete"
+        ? humanConfirmedIssueAsset(
+            candidate,
+            commercialTemplateId,
+            "印花／胶印／刺绣",
+            CARDIGAN_EXPERIENCE_ISSUE,
+          )
+        : undefined;
+      const readyCandidate = result
+        ? { ...candidate, status: "done" as const, result }
+        : candidate;
+      setReferenceFiles([truthFile]);
+      setCustomerProfile((current) => ({
+        ...current,
+        styles: ["简约通勤"],
+        priceMin: "199",
+        priceMax: "399",
+        audiences: ["都市白领", "通勤女性"],
+        skuFacts: [
+          "暖浅灰细罗纹针织圆领长袖短款开衫",
+          "前襟恰好四颗哑光深灰纽扣",
+          "正确刺绣恰好一枚，位于穿着者左胸（画面右侧）",
+          "穿着者右胸（画面左侧）无刺绣或装饰",
+          "无口袋、无拉链、无品牌文字",
+        ],
+      }));
+      setBatchCandidates([readyCandidate]);
+      candidateFileRef.current = candidateFile;
+      setLocalCandidate({
+        name: candidateFile.name,
+        size: candidateFile.size,
+        sha256,
+        traceId: candidate.traceId,
+        fixtureCaseId: CARDIGAN_EXPERIENCE_CASE_ID,
+        submissionContext,
+        reviewStartedAt: new Date().toISOString(),
+      });
+      setApiAsset(result ?? null);
+      setSelectedId(candidate.id);
+      setView("grid");
+      setLiveConsent(false);
+      setRepairProviderJob(null);
+      setRepairChecks([]);
+      setUpscaleOutputFile(null);
+      setUpscaleReceipt(null);
+      if (mode === "complete" && result) {
+        setDataState({ kind: "human-confirmed", candidateName: candidateFile.name });
+        setRepairOutputFile(repairedFile);
+        setRepairSourceAssetId(candidate.id);
+        setArea("repair");
+        setToast("已载入完整开衫案例；可直接检查修改前后并完成人工复验。");
+      } else {
+        setDataState({
+          kind: "local",
+          candidateName: candidateFile.name,
+          candidateTraceId: candidate.traceId,
+          fixtureCaseId: CARDIGAN_EXPERIENCE_CASE_ID,
+        });
+        setRepairOutputFile(null);
+        setRepairSourceAssetId(null);
+        setArea("review");
+        setToast("已载入开衫案例；可以直接确认问题，或勾选授权运行 AI 诊断。");
+      }
+      setIntakeState({ kind: "ready" });
+      window.setTimeout(() => setToast(null), 4200);
+    } catch (error) {
+      setIntakeState({
+        kind: "error",
+        message: error instanceof Error ? error.message : "本地体验案例载入失败。",
+      });
+    }
+  };
+
   const syntheticGroundTruthEligible =
     isSyntheticTrousersGroundTruthEligible({
       candidateCount: batchCandidates.length,
@@ -2312,6 +2421,16 @@ export function Workspace() {
           <span>交付规则</span>
           <strong>人工终审始终开启</strong>
           <p>自动放行关闭。参考范围不会从局部通过扩张为完整 SKU 通过。</p>
+        </div>
+        <div className="rail-experience" aria-label="本地体验案例">
+          <span>本地体验</span>
+          <button type="button" onClick={() => void loadCardiganExperienceCase("start")}>
+            从头体验开衫案例
+          </button>
+          <button type="button" onClick={() => void loadCardiganExperienceCase("complete")}>
+            查看完整修正结果
+          </button>
+          <small>不调用模型 · 不产生费用</small>
         </div>
       </aside>
 
@@ -2952,7 +3071,7 @@ function CustomerWorkflow({
             </div>
           )}
           {batchCandidates.length > 0 && (
-            <details className="manual-issue-entry">
+            <details className="manual-issue-entry" open>
               <summary>我已经知道问题，直接告诉系统</summary>
               <div className="manual-issue-entry-content">
                 <fieldset className="tag-field">
