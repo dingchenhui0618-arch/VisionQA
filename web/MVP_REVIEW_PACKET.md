@@ -1,12 +1,12 @@
-# VisionQA v0.5 MVP Review Packet
+# VisionQA v0.6 MVP Review Packet
 
 ## 1. Brief and success definition
 
 - `USER-SUPPLIED`：产品负责人无代码经验，具备电商运营经验，能够审核商家痛点、文案和交付结果。
 - Target user：服饰电商运营、视觉负责人、AI 出图与审核人员。
-- Vertical slice：商品基准与人群 → 素材提交 → 质量评审 → 改图任务 → 外部生成结果回传 → 人工复审 → 营销交付草案。
-- Primary metric `PROPOSED`：完成评审的素材中，能够经过一次改图并通过人工复审、进入交付的比例。
-- Exclusions：本轮没有接入 Seedream、千问改图或 GPT Image 付费 API；没有真实账号认证；没有真实博主检索；没有客户付款或采用证据。
+- Vertical slice：商品真值 → 待修图片 → 具体问题 → 受控改图 → 前后对比 → 人工判断是否可交付。
+- Primary metric `PROPOSED`：真实待修图片中，一次修正后通过目标修复、SKU 一致性、非目标漂移与人工交付 Gate 的比例。
+- Exclusions：未接入 Seedream、GPT Image 2 与真实 AI 超分；没有正式账号、客户付款、采用或复购证据；营销交付退出当前核心验收。
 
 ## 2. Assumption register
 
@@ -17,9 +17,11 @@
 
 ## 3. Team governance
 
-- 本轮未创建子智能体。当前代码与状态高度耦合，新增代理会增加整合成本。
-- Customer Discovery Agent：`NOT RUN`；本轮没有把模拟发现冒充真实访谈。
-- 后续独立 QA：在真实改图 Provider 接入并形成可运行结果后再执行，避免只审核 UI 草案。
+- Product Manager / Orchestrator：主 Agent，冻结 MVP 契约、整合 API/UI、控制费用并执行最终回归。
+- Provider Engineer（gpt-5.6-terra）：输出 Qwen 3 / Wan 方案和 Qwen 3 受控适配器；只写 Provider 与测试，真实调用为 0；10 项 fake-fetch 测试通过。
+- Visual QA（gpt-5.6-terra）：建立 12 案例基准契约并独立复核首次 Qwen 3 候选；结论 `ACCEPTED_FOR_INTERNAL_DEMO`、客户交付 `BLOCKED`。
+- Customer Discovery（gpt-5.6-luna）：只输出 `SIMULATED` Day 1 报告；不得升级为真实访谈或市场验证。
+- 拒绝新增 UI Agent 与常驻多智能体集群：职责不能形成独立长期资产，且会扩大同文件冲突。当前六职责仍是可追溯状态机，不冒充六个模型已在线协作。
 
 ## 4. Implemented MVP
 
@@ -46,8 +48,9 @@ npm run lint
 - `npm test`：构建、页面、契约、质量规则、模型适配、存储和持久化测试通过。
 - `npm run lint`：要求 0 errors / 0 warnings。
 - 浏览器：1440px 与 390px 检查；无横向溢出；干净页面控制台 0 errors。
-- 真实图像编辑 API：`NOT RUN`。
+- Qwen Image 3.0 Pro 真实图像编辑：恰好 1 次，`n=1`、0 重试；请求标识和输出见 `../data/repair_benchmark_v0.1/runs/qwen-image-3-probe-001/receipt.json`。
 - 真实客户采用、付款与复购：`MISSING`。
+- 最新工作台浏览器视觉 QA：`NOT RUN`；本地 URL 被浏览器安全策略阻断，未绕过。此前浏览器证据不得替代本轮灰阶改动验收。
 
 ## 7. Customer Discovery — Day 1 — SIMULATED
 
@@ -67,10 +70,10 @@ npm run lint
 
 ## 9. Internal review
 
-- Product value：工作流骨架成立，真实改图效果未验证。
+- Product value：单个合成服饰案例已形成正确的全身模特修正候选；真实客户 SKU 泛化与交付质量仍未验证。
 - Evidence integrity：未接 API 的 Provider 均显示“未配置”；示例内容保持示例标记。
 - Security/privacy：本轮没有新增凭据或外部图片传输。
-- Residual high risk：多模型图像一致性、成本、延迟和失败重试均未验证。
+- Residual high risk：非目标区域仍会再渲染；单案例不能证明稳定可交付；单次实际费用、真实 SKU、客户采用和付费均缺失。
 - Compatibility boundary：持久化评估结果仍使用历史 `evaluation-result-v0.3` 的商业字段 ID。当前已增加 `product-expression-v0.1` 运行时校验和旧版诚实投影：只迁移具有直接对应证据的字段，其余保持 `NOT_ASSESSABLE`；真实 Qwen 尚未原生返回新六维度，不能宣称已经完成新维度标定。
 
 ## 2026-08-20 增量交付：商品表达契约与本地营销智能体
@@ -105,8 +108,8 @@ npm run lint
 | Claim | Evidence | Verdict | Limitation |
 |---|---|---|---|
 | 五阶段界面可运行 | build、tests、browser QA | supported | 仅本地原型 |
-| Repair Job 可导出并回传结果 | UI 与契约 | supported | 未调用真实生成 API |
-| 某个模型最适合服饰改图 | 无 | unsupported | 需要同样本对照 |
+| Qwen 3 可在受控样例移除错误贴袋并保留全身模特 | 一次真实调用、Receipt、独立视觉 QA | supported for this case | 不可外推为一般成功率 |
+| Qwen 3 是最适合服饰改图的模型 | 无同样本多模型对照 | unsupported | 需要真实 SKU 基准集 |
 | 客户愿意付款 | 无 | unsupported | 需要真实订单 |
 
 ## 11. Cost and engineering estimate
@@ -133,4 +136,4 @@ npm run lint
 
 ## 14. Cheapest next experiment
 
-选择一个真实 SKU、两张有明确结构错误的 AI 商品图，分别用三种候选模型执行同一 Repair Job。记录一次可交付率、漂移数量、人工用时和成本，再决定第一个正式接入的 Provider。
+由产品负责人用一个真实 SKU 和一张明确有错的 AI 模特图完成工作台全流程；记录是否找到正确问题、一次候选是否节省 PS 返工时间、非目标漂移、人工处理分钟数和账单费用。若候选仍需大面积重做则改变修图策略；若只需轻微收尾则扩展至 5 个真实案例。

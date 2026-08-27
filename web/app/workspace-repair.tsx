@@ -11,9 +11,12 @@ import {
   createRepairProviderJob,
   QWEN_IMAGE_EDIT_MODEL_SNAPSHOT,
   QWEN_IMAGE_EDIT_PROVIDER_ID,
+  QWEN_IMAGE_3_MODEL_SNAPSHOT,
+  QWEN_IMAGE_3_PROVIDER_ID,
   updateRepairProviderJob,
   type RepairProviderCapability,
   type RepairProviderJobSnapshot,
+  type RepairProviderRoute,
 } from "../lib/visionqa/repair-provider-contract";
 import { runRepairCollaboration } from "../lib/visionqa/agents/repair-orchestrator";
 import {
@@ -61,7 +64,8 @@ type RepairWorkspaceProps = {
 };
 
 const providers = [
-  { id: "qwen-image", name: "千问图像编辑", fit: "当前首选 · 同一修正链路", state: "受控适配已完成" },
+  { id: "qwen-image-3", route: "qwen-image-3", name: "Qwen Image 3.0 Pro", fit: "实验主通道 · 单图局部修正", state: "受控适配已完成" },
+  { id: "qwen-image", route: "qwen-image-edit-max", name: "千问 Image Edit Max", fit: "稳定回退 · 同一修正链路", state: "受控适配已完成" },
   { id: "seedream", name: "Seedream", fit: "保留为图像编辑适配器候选", state: "后续适配" },
   { id: "gpt-image", name: "GPT Image", fit: "保留为图像编辑适配器候选", state: "API 未配置" },
 ] as const;
@@ -92,7 +96,7 @@ export function RepairWorkspace({
   onBack,
   onContinue,
 }: RepairWorkspaceProps) {
-  const [provider, setProvider] = useState<(typeof providers)[number]["id"]>("qwen-image");
+  const [provider, setProvider] = useState<(typeof providers)[number]["id"]>("qwen-image-3");
   const [copied, setCopied] = useState(false);
   const [providerCapability, setProviderCapability] = useState<
     | { kind: "loading" }
@@ -112,6 +116,11 @@ export function RepairWorkspace({
     width: number;
     height: number;
   } | null>(null);
+  const [repairSourceDimensions, setRepairSourceDimensions] = useState<{
+    sourceKey: string;
+    width: number;
+    height: number;
+  } | null>(null);
   const [upscaleState, setUpscaleState] = useState<
     | { kind: "idle" }
     | { kind: "running"; sourceKey: string }
@@ -127,6 +136,9 @@ export function RepairWorkspace({
   useEffect(() => () => { if (outputUrl) URL.revokeObjectURL(outputUrl); }, [outputUrl]);
 
   const selectedProvider = providers.find((item) => item.id === provider)!;
+  const selectedQwenRoute = "route" in selectedProvider
+    ? selectedProvider.route as RepairProviderRoute
+    : null;
   const referenceOptions = useMemo(
     () =>
       referenceFiles.map((file) => ({
@@ -197,7 +209,10 @@ export function RepairWorkspace({
 
   useEffect(() => {
     const controller = new AbortController();
-    getRepairProviderCapability(controller.signal)
+    if (!selectedQwenRoute) {
+      return () => controller.abort();
+    }
+    getRepairProviderCapability(selectedQwenRoute, controller.signal)
       .then((value) => setProviderCapability({ kind: "ready", value }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -210,7 +225,17 @@ export function RepairWorkspace({
         });
       });
     return () => controller.abort();
-  }, []);
+  }, [selectedQwenRoute]);
+
+  useEffect(() => {
+    let active = true;
+    if (!sourceFile) return () => { active = false; };
+    const sourceKey = `${sourceFile.name}-${sourceFile.size}-${sourceFile.lastModified}`;
+    inspectImageFile(sourceFile)
+      .then((dimensions) => { if (active) setRepairSourceDimensions({ sourceKey, ...dimensions }); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [sourceFile]);
 
   useEffect(() => {
     let active = true;
@@ -268,20 +293,26 @@ export function RepairWorkspace({
       !sourceFile ||
       !sourceSha256 ||
       !repairPlanReady ||
-      (provider === "qwen-image" && selectedReferenceFiles.length === 0)
+      (selectedQwenRoute && selectedReferenceFiles.length === 0)
     ) return;
     const capability =
       providerCapability.kind === "ready" ? providerCapability.value : null;
-    const qwenSelected = provider === "qwen-image";
+    const qwenSelected = Boolean(selectedQwenRoute);
+    const providerId = selectedQwenRoute === "qwen-image-3"
+      ? QWEN_IMAGE_3_PROVIDER_ID
+      : QWEN_IMAGE_EDIT_PROVIDER_ID;
+    const modelSnapshot = selectedQwenRoute === "qwen-image-3"
+      ? QWEN_IMAGE_3_MODEL_SNAPSHOT
+      : QWEN_IMAGE_EDIT_MODEL_SNAPSHOT;
     onProviderJobChange(
       createRepairProviderJob({
         sourceAssetId: asset.id,
         sourceSha256,
         providerId: qwenSelected
-          ? QWEN_IMAGE_EDIT_PROVIDER_ID
+          ? providerId
           : provider,
         modelSnapshot: qwenSelected
-          ? QWEN_IMAGE_EDIT_MODEL_SNAPSHOT
+          ? modelSnapshot
           : null,
         status: qwenSelected
           ? capability?.liveReady
@@ -303,14 +334,20 @@ export function RepairWorkspace({
   };
 
   const runQwenProvider = async () => {
+    const sourceKey = sourceFile
+      ? `${sourceFile.name}-${sourceFile.size}-${sourceFile.lastModified}`
+      : "";
     if (
       !sourceFile ||
       !repairPlanReady ||
       !providerJob ||
-      providerJob.providerId !== QWEN_IMAGE_EDIT_PROVIDER_ID ||
+      !selectedQwenRoute ||
       providerCapability.kind !== "ready" ||
+      providerJob.providerId !== providerCapability.value.providerId ||
       !providerCapability.value.liveReady ||
-      !repairConsent
+      !repairConsent ||
+      !repairSourceDimensions ||
+      repairSourceDimensions.sourceKey !== sourceKey
     ) {
       return;
     }
@@ -324,10 +361,13 @@ export function RepairWorkspace({
     setProviderRunError(null);
     try {
       const result = await executeQwenRepair({
+        route: selectedQwenRoute,
         source: sourceFile,
         references: selectedReferenceFiles,
         sourceSha256,
         prompt: asset.repairPrompt,
+        sourceWidth: repairSourceDimensions.width,
+        sourceHeight: repairSourceDimensions.height,
       });
       const outputGate = await inspectRepairOutput(result.file);
       if (outputGate.decision === "BLOCK_MAJOR_DRIFT") {
@@ -490,7 +530,7 @@ export function RepairWorkspace({
           ? "接口就绪 · 每次发送仍需确认"
           : `等待授权 · ${providerCapability.value.blockers.length} 项 Gate`;
   const qwenCanRun =
-    provider === "qwen-image" &&
+    Boolean(selectedQwenRoute) &&
     providerCapability.kind === "ready" &&
     providerCapability.value.liveReady &&
     selectedReferenceFiles.length > 0 &&
@@ -526,20 +566,20 @@ export function RepairWorkspace({
       <header className="page-heading">
         <div>
           <p className="page-context">第四步 · 修正与交付</p>
-          <h1 id="repair-title">只改问题区域，商品身份保持不变。</h1>
-          <p>先生成可审计的改图任务，再由外部工具或未来 API 产生候选图。修改结果必须重新检查商品一致性与非目标区域漂移。</p>
+          <h1 id="repair-title">修正问题，再确认其他地方没有被改坏。</h1>
+          <p>生成候选图，直接比较修改前后。</p>
         </div>
         <button className="quiet-button" type="button" onClick={onBack}>返回问题诊断</button>
       </header>
 
-      <section className="repair-agent-ledger" aria-labelledby="repair-agent-title">
-        <header>
+      <details className="repair-agent-ledger">
+        <summary>
           <div>
-            <span>同一案例协作链</span>
-            <h2 id="repair-agent-title">六个职责，共用一份商品事实与版本记录。</h2>
+            <span>内部处理记录</span>
+            <h2>查看本次任务的状态与下一步</h2>
           </div>
           <strong>{collaborationStatusLabel[collaboration.status]} · {collaboration.status}</strong>
-        </header>
+        </summary>
         <ol>
           {collaboration.agents.map((item, index) => (
             <li key={item.id} data-status={item.status}>
@@ -554,17 +594,17 @@ export function RepairWorkspace({
           <strong>{collaboration.nextAction}</strong>
           <small>当前是可追溯状态机，不冒充六个独立模型已经在线推理。</small>
         </footer>
-      </section>
+      </details>
 
       <section className="repair-command" aria-labelledby="repair-command-title">
         <div className="repair-command-heading">
-          <div><span>改图任务</span><h2 id="repair-command-title">选择执行方案，确认修复边界。</h2></div>
+          <div><span>本次修正</span><h2 id="repair-command-title">确认要改什么，以及哪些地方不能变。</h2></div>
           <strong>{isDemo ? "示例素材" : `当前图片 ${String(asset.id).padStart(3, "0")}`}</strong>
         </div>
         <div className="provider-choice-grid" role="radiogroup" aria-label="改图模型方案">
           {providers.map((item) => (
-            <button key={item.id} type="button" role="radio" aria-checked={provider === item.id} onClick={() => { setProvider(item.id); const nextProviderId = item.id === "qwen-image" ? QWEN_IMAGE_EDIT_PROVIDER_ID : item.id; if (providerJob && providerJob.providerId !== nextProviderId) onProviderJobChange(null); setRepairConsent(false); setProviderRunError(null); }}>
-              <span>{item.name}</span><p>{item.fit}</p><small>{item.id === "qwen-image" ? qwenCapabilityLabel : item.state}</small>
+            <button key={item.id} type="button" role="radio" aria-checked={provider === item.id} onClick={() => { setProvider(item.id); setProviderCapability("route" in item ? { kind: "loading" } : { kind: "error", message: "该模型适配器尚未接入。" }); onProviderJobChange(null); setRepairConsent(false); setProviderRunError(null); }}>
+              <span>{item.name}</span><p>{item.fit}</p><small>{"route" in item ? qwenCapabilityLabel : item.state}</small>
             </button>
           ))}
         </div>
@@ -577,7 +617,7 @@ export function RepairWorkspace({
           <div>
             <span>本次改图参考</span>
             <strong>从完整 SKU 中选择最多 {maxProviderReferences} 张最相关真值图</strong>
-            <p>完整 SKU 可以保留更多商品图；单次模型调用只发送待修图和当前选中的真值图。正面模特图优先选正面白底图，再补一张关键细节或侧面图。</p>
+            <p>优先选择同角度白底图，再补一张关键细节。</p>
           </div>
           <div className="repair-reference-list" role="group" aria-label="本次发送的商品真值图">
             {referenceOptions.length ? referenceOptions.map(({ key, file }) => {
@@ -600,7 +640,7 @@ export function RepairWorkspace({
           <small>已选择 {selectedReferenceFiles.length}/{maxProviderReferences} 张；选择变化后需要重新确认发送。</small>
         </div>
         <div className="repair-task-actions">
-          <button className="primary-button" type="button" disabled={!sourceFile || !sourceSha256 || !repairPlanReady || (provider === "qwen-image" && selectedReferenceFiles.length === 0) || providerJob?.status === "RUNNING"} onClick={buildProviderJob}>{providerJob ? "重建改图任务" : "建立改图任务"}</button>
+          <button className="primary-button" type="button" disabled={!sourceFile || !sourceSha256 || !repairPlanReady || (Boolean(selectedQwenRoute) && selectedReferenceFiles.length === 0) || providerJob?.status === "RUNNING"} onClick={buildProviderJob}>{providerJob ? "重建改图任务" : "建立改图任务"}</button>
           <button className="quiet-button" type="button" disabled={!providerJob} onClick={exportJob}>导出任务 JSON</button>
           <span>{providerJob ? `${selectedProvider.name} · ${providerJob.status}` : "不会在缺少诊断或授权时伪装生成成功。"}</span>
         </div>
@@ -640,7 +680,7 @@ export function RepairWorkspace({
                   </p>
                 )}
               </>
-            ) : <div><strong>尚无改图结果</strong><p>可先在 Seedream、千问或 GPT 中执行任务，再上传结果进行对比复审。</p></div>}
+            ) : <div><strong>尚无改图结果</strong><p>生成候选后将在这里对比。</p></div>}
           </figure>
         </div>
         <label className="repair-output-upload">
@@ -651,7 +691,7 @@ export function RepairWorkspace({
       </section>
 
       <section className="repair-review-sheet" aria-labelledby="repair-review-title">
-        <div><span>人工复审 Gate</span><h2 id="repair-review-title">不是变好看就算完成。</h2><p>四项全部确认后，才可以把改图候选作为营销内容依据。</p></div>
+        <div><span>人工复验</span><h2 id="repair-review-title">确认修好，也确认没有改坏。</h2></div>
         <div className="repair-check-list">
           {reviewChecks.map((check) => <label key={check}><input type="checkbox" checked={checks.includes(check)} disabled={!outputFile || !workflowEvidenceReady} onChange={() => onChecksChange(checks.includes(check) ? checks.filter((item) => item !== check) : [...checks, check])} /><span>{check}</span></label>)}
         </div>
@@ -666,7 +706,7 @@ export function RepairWorkspace({
           <div>
             <span>交付清晰度</span>
             <h2 id="upscale-title">修正完成后，再生成 4K 文件。</h2>
-            <p>清晰度处理不会替代商品一致性复验。当前先提供完全本机的 4K 尺寸交付，真实 AI 细节重建保留独立授权 Gate。</p>
+            <p>人工复验后再处理清晰度。</p>
           </div>
           <strong>{reviewed ? "可以处理" : workflowEvidenceReady ? "等待人工复验" : "等待证据 Gate"}</strong>
         </header>

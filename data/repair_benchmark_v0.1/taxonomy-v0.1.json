@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "visionqa-repair-benchmark-taxonomy-v0.1",
+  "evidence_mode": "PLANNING_ONLY_NO_MODEL_CALLS",
+  "customer_conclusion_policy": "NO_SINGLE_COMPOSITE_SCORE",
+  "default_delivery_states": ["PASS", "CONDITIONAL_PASS", "REWORK", "REGENERATE", "BLOCKED"],
+  "observable_outcomes": [
+    {"id": "target_repair", "question": "指定问题是否已在目标区域按商品真值修正？"},
+    {"id": "sku_consistency", "question": "颜色、版型、结构、Logo/字标及材质是否仍符合该 SKU 真值？"},
+    {"id": "person_identity", "question": "若原图含模特，身份、脸部、姿势、肢体数目与可见手脚是否保持或按 Brief 正确重建？"},
+    {"id": "non_target_drift", "question": "目标区域以外的商品、人物、背景、镜头和裁切是否出现不可接受变化？"},
+    {"id": "delivery_usability", "question": "是否满足指定用途、画幅、像素尺寸、清晰度与无文字/水印等交付条件？"}
+  ],
+  "categories": [
+    {
+      "id": "BRAND_MARK",
+      "name": "Logo/字标",
+      "target_region": "已标注的 Logo、字标、吊牌或压印局部",
+      "product_truth_required": ["官方矢量或透明 PNG", "标准色值", "标准位置/尺寸/朝向", "对应视角商品真值图"],
+      "forbidden_change_regions": ["非目标服装结构", "人物脸部/手部", "背景、镜头与裁切"],
+      "preferred_strategy": "DETERMINISTIC_COMPOSITE",
+      "repairable_when": "官方资产和位置锚点齐全，且可不重绘相邻纹理。",
+      "regenerate_when": "Logo 所在区域与褶皱、遮挡或透视严重耦合，确定性合成无法自然贴合。",
+      "deterministic_composite": "使用已授权官方资产，按透视/遮罩/色彩匹配确定性合成；禁止生成模型猜写品牌文字。"
+    },
+    {
+      "id": "GARMENT_DECORATION",
+      "name": "贴花、胶印、刺绣与图案",
+      "target_region": "指定图案、绣花、贴花或胶印的边界与周边织物",
+      "product_truth_required": ["细节近照", "图案文件或清晰真值图", "工艺类型", "尺寸与相对位置"],
+      "forbidden_change_regions": ["其他图案", "面料纹理方向", "五官、手指、背景"],
+      "preferred_strategy": "LOCAL_REPAIR_OR_DETERMINISTIC_COMPOSITE",
+      "repairable_when": "缺失、错位、断裂或边缘融合问题局限于已标注装饰区域。",
+      "regenerate_when": "大面积花型、满印或多层透明材质与服装褶皱同时失真。",
+      "deterministic_composite": "仅在官方图案资产、遮罩和材质贴合参数完整时使用；否则保留为局部修正或重生成候选。"
+    },
+    {
+      "id": "COLOR_MATERIAL_TEXTURE",
+      "name": "颜色、材质与纹理",
+      "target_region": "颜色偏移、布纹连续性、反光、褶皱或面料细节局部",
+      "product_truth_required": ["受控光线白底图", "关键面料近照", "颜色容差/色卡（如有）", "材质和纹理方向说明"],
+      "forbidden_change_regions": ["未标注的服装结构", "人物身份", "背景曝光与构图"],
+      "preferred_strategy": "LOCAL_REPAIR",
+      "repairable_when": "色偏或纹理断裂可在局部、且不会改变 SKU 视觉识别。",
+      "regenerate_when": "主色、全身材质或大面积纹理被错误重绘，无法从真值安全恢复。",
+      "deterministic_composite": "仅允许做可审计的全局色彩校正；不得以滤镜伪造不存在的材质细节。"
+    },
+    {
+      "id": "GARMENT_STRUCTURE",
+      "name": "口袋、纽扣、领口、拉链与版型结构",
+      "target_region": "明确的衣片、口袋、五金、领口、袖口、下摆或接缝",
+      "product_truth_required": ["正/背/侧真值图", "结构细节近照", "部件数量与位置", "视角适用范围"],
+      "forbidden_change_regions": ["未涉及衣片", "品牌标识", "模特姿势、背景与裁切"],
+      "preferred_strategy": "LOCAL_REPAIR",
+      "repairable_when": "单一结构多出、缺失、错位或边缘断裂，且可从对应视角真值核验。",
+      "regenerate_when": "多个关键结构互相矛盾、服装轮廓改变或真值视角缺失。",
+      "deterministic_composite": "仅可用于有完整官方部件资产且不会引入轮廓接缝的简单五金/纽扣覆盖。"
+    },
+    {
+      "id": "HUMAN_ANATOMY",
+      "name": "人体异常",
+      "target_region": "手指、手臂、腿部、脸部、耳饰接触区或身体连接处",
+      "product_truth_required": ["原图用途说明", "允许修正的身体区域", "人物身份锁定规则", "服装遮挡关系"],
+      "forbidden_change_regions": ["SKU 真值特征", "未标注人物部位", "背景、镜头与构图"],
+      "preferred_strategy": "LOCAL_REPAIR_OR_REGENERATE",
+      "repairable_when": "小范围多指、手腕连接、局部肢体边缘异常且能保留同一身份和姿势。",
+      "regenerate_when": "脸部身份、身体比例、肢体数量或姿势整体崩坏。",
+      "deterministic_composite": "不适用；不得用库存人像或无授权人像替换人物。"
+    },
+    {
+      "id": "OCCLUSION_CONTACT",
+      "name": "遮挡与接触关系",
+      "target_region": "手与服装、头发与领口、包带与衣片、身体与服装边缘的接触区域",
+      "product_truth_required": ["商品对应部位真值", "原图遮挡层级", "允许/禁止移除的对象"],
+      "forbidden_change_regions": ["非目标手指/脸部", "商品标识", "背景透视与光影"],
+      "preferred_strategy": "LOCAL_REPAIR_OR_REGENERATE",
+      "repairable_when": "遮挡边缘短且目标物真实形状、面料和光线可确定。",
+      "regenerate_when": "关键商品结构大面积被手、头发或道具遮住，无法依据真值还原。",
+      "deterministic_composite": "仅限可授权、层级明确的简单道具遮罩，不用于猜测被遮住的商品结构。"
+    },
+    {
+      "id": "BACKGROUND_COMPOSITION",
+      "name": "背景、构图、镜头与裁切",
+      "target_region": "背景瑕疵、地面接触阴影、空白区、画面边缘或指定构图区域",
+      "product_truth_required": ["用途画幅", "主体必须可见范围", "构图母版", "背景要求"],
+      "forbidden_change_regions": ["商品、人物身份、姿势、商品占比（除非明确授权）"],
+      "preferred_strategy": "LOCAL_REPAIR_OR_REGENERATE",
+      "repairable_when": "背景污点、孤立杂物或轻微阴影错误不影响主体边缘。",
+      "regenerate_when": "主体被裁切、镜头视角错误、人物比例或场景叙事不符合 Brief。",
+      "deterministic_composite": "可用于纯背景清理和透明背景合成；须保持原主体像素与画幅证据。"
+    },
+    {
+      "id": "REGENERATE_DECISION",
+      "name": "应重生成场景",
+      "target_region": "不适用：这是策略级硬判定",
+      "product_truth_required": ["完整 SKU 真值", "用途 Brief", "原图与缺陷证据"],
+      "forbidden_change_regions": ["不适用；禁止把不可修复问题伪装成局部可交付修正"],
+      "preferred_strategy": "REGENERATE",
+      "repairable_when": "不适用；仅用于验证系统拒绝错误策略。",
+      "regenerate_when": "缺少真值、人物身份/姿势整体错误、多个关键结构错误、主体裁切或大幅构图漂移。",
+      "deterministic_composite": "不适用。"
+    },
+    {
+      "id": "DELIVERY_2K_4K",
+      "name": "2K 到 4K 交付可用性",
+      "target_region": "整图尺寸、边缘、文字/Logo 清晰度与压缩伪影",
+      "product_truth_required": ["交付用途", "目标分辨率", "允许的文件格式/画幅", "是否需要真实细节重建"],
+      "forbidden_change_regions": ["任何 SKU/人物/背景内容；尺寸处理不得改写内容"],
+      "preferred_strategy": "DETERMINISTIC_RESAMPLE_OR_BLOCK",
+      "repairable_when": "只需要像素尺寸交付且原始细节足以满足用途；可用本地高质量重采样。",
+      "regenerate_when": "源图严重模糊、纹理缺失或客户要求真实细节重建而无获批超分能力。",
+      "deterministic_composite": "不适用；本地重采样只能扩大像素尺寸，必须标注 detailReconstruction=false。"
+    }
+  ]
+}

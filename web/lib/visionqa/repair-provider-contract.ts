@@ -6,6 +6,11 @@ export const QWEN_IMAGE_EDIT_MODEL_SNAPSHOT =
   "qwen-image-edit-max-2026-01-16" as const;
 export const QWEN_IMAGE_EDIT_DATA_SCOPE =
   "MODEL_DRAFT_AND_PRODUCT_REFERENCES" as const;
+export const QWEN_IMAGE_3_PROVIDER_ID =
+  "aliyun-bailian-qwen-image-3-beijing" as const;
+export const QWEN_IMAGE_3_MODEL_SNAPSHOT = "qwen-image-3.0-pro" as const;
+
+export type RepairProviderRoute = "qwen-image-3" | "qwen-image-edit-max";
 
 export type RepairProviderJobStatus =
   | "READY"
@@ -40,8 +45,8 @@ export type RepairProviderJobSnapshot = {
 
 export type RepairProviderCapability = {
   adapterReady: true;
-  providerId: typeof QWEN_IMAGE_EDIT_PROVIDER_ID;
-  modelSnapshot: typeof QWEN_IMAGE_EDIT_MODEL_SNAPSHOT;
+  providerId: string;
+  modelSnapshot: string;
   region: "cn-beijing";
   apiKeyConfigured: boolean;
   workspaceConfigured: boolean;

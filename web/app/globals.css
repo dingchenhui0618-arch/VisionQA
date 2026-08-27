@@ -3034,7 +3034,7 @@ button:active {
   border-bottom: 1px solid var(--line-strong);
 }
 
-.repair-agent-ledger > header,
+.repair-agent-ledger > summary,
 .repair-agent-ledger > footer {
   display: flex;
   align-items: flex-start;
@@ -3043,19 +3043,35 @@ button:active {
   padding: 1rem 0;
 }
 
-.repair-agent-ledger > header span,
+.repair-agent-ledger > summary {
+  min-height: 3.5rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.repair-agent-ledger > summary::-webkit-details-marker { display: none; }
+
+.repair-agent-ledger > summary::after {
+  content: "展开";
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.repair-agent-ledger[open] > summary::after { content: "收起"; }
+
+.repair-agent-ledger > summary span,
 .repair-agent-ledger > footer span,
 .repair-agent-ledger > footer small {
   color: var(--faint);
   font-size: 0.6875rem;
 }
 
-.repair-agent-ledger > header h2 {
+.repair-agent-ledger > summary h2 {
   margin: 0.25rem 0 0;
   font-size: 1rem;
 }
 
-.repair-agent-ledger > header > strong {
+.repair-agent-ledger > summary > strong {
   font-size: 0.6875rem;
   font-weight: 650;
   letter-spacing: 0.04em;
@@ -3513,7 +3529,7 @@ button:active {
   .agent-runtime-trace li { grid-template-columns: 2rem 3.5rem minmax(0, 1fr); }
   .agent-runtime-trace li p { grid-column: 2 / -1; }
   .repair-task-actions > span { margin-left: 0; }
-  .repair-agent-ledger > header { align-items: stretch; flex-direction: column; }
+  .repair-agent-ledger > summary { align-items: stretch; flex-direction: column; }
   .repair-agent-ledger ol { grid-template-columns: 1fr; }
   .repair-agent-ledger li,
   .repair-agent-ledger li:nth-child(4) { border-top: 1px solid var(--line); border-left: 0; }
@@ -3554,6 +3570,12 @@ h3 {
 }
 
 .vision-workbench-shell {
+  --blue: #171717;
+  --blue-deep: #090909;
+  --blue-soft: #ececec;
+  --green: #444444;
+  --amber: #666666;
+  --red: #222222;
   min-height: 100dvh;
   display: grid;
   grid-template-columns: 14.5rem minmax(0, 1fr);
@@ -3570,7 +3592,7 @@ h3 {
   flex-direction: column;
   padding: 1.25rem 1rem 1rem;
   border-right: 1px solid var(--line);
-  background: #f7f8fa;
+  background: #f7f7f7;
 }
 
 .workspace-brand {
@@ -3704,7 +3726,7 @@ h3 {
 
 .rail-governance p {
   margin: 0;
-  color: #48556d;
+  color: #555555;
   font-size: 0.6875rem;
   line-height: 1.5;
 }
@@ -3829,12 +3851,12 @@ h3 {
 
 .data-source-badge {
   border-radius: 0.375rem;
-  background: #f5f7fa;
+  background: #f5f5f5;
 }
 
 .view-switch {
   border-radius: 0.5rem;
-  background: #f1f3f6;
+  background: #f2f2f2;
 }
 
 .view-switch button,
@@ -3845,7 +3867,7 @@ h3 {
 .view-switch button[aria-pressed="true"],
 .filter-pill[aria-pressed="true"] {
   background: var(--surface-raised);
-  box-shadow: 0 1px 3px rgba(27, 37, 52, 0.08);
+  box-shadow: 0 1px 3px rgba(32, 32, 32, 0.08);
   color: var(--blue-deep);
 }
 
@@ -3855,7 +3877,7 @@ h3 {
 .submission-context input,
 .submission-context select,
 .price-range input {
-  background: #f6f7f9;
+  background: #f7f7f7;
 }
 
 .overview-focus {
@@ -3873,7 +3895,7 @@ h3 {
   min-height: 25rem;
   margin: 0;
   overflow: hidden;
-  background: #e9ebef;
+  background: #ebebeb;
 }
 
 .overview-cover img {
@@ -3891,7 +3913,7 @@ h3 {
   left: 0.75rem;
   padding: 0.5rem 0.625rem;
   border-radius: 0.375rem;
-  background: rgba(18, 21, 28, 0.84);
+  background: rgba(22, 22, 22, 0.84);
   color: #fff;
   font-size: 0.6875rem;
 }
@@ -4127,7 +4149,7 @@ h3 {
   position: relative;
   min-height: 30rem;
   margin: 0;
-  background: #e7e9ed;
+  background: #e9e9e9;
 }
 
 .brief-product-visual img {
@@ -4319,7 +4341,7 @@ h3 {
 
 .script-output p {
   margin: 0.75rem 0 0;
-  color: #30405c;
+  color: #3f3f3f;
   line-height: 1.7;
 }
 
@@ -4693,6 +4715,39 @@ h3 {
   background: var(--surface-raised);
 }
 
+.manual-issue-entry {
+  margin-top: 0.875rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.manual-issue-entry > summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 650;
+  list-style: none;
+}
+
+.manual-issue-entry > summary::-webkit-details-marker { display: none; }
+.manual-issue-entry > summary::after { content: "填写"; color: var(--faint); font-size: 0.6875rem; font-weight: 500; }
+.manual-issue-entry[open] > summary::after { content: "收起"; }
+
+.manual-issue-entry-content {
+  display: grid;
+  gap: 0.875rem;
+  padding: 0.875rem 0 1rem;
+}
+
+.manual-issue-entry-content textarea {
+  resize: vertical;
+  min-height: 5.25rem;
+}
+
 .review-page .workspace {
   min-height: calc(100dvh - 13rem);
   grid-template-columns: 11.5rem minmax(27rem, 1fr) 21.5rem;
@@ -4725,7 +4780,7 @@ h3 {
 }
 
 .review-page .gallery {
-  background: #eef1f5;
+  background: #f0f0f0;
 }
 
 .review-page .gallery-toolbar {
@@ -4736,7 +4791,7 @@ h3 {
 .review-page .asset-tile {
   border-width: 2px;
   border-radius: 0.5rem;
-  background: #e5e8ed;
+  background: #e7e7e7;
   transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -4757,7 +4812,7 @@ h3 {
 }
 
 .review-page .asset-score {
-  background: rgba(18, 21, 28, 0.86);
+  background: rgba(22, 22, 22, 0.86);
 }
 
 .review-page .inspector-kicker {
@@ -4804,14 +4859,14 @@ h3 {
   inset: 4rem 0 0 auto;
   z-index: 40;
   border-left: 1px solid var(--line);
-  box-shadow: -6px 0 12px rgba(27, 37, 52, 0.08);
+  box-shadow: -6px 0 12px rgba(32, 32, 32, 0.08);
 }
 
 .toast {
   z-index: 50;
   border-radius: 0.5rem;
-  background: #182035;
-  box-shadow: 0 4px 8px rgba(27, 37, 52, 0.14);
+  background: #1d1d1d;
+  box-shadow: 0 4px 8px rgba(32, 32, 32, 0.14);
 }
 
 @media (max-width: 78rem) {

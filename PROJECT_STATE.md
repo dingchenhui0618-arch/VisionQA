@@ -1,10 +1,20 @@
 # VisionQA 项目状态
 
 > 这是本项目的首要状态入口。每次阶段交付、评审结论或方向变化后更新。  
-> 最后更新：2026-08-26（Asia/Shanghai；ImageGen 修正金标准与受控真值闭环已建立）
+> 最后更新：2026-08-27（Asia/Shanghai；Qwen Image 3.0 Pro 首次受控修正与问题导向工作台）
 > 内部代号：`VisionQA`；外部产品名：待定  
 
 ## 2026-08-26 完整 SKU 真实修正闭环准备
+
+### 2026-08-27 Qwen Image 3.0 Pro 首次受控闭环
+
+- 产品结果契约更新为：客户先看“具体问题、可修方式、修改前后、是否可交付”，不以总分作为前台主结果。已知问题可由用户直接确认并进入修正，不强制先跑综合评分。
+- 工作台限定为黑白灰界面与真实图片主导；首页和测试登录页保持不变。本轮压缩了上传、诊断和修正页的解释文字。
+- 新增 `qwen-image-3.0-pro` Provider、就绪 Gate、双路由兼容和固定受控探针。API Key、Workspace、Provider、付费、数据范围和模型版本在读取图片前检查；单次 `n=1`、0 自动重试。
+- 真实探针请求成功，输出未退化为商品特写：错误工装贴袋被移除并保留完整全身模特构图。独立 QA 将其判为内部演示可用，但因非目标区域再渲染、合成样例与缺少客户终审，商业交付硬性阻断。
+- 原始证据位于 `data/repair_benchmark_v0.1/runs/qwen-image-3-probe-001/`；单次实际费用仍待阿里云账单核验，不宣称为 0。
+- 回归：109/109 测试、Lint 和生产构建通过；浏览器自动视觉复验被本地 URL 策略阻断，未绕过。
+- 当前 Gate：`QWEN_IMAGE_3_CONTROLLED_PROBE_SUCCEEDED / INTERNAL_DEMO_ONLY / CUSTOMER_DELIVERY_BLOCKED / HUMAN_REVIEW_REQUIRED / NO_AUTO_RETRY / ACTUAL_COST_MISSING / HOME_AND_LOGIN_FROZEN`。
 
 ### 2026-08-26 ImageGen 修正金标准与受控闭环
 

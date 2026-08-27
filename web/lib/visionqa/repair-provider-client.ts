@@ -1,4 +1,7 @@
-import type { RepairProviderCapability } from "./repair-provider-contract";
+import type {
+  RepairProviderCapability,
+  RepairProviderRoute,
+} from "./repair-provider-contract";
 
 export class RepairProviderApiError extends Error {
   constructor(
@@ -54,9 +57,10 @@ function outputName(sourceName: string, mimeType: string): string {
 }
 
 export async function getRepairProviderCapability(
+  route: RepairProviderRoute,
   signal?: AbortSignal,
 ): Promise<RepairProviderCapability> {
-  const response = await fetch("/api/repair-jobs", {
+  const response = await fetch(`/api/repair-jobs?route=${encodeURIComponent(route)}`, {
     headers: { accept: "application/json" },
     cache: "no-store",
     signal,
@@ -105,10 +109,13 @@ export async function getRepairProviderCapability(
 }
 
 export async function executeQwenRepair(input: {
+  route: RepairProviderRoute;
   source: File;
   references: File[];
   sourceSha256: string;
   prompt: string;
+  sourceWidth: number;
+  sourceHeight: number;
   signal?: AbortSignal;
 }): Promise<RepairProviderExecution> {
   const form = new FormData();
@@ -116,8 +123,11 @@ export async function executeQwenRepair(input: {
   input.references.slice(0, 4).forEach((file) => form.append("references", file));
   form.set("sourceSha256", input.sourceSha256);
   form.set("prompt", input.prompt);
+  form.set("route", input.route);
+  form.set("sourceWidth", String(input.sourceWidth));
+  form.set("sourceHeight", String(input.sourceHeight));
   form.set("consent", "MODEL_DRAFT_AND_PRODUCT_REFERENCES");
-  const response = await fetch("/api/repair-jobs", {
+  const response = await fetch(`/api/repair-jobs?route=${encodeURIComponent(input.route)}`, {
     method: "POST",
     body: form,
     cache: "no-store",

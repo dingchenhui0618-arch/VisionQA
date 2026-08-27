@@ -32,9 +32,15 @@ type AssetIntakeWorkspaceProps = {
 
 const channelOptions = ["天猫", "淘宝", "唯品会", "抖音商城", "小红书商城", "京东", "拼多多", "微信小店", "独立站"] as const;
 const provenanceOptions = [
-  { value: "confirmed_ai", label: "确认是 AI 生成图", note: "进入 AI 痕迹与商品漂移检查" },
-  { value: "confirmed_real", label: "确认是真人或实拍图", note: "不默认存在 AI 生成过程" },
-  { value: "unknown", label: "暂不确定", note: "正式评分前需要人工补充来源" },
+  { value: "confirmed_ai", label: "确认是 AI 生成图", note: "检查商品逻辑、人物与生成漂移" },
+  { value: "confirmed_real", label: "确认是真人或实拍图", note: "检查商品呈现、人物接触与画面问题" },
+  { value: "unknown", label: "暂不确定", note: "系统会保留来源未知状态，不强行推断" },
+] as const;
+
+const assetRoleOptions = [
+  { value: "AI商品图", label: "AI 商品图", note: "白底、场景或产品展示图" },
+  { value: "AI模特图", label: "AI 模特图", note: "试穿、模特展示或换装图" },
+  { value: "真人实拍图", label: "真人实拍图", note: "棚拍、外景或运营实拍素材" },
 ] as const;
 
 export function AssetIntakeWorkspace({
@@ -54,9 +60,9 @@ export function AssetIntakeWorkspace({
     <section className="workspace-page intake-page" aria-labelledby="intake-title">
       <header className="page-heading intake-heading">
         <div>
-          <p className="page-context">第二步 · AI 模特草图</p>
-          <h1 id="intake-title">上传需要修正的模特母图。</h1>
-          <p>当前版本只处理同一 SKU 的 AI 模特图，建议先放入 1 张，最多 3 张同用途候选；详情页和促销排版不与母图混在同一任务。</p>
+          <p className="page-context">第二步 · 待修素材</p>
+          <h1 id="intake-title">把需要检查和修正的图片放进来。</h1>
+          <p>上传同一 SKU 的待修图片。一次最多 3 张。</p>
         </div>
         <button className="primary-button" type="button" disabled={!items.length} onClick={onContinue}>
           下一步：定位问题
@@ -65,15 +71,26 @@ export function AssetIntakeWorkspace({
 
       <section className="intake-command-sheet" aria-labelledby="intake-command-title">
         <div className="intake-command-copy">
-          <span>固定任务范围</span>
-          <h2 id="intake-command-title">AI 模特图修正</h2>
+          <span>本次任务范围</span>
+          <h2 id="intake-command-title">商品图与模特图修正</h2>
           <div className="intake-scope-ledger" role="note">
-            <div><span>素材角色</span><strong>AI 模特母图</strong></div>
+            <div><span>素材角色</span><strong>{submissionContext.placement || "待确认"}</strong></div>
             <div><span>商品真值</span><strong>以上一步白底图为准</strong></div>
-            <div><span>促销信息</span><strong>不要求，缺少时不扣分</strong></div>
+            <div><span>客户结果</span><strong>具体问题、修正候选与前后对比</strong></div>
           </div>
         </div>
         <div className="intake-context-fields intake-context-choice-fields">
+          <fieldset className="intake-choice-field">
+            <legend>这次要修什么图</legend>
+            <div className="provenance-choice-list">
+              {assetRoleOptions.map((option) => (
+                <button key={option.value} type="button" aria-pressed={submissionContext.placement === option.value} onClick={() => setSubmissionContext((current) => ({ ...current, placement: option.value }))}>
+                  <strong>{option.label}</strong>
+                  <span>{option.note}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
           <fieldset className="intake-choice-field">
             <legend>主要发布渠道</legend>
             <div className="channel-choice-grid">
@@ -108,8 +125,8 @@ export function AssetIntakeWorkspace({
           }}
         />
         <span className="intake-drop-index">+</span>
-        <strong>{processing ? "正在建立素材批次" : items.length ? "继续添加或更换本批素材" : "选择需要评审的图片"}</strong>
-        <p>支持 JPG、PNG、WebP，单张不超过 10 MB。文件保存在当前浏览器项目中，不会因自动保存上传第三方。</p>
+        <strong>{processing ? "正在建立修正任务" : items.length ? "继续添加或更换本批素材" : "选择需要检查和修正的图片"}</strong>
+        <p>JPG、PNG、WebP · 单张不超过 10 MB · 保存在当前项目</p>
       </label>
 
       {errorMessage && <p className="intake-error" role="alert">{errorMessage}</p>}
@@ -118,7 +135,7 @@ export function AssetIntakeWorkspace({
         <div className="section-title-row">
           <div>
             <span>当前修正任务</span>
-            <h2 id="intake-queue-title">{items.length ? `${items.length} 张同用途模特图` : "尚未加入模特草图"}</h2>
+            <h2 id="intake-queue-title">{items.length ? `${items.length} 张同用途待修图` : "尚未加入待修素材"}</h2>
           </div>
           <div className="intake-queue-actions">
             <strong>已选 {selectedCount}</strong>
@@ -143,7 +160,7 @@ export function AssetIntakeWorkspace({
         ) : (
           <div className="intake-empty-state">
             <strong>从真实素材开始</strong>
-            <p>上传完成前，这里不会显示示例图片、模拟分数或自动通过结论。</p>
+            <p>上传后在这里确认待修素材。</p>
           </div>
         )}
       </section>

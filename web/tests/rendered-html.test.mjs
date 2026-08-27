@@ -46,7 +46,7 @@ test("server-renders the truthful VisionQA login entry", async () => {
   assert.doesNotMatch(html, /真实客户已采用|已付款|自动放行已开启|认证成功/);
 });
 
-test("keeps the focused AI model-image repair workflow in the implementation", async () => {
+test("keeps the focused product and model-image repair workflow in the implementation", async () => {
   const workspaceSource = await readFile(new URL("../app/workspace.tsx", import.meta.url), "utf8");
   const baselineSource = await readFile(new URL("../app/workspace-overview.tsx", import.meta.url), "utf8");
   const intakeSource = await readFile(new URL("../app/workspace-intake.tsx", import.meta.url), "utf8");
@@ -67,20 +67,22 @@ test("keeps the focused AI model-image repair workflow in the implementation", a
   assert.match(baselineSource, /上传商品白底图或官方确认稿/);
   assert.match(baselineSource, /profile-sidebar/);
   assert.match(baselineSource, /编辑商品策略与人群画像/);
-  assert.match(intakeSource, /AI 模特图修正/);
-  assert.match(intakeSource, /详情页和促销排版不与母图混在同一任务/);
-  assert.match(intakeSource, /不要求，缺少时不扣分/);
+  assert.match(intakeSource, /商品图与模特图修正/);
+  assert.match(intakeSource, /AI 商品图/);
+  assert.match(intakeSource, /真人实拍图/);
+  assert.match(intakeSource, /具体问题、修正候选与前后对比/);
   assert.doesNotMatch(intakeSource, /可放在同一批次/);
   assert.match(intakeSource, /抖音商城/);
   assert.match(intakeSource, /确认是 AI 生成图/);
   assert.match(repairSource, /Seedream/);
-  assert.match(repairSource, /千问图像编辑/);
+  assert.match(repairSource, /Qwen Image 3\.0 Pro/);
+  assert.match(repairSource, /千问 Image Edit Max/);
   assert.match(repairSource, /GPT Image/);
   assert.match(repairSource, /修改前后对比/);
   assert.match(repairSource, /生成 4K 尺寸文件/);
   assert.match(upscaleSource, /AI 细节重建超分/);
   assert.match(repairSource, /未进行 AI 细节重建/);
-  assert.match(repairSource, /同一案例协作链/);
+  assert.match(repairSource, /内部处理记录/);
   assert.match(repairSource, /不冒充六个独立模型已经在线推理/);
   assert.match(workspaceSource, /pendingCandidateAsset/);
   assert.match(workspaceSource, /item\.result \?\? pendingCandidateAsset/);
@@ -144,13 +146,13 @@ test("keeps the consent gate and focused model-image diagnosis launch", async ()
   );
   assert.match(workspaceSource, /商品真值与 SKU/);
   assert.match(workspaceSource, /客户画像/);
-  assert.match(workspaceSource, /分析范围与启动/);
+  assert.match(workspaceSource, /分析图片问题/);
   assert.match(workspaceSource, /type="file"/);
   assert.match(workspaceSource, /AI 模特草图与.*商品真值图可发送至阿里云百炼/);
   assert.match(workspaceSource, /开始 AI 问题诊断/);
   assert.match(workspaceSource, /服务端不留存原图/);
   assert.match(workspaceSource, /本机项目会保存工作集/);
-  assert.match(workspaceSource, /当前最多 3 张/);
+  assert.match(workspaceSource, /一次最多 3 张/);
   assert.match(workspaceSource, /商品 SKU 链接/);
   assert.match(workspaceSource, /确认 AI 生成/);
   assert.match(workspaceSource, /function DeliveryWorkspace/);
@@ -199,18 +201,18 @@ test("keeps score bands consistent while allowing blocker gate overrides", async
   assert.doesNotMatch(workspaceSource, /全部 128|PASS 84|REVIEW 36|REJECT 8/);
 });
 
-test("keeps evidence-led product expression evaluation in the review implementation", async () => {
+test("keeps evidence-led analysis internal while customer results stay problem-led", async () => {
   const workspaceSource = await readFile(
     new URL("../app/workspace.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(workspaceSource, /评估模板/);
-  assert.match(workspaceSource, /AI 模特图修正/);
-  assert.match(workspaceSource, /品牌场景表达/);
-  assert.match(workspaceSource, /模板相对分/);
+  assert.match(workspaceSource, /内部分析、Prompt 与审计细节/);
+  assert.match(workspaceSource, /问题与建议/);
+  assert.match(workspaceSource, /确认问题并进入修正/);
+  assert.match(workspaceSource, /综合评分/);
   assert.match(workspaceSource, /视觉重心/);
   assert.match(workspaceSource, /原商品一致性/);
-  assert.match(workspaceSource, /促销层级不属于本任务/);
+  assert.match(workspaceSource, /只修正以下用户确认问题/);
   assert.doesNotMatch(workspaceSource, /平台商品表达/);
 });
 

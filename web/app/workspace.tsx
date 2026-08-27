@@ -61,6 +61,13 @@ type Decision = "PASS" | "REVIEW" | "REJECT";
 type View = "grid" | "evidence";
 type WorkspaceArea = "overview" | "baseline" | "intake" | "review" | "repair" | "delivery";
 type CommercialTemplateId = "model-image-repair" | "brand-flagship";
+type ManualIssueCategory =
+  | "商品结构"
+  | "Logo／字标"
+  | "印花／胶印／刺绣"
+  | "颜色／材质／纹理"
+  | "人物／穿着逻辑"
+  | "背景／构图";
 
 type SkillScore = {
   id: string;
@@ -116,6 +123,7 @@ type EvaluatedAsset = Asset & {
   evaluationId?: string;
   resultVersion?: number;
   scoreAvailable?: boolean;
+  diagnosisReady?: boolean;
   promptProvenance?: string | null;
   calibrationStatus?: "DEMO" | "UNCALIBRATED" | "CALIBRATED";
   modelStatus?: string;
@@ -123,7 +131,8 @@ type EvaluatedAsset = Asset & {
   evaluationMode?:
     | typeof LOCAL_EVALUATION_MODE
     | "LIVE_MODEL_CANARY"
-    | "SYNTHETIC_GROUND_TRUTH";
+    | "SYNTHETIC_GROUND_TRUTH"
+    | "HUMAN_CONFIRMED_ISSUE";
   fixtureCaseId?: string;
   persistedEvaluation?: boolean;
   providerId?: string;
@@ -151,6 +160,7 @@ type DataState =
       latencyMs: number;
     }
   | { kind: "synthetic-ground-truth"; caseId: string }
+  | { kind: "human-confirmed"; candidateName: string }
   | {
       kind: "live-error";
       candidateName: string;
@@ -176,7 +186,8 @@ type AuditEntry = {
   evaluationMode?:
     | typeof LOCAL_EVALUATION_MODE
     | "LIVE_MODEL_CANARY"
-    | "SYNTHETIC_GROUND_TRUTH";
+    | "SYNTHETIC_GROUND_TRUTH"
+    | "HUMAN_CONFIRMED_ISSUE";
   fixtureCaseId?: string;
   reasonCode?: string;
   evidenceNote?: string;
@@ -338,6 +349,7 @@ function stripEvaluatedAsset(asset: EvaluatedAsset): StoredEvaluatedAsset {
     evaluationId: asset.evaluationId,
     resultVersion: asset.resultVersion,
     scoreAvailable: asset.scoreAvailable,
+    diagnosisReady: asset.diagnosisReady,
     promptProvenance: asset.promptProvenance,
     calibrationStatus: asset.calibrationStatus,
     modelStatus: asset.modelStatus,
@@ -894,6 +906,7 @@ function pendingCandidateAsset(
       metrics: [],
     },
     scoreAvailable: false,
+    diagnosisReady: false,
     promptProvenance: null,
     calibrationStatus: "UNCALIBRATED",
     modelStatus: "NOT_RUN",
@@ -913,6 +926,7 @@ function syntheticTrousersGroundTruthAsset(
     decision: "REVIEW",
     score: Number.NaN,
     scoreAvailable: false,
+    diagnosisReady: true,
     productLabel: candidate.file.name,
     skills: [],
     issues: [
@@ -957,6 +971,63 @@ function syntheticTrousersGroundTruthAsset(
   };
 }
 
+function humanConfirmedIssueAsset(
+  candidate: BatchCandidate,
+  templateId: CommercialTemplateId,
+  category: ManualIssueCategory,
+  note: string,
+): EvaluatedAsset {
+  const template = commercialTemplates.find((item) => item.id === templateId)!;
+  const issueText = note.trim();
+  return {
+    id: candidate.id,
+    src: candidate.src,
+    decision: "REVIEW",
+    score: Number.NaN,
+    scoreAvailable: false,
+    diagnosisReady: true,
+    productLabel: candidate.file.name,
+    skills: [],
+    issues: [
+      {
+        id: `human-${category}`,
+        title: issueText,
+        skill: category,
+        severity: "Major",
+        observation: `由用户确认的${category}问题：${issueText}`,
+        impact: "该问题需要在进入详情页、排版或上架流程前处理，并复验其他已正确区域。",
+        rule: "只修正用户确认的目标问题；商品真值、人物身份、画幅、背景与非目标区域不得发生不可接受变化。",
+        marker: { x: 50, y: 50 },
+      },
+    ],
+    commercialAssessment:
+      "用户已确认一个具体问题，当前没有运行综合评分；后续以修正前后和人工复验作为结果。",
+    repairPrompt:
+      `只修正以下用户确认问题：${issueText}。以本次商品真值图中可见的颜色、版型、结构、材质、图案、Logo与细节为依据。保持原图人物身份、面部、发型、姿势、手脚、服装其他正确区域、背景、光线、镜头、构图、画幅和非目标区域不变。不要裁切、拉近、重新摆拍、增加促销文字或创造未提供的商品细节。`,
+    lockedAttributes:
+      "本次商品真值范围内的颜色、版型、结构、材质、图案与Logo；原图人物、背景、镜头、构图、画幅及所有非目标区域",
+    commercial: {
+      templateId,
+      templateVersion: template.version,
+      templateName: template.name,
+      fitScore: Number.NaN,
+      fitLevel: "未评估",
+      summary: "不生成商业评分，以具体问题与修正结果为准。",
+      strengths: [],
+      gaps: [issueText],
+      metrics: [],
+    },
+    promptProvenance: "human-confirmed-issue-v0.1",
+    calibrationStatus: "UNCALIBRATED",
+    modelStatus: "HUMAN_CONFIRMED",
+    markerAvailable: false,
+    evaluationMode: "HUMAN_CONFIRMED_ISSUE",
+    fixtureCaseId: candidate.fixtureCaseId,
+    persistedEvaluation: false,
+    referenceCount: 0,
+  };
+}
+
 function buildApiAsset(
   patch: UiEvaluationPatch,
   options: {
@@ -966,7 +1037,8 @@ function buildApiAsset(
     evaluationMode?:
       | typeof LOCAL_EVALUATION_MODE
       | "LIVE_MODEL_CANARY"
-      | "SYNTHETIC_GROUND_TRUTH";
+      | "SYNTHETIC_GROUND_TRUTH"
+      | "HUMAN_CONFIRMED_ISSUE";
     providerId?: string;
     modelSnapshot?: string;
     providerLatencyMs?: number;
@@ -983,6 +1055,7 @@ function buildApiAsset(
       options.productLabel ?? `正式评估 · ${patch.evaluationId}`,
     score: patch.score ?? Number.NaN,
     scoreAvailable: patch.score !== null,
+    diagnosisReady: true,
     decision: patch.decision ?? "REVIEW",
     skills: patch.skills.map((skill) => ({
       ...skill,
@@ -1041,13 +1114,15 @@ function Status({ value }: { value: Decision }) {
 function DataSourceBadge({ state }: { state: DataState }) {
   const label =
     state.kind === "live"
-      ? "AI 评分完成"
+      ? "问题分析完成"
       : state.kind === "synthetic-ground-truth"
         ? "合成样例真值"
+      : state.kind === "human-confirmed"
+        ? "用户确认问题"
       : state.kind === "live-loading"
-        ? "AI 评分中"
+        ? "问题分析中"
         : state.kind === "live-error"
-          ? "评分失败"
+          ? "分析失败"
           : state.kind === "real"
       ? "已保存评估"
       : state.kind === "local"
@@ -1118,6 +1193,14 @@ function DataStateNotice({ state }: { state: DataState }) {
       <div className="data-state-notice real" role="status">
         已载入合成受控样例 {state.caseId} 的人工预设真值。该结论只用于验证修正闭环，
         不是模型诊断、客户证据或准确率证据。
+      </div>
+    );
+  }
+  if (state.kind === "human-confirmed") {
+    return (
+      <div className="data-state-notice real" role="status">
+        已记录 {state.candidateName} 的用户确认问题。当前没有生成评分；修正任务将以商品真值、
+        具体问题和前后复验为准。
       </div>
     );
   }
@@ -1759,6 +1842,38 @@ export function Workspace() {
     setToast("已载入合成样例人工真值；这不是模型诊断结果。");
   };
 
+  const confirmManualIssue = (
+    category: ManualIssueCategory,
+    note: string,
+  ) => {
+    const candidate =
+      batchCandidates.find((item) => item.selected) ?? batchCandidates[0];
+    if (!candidate || note.trim().length < 4) {
+      setToast("请先选择一张图片，并写清楚需要修正的具体问题。");
+      return;
+    }
+    const result = humanConfirmedIssueAsset(
+      candidate,
+      commercialTemplateId,
+      category,
+      note,
+    );
+    setBatchCandidates((current) =>
+      current.map((item) =>
+        item.id === candidate.id
+          ? { ...item, status: "done", result, error: undefined }
+          : item,
+      ),
+    );
+    setApiAsset(result);
+    setSelectedId(candidate.id);
+    setDataState({
+      kind: "human-confirmed",
+      candidateName: candidate.file.name,
+    });
+    setToast("具体问题已记录，可以进入修正与前后复验。");
+  };
+
   const runLiveEvaluation = async () => {
     const file = candidateFileRef.current;
     if (!file || !localCandidate) {
@@ -2115,13 +2230,13 @@ export function Workspace() {
 
   const batchTitle =
     batchCandidates.length > 0
-      ? `当前 SKU · ${batchCandidates.length} 张模特草图`
-      : "AI 模特图修正示例";
+      ? `当前 SKU · ${batchCandidates.length} 张待修素材`
+      : "商品图修正示例";
   const selectedBatchCandidate = batchCandidates.find(
     (item) => item.id === selected.id,
   );
   const selectedDiagnosisReady = selectedBatchCandidate
-    ? Boolean(selectedBatchCandidate.result)
+    ? Boolean(selectedBatchCandidate.result?.diagnosisReady)
     : dataState.kind !== "local" && dataState.kind !== "live-loading";
   const projectTitle = projectRecord?.projectName ?? batchTitle;
   const sourceLabel =
@@ -2131,6 +2246,8 @@ export function Workspace() {
         ? "AI 诊断完成，等待人工确认"
         : dataState.kind === "synthetic-ground-truth"
           ? "合成样例真值，等待人工复验"
+        : dataState.kind === "human-confirmed"
+          ? "用户已确认具体问题"
         : dataState.kind === "local"
           ? "客户图片仅在本机等待"
           : dataState.kind === "live-loading"
@@ -2141,8 +2258,8 @@ export function Workspace() {
   const areaLabel: Record<WorkspaceArea, string> = {
     overview: "项目总览",
     baseline: "商品真值",
-    intake: "AI 模特草图",
-    review: "问题诊断",
+    intake: "待修素材",
+    review: "问题与建议",
     repair: "修正与交付",
     delivery: "营销延展",
   };
@@ -2206,7 +2323,7 @@ export function Workspace() {
           <div className="topbar-actions">
             {area === "review" && (
               <label className="template-control">
-                <span>评估模板</span>
+                <span>内部分析规则</span>
                 <select
                   value={commercialTemplateId}
                   disabled={
@@ -2329,6 +2446,7 @@ export function Workspace() {
                 onRunLive={runLiveEvaluation}
                 syntheticGroundTruthEligible={syntheticGroundTruthEligible}
                 onLoadSyntheticGroundTruth={loadSyntheticGroundTruth}
+                onConfirmManualIssue={confirmManualIssue}
                 referenceFiles={referenceFiles}
                 setReferenceFiles={setReferenceFiles}
                 customerProfile={customerProfile}
@@ -2515,7 +2633,7 @@ function ProjectOverview({
         <div>
           <p className="page-context">项目总览</p>
           <h1 id="overview-title">一个 SKU，修好一张模特母图。</h1>
-          <p>这里只呈现当前状态与下一步。评分退到诊断细节中，商品问题、修正版本和人工复验保留在对应阶段。</p>
+          <p>只看当前状态与下一步。</p>
         </div>
       </header>
 
@@ -2654,6 +2772,7 @@ function CustomerWorkflow({
   onRunLive,
   syntheticGroundTruthEligible,
   onLoadSyntheticGroundTruth,
+  onConfirmManualIssue,
   referenceFiles,
   setReferenceFiles,
   customerProfile,
@@ -2674,6 +2793,10 @@ function CustomerWorkflow({
   onRunLive: () => Promise<void>;
   syntheticGroundTruthEligible: boolean;
   onLoadSyntheticGroundTruth: () => void;
+  onConfirmManualIssue: (
+    category: ManualIssueCategory,
+    note: string,
+  ) => void;
   referenceFiles: File[];
   setReferenceFiles: (files: File[]) => void;
   customerProfile: CustomerProfileInput;
@@ -2695,6 +2818,17 @@ function CustomerWorkflow({
   const failed = batchCandidates.filter((item) => item.status === "error").length;
   const selectedCount = batchCandidates.filter((item) => item.selected).length;
   const processing = state.kind === "processing" || liveRunning;
+  const [manualIssueCategory, setManualIssueCategory] =
+    useState<ManualIssueCategory>("商品结构");
+  const [manualIssueNote, setManualIssueNote] = useState("");
+  const manualIssueOptions: ManualIssueCategory[] = [
+    "商品结构",
+    "Logo／字标",
+    "印花／胶印／刺绣",
+    "颜色／材质／纹理",
+    "人物／穿着逻辑",
+    "背景／构图",
+  ];
 
   return (
     <details className="customer-workflow" open={batchCandidates.length > 0}>
@@ -2702,14 +2836,14 @@ function CustomerWorkflow({
         <div>
           <span>第三步 · 问题诊断</span>
           <h2 id="customer-workflow-title">确认商品真值并开始诊断</h2>
-          <p>系统先定位商品漂移和明显人体异常，再生成证据与修正建议；没有促销文字不会被判为缺陷。</p>
+          <p>定位问题，给出修正建议。</p>
         </div>
         <strong>{batchCandidates.length > 0 ? `${batchCandidates.length} 张素材已载入` : "展开评审准备"}</strong>
       </summary>
 
       <div className="workflow-sections">
         <section className="workflow-block">
-          <header><span className="workflow-step mono">01</span><div><h2>商品真值与 SKU</h2><p>Project 可保存最多 4 张白底图、官方确认稿或关键细节图；每次改图只发送用户选中的最多 2 张相关真值图。</p></div></header>
+          <header><span className="workflow-step mono">01</span><div><h2>商品真值与 SKU</h2><p>最多保存 4 张，改图时选择 1–2 张。</p></div></header>
           <div className="workflow-actions">
             <label className="secondary-file-button">
               <input type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={processing}
@@ -2746,7 +2880,7 @@ function CustomerWorkflow({
         </section>
 
         <section className="workflow-block">
-          <header><span className="workflow-step mono">02</span><div><h2>客户画像</h2><p>用于校准商业价值，不替代可见证据。</p></div></header>
+          <header><span className="workflow-step mono">02</span><div><h2>客户画像</h2><p>补充商品使用场景。</p></div></header>
           <fieldset className="tag-field"><legend>目标风格</legend><div>{styleOptions.map((option) => (
             <button type="button" key={option} aria-pressed={customerProfile.styles.includes(option)} onClick={() => toggleProfileTag("styles", option)}>{option}</button>
           ))}</div></fieldset>
@@ -2762,7 +2896,7 @@ function CustomerWorkflow({
         </section>
 
         <section className="workflow-block workflow-block-wide">
-          <header><span className="workflow-step mono">诊断</span><div><h2>分析范围与启动</h2><p>按顺序逐张分析，当前最多 3 张同用途模特图；促销层级不属于本任务。</p></div></header>
+          <header><span className="workflow-step mono">诊断</span><div><h2>分析图片问题</h2><p>一次最多 3 张同用途图片。</p></div></header>
           <div className="submission-context compact-context">
             <label>渠道<input value={submissionContext.channel} onChange={(event) => setSubmissionContext((current) => ({ ...current, channel: event.target.value }))} disabled={processing} /></label>
             <label>图位<input value={submissionContext.placement} onChange={(event) => setSubmissionContext((current) => ({ ...current, placement: event.target.value }))} disabled={processing} /></label>
@@ -2775,7 +2909,7 @@ function CustomerWorkflow({
               {state.kind === "processing" ? "正在建立任务" : batchCandidates.length ? "更换模特草图" : "选择 AI 模特草图"}
             </label>
             <button className="primary-button" type="button" disabled={processing || !candidate || !liveConsent || !liveCapability?.configured || liveCapability.remainingRequests < 1} onClick={() => void onRunLive()}>
-              {liveRunning ? `正在诊断 ${completed + 1}/${batchCandidates.length} · 最长约 3 分钟` : "开始 AI 问题诊断"}
+              {liveRunning ? `正在分析 ${completed + 1}/${batchCandidates.length} · 最长约 3 分钟` : "开始分析图片问题"}
             </button>
             {syntheticGroundTruthEligible && completed === 0 && (
               <button
@@ -2795,7 +2929,7 @@ function CustomerWorkflow({
               <ul>{batchCandidates.map((item) => (
                 <li key={item.id}>
                   <label><input type="checkbox" checked={item.selected} onChange={() => toggleBatchSelection(item.id)} /><SafeImage src={item.src} alt={item.file.name} /><span title={item.file.name}>{item.file.name}</span></label>
-                  <span className={`queue-status ${item.status}`}>{item.status === "ready" ? "等待诊断" : item.status === "running" ? "诊断中" : item.status === "done" ? `${item.result?.scoreAvailable === false ? "待人工" : item.result?.score} · ${item.result?.decision}` : "失败"}</span>
+                  <span className={`queue-status ${item.status}`}>{item.status === "ready" ? "等待分析" : item.status === "running" ? "分析中" : item.status === "done" ? `${item.result?.issues.length ?? 0} 项问题 · ${displayDecision(item.result?.decision ?? "REVIEW")}` : "失败"}</span>
                   {item.error && <small className="queue-error">{item.error}</small>}
                   {item.lastAttempt && (
                     <small className="queue-attempt mono">
@@ -2807,13 +2941,58 @@ function CustomerWorkflow({
               ))}</ul>
             </div>
           )}
+          {batchCandidates.length > 0 && (
+            <details className="manual-issue-entry">
+              <summary>我已经知道问题，直接告诉系统</summary>
+              <div className="manual-issue-entry-content">
+                <fieldset className="tag-field">
+                  <legend>问题属于哪一类</legend>
+                  <div>
+                    {manualIssueOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        aria-pressed={manualIssueCategory === option}
+                        onClick={() => setManualIssueCategory(option)}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+                <label className="field-stack">
+                  <span>具体哪里不对、希望改成什么</span>
+                  <textarea
+                    rows={3}
+                    value={manualIssueNote}
+                    placeholder="例如：画面左侧裤腿多了商品真值中不存在的翻盖口袋，只移除这个口袋，人物和其他区域不要变化。"
+                    onChange={(event) => setManualIssueNote(event.target.value)}
+                  />
+                </label>
+                <div className="workflow-actions">
+                  <button
+                    className="primary-button"
+                    type="button"
+                    disabled={manualIssueNote.trim().length < 4}
+                    onClick={() => {
+                      onConfirmManualIssue(manualIssueCategory, manualIssueNote);
+                      setManualIssueNote("");
+                    }}
+                  >
+                    确认问题并进入修正
+                  </button>
+                  <span>这条记录来自用户确认，不会冒充 AI 自动发现。</span>
+                </div>
+              </div>
+            </details>
+          )}
           <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured || liveCapability.remainingRequests < 1} onChange={(event) => setLiveConsent(event.target.checked)} /><span>我确认当前 AI 模特草图与 {referenceFiles.length} 张商品真值图可发送至阿里云百炼。服务端不留存原图，本机项目会保存工作集；所有结果必须人工终审。</span></label>
         </section>
 
       </div>
       <p className="data-processing-note">
-        隐私与授权：只有确认授权并点击开始评分后，候选图与历史参考图才会发送至阿里云百炼。
-        本页面不保存原图；当前验收环境中的评分与人工改判仅保存在本浏览器。
+        隐私与授权：只有确认授权并点击开始分析后，待修图与本次选择的商品真值图才会发送至阿里云百炼。
+        服务端不留存原图；当前验收环境中的项目、问题结果与人工选择保存在本机工作集。
       </p>
     </details>
   );
@@ -3049,14 +3228,14 @@ function GridWorkspace({
   onRepair: () => void;
 }) {
   const allAssetsCount = allAssets.length;
-  const diagnosisPending = selected.scoreAvailable === false;
+  const diagnosisPending = selected.diagnosisReady === false;
 
   return (
-    <section className="workspace" aria-label="批次审核工作台">
+    <section className="workspace" aria-label="图片问题与修正建议工作台">
       <section className="gallery">
         <div className="gallery-toolbar">
-          <span className="toolbar-label">评分与门禁 · {allAssetsCount} 张</span>
-          <span className="demo-source">按严重程度和上传顺序查看，不启用复杂筛选</span>
+          <span className="toolbar-label">待修图片 · {allAssetsCount} 张</span>
+          <span className="demo-source">先看具体问题与下一步，内部分析数据不作为客户结论</span>
         </div>
         {visibleAssets.length ? (
           <div className="image-grid" role="listbox" aria-label="候选图片">
@@ -3074,17 +3253,20 @@ function GridWorkspace({
               >
                 <SafeImage
                   src={asset.src}
-                  alt={`候选图 ${asset.id}，系统建议 ${displayDecision(asset.decision)}`}
+                  alt={`待修图片 ${asset.id}，处理建议 ${displayDecision(asset.decision)}`}
                 />
                 <span className="asset-index mono">
                   {String(asset.id).padStart(3, "0")}
                 </span>
                 <span className="asset-status">
-                  {asset.scoreAvailable === false ? "等待诊断" : <Status value={asset.decision} />}
+                  {asset.diagnosisReady === false ? "等待分析" : <Status value={asset.decision} />}
                 </span>
                 <span className="asset-score mono">
-                  {asset.scoreAvailable === false ? "--" : asset.score}
-                  <small>{asset.scoreAvailable === false ? "" : "/100"}</small>
+                  {asset.diagnosisReady === false
+                    ? "未分析"
+                    : asset.issues.length
+                      ? `${asset.issues.length} 项问题`
+                      : "未见主要问题"}
                 </span>
               </button>
             ))}
@@ -3120,7 +3302,7 @@ function GridWorkspace({
         </section>
 
         <details className="review-analysis-details">
-          <summary>查看评分、问题、Prompt 与审计细节</summary>
+          <summary>查看内部分析、Prompt 与审计细节</summary>
           <div className="review-analysis-content">
         <div className="inspector-section score-summary">
           <div>
@@ -3138,7 +3320,7 @@ function GridWorkspace({
             <Status value={selected.decision} />
             <span>
               {selected.decision === "PASS"
-                ? "高分发布候选"
+                ? "可以进入人工交付复验"
                 : selected.decision === "REVIEW"
                   ? "建议返工后复核"
                   : "建议重新生成"}

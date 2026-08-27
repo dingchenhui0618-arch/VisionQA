@@ -1,5 +1,6 @@
 import {
   QWEN_IMAGE_EDIT_DATA_SCOPE,
+  type RepairProviderRoute,
 } from "../../../lib/visionqa/repair-provider-contract";
 import {
   createGovernedQwenImageEditProvider,
@@ -8,6 +9,15 @@ import {
   QWEN_IMAGE_EDIT_MAX_SOURCE_BYTES,
   QwenImageEditProviderError,
 } from "../../../lib/visionqa/providers/qwen-image-edit";
+import {
+  createQwenImage3Provider,
+  getQwenImage3Readiness,
+  QWEN_IMAGE_3_MAX_IMAGE_BYTES,
+  QWEN_IMAGE_3_MAX_REFERENCES,
+  QWEN_IMAGE_3_MODEL,
+  QWEN_IMAGE_3_PROVIDER_ID,
+  QwenImage3ProviderError,
+} from "../../../lib/visionqa/providers/qwen-image-3";
 
 const MAX_REQUEST_BYTES = 34 * 1024 * 1024;
 const SUPPORTED_IMAGE_TYPES = new Set([
@@ -16,8 +26,30 @@ const SUPPORTED_IMAGE_TYPES = new Set([
   "image/webp",
 ]);
 
-function capabilityResponse() {
-  const readiness = getQwenImageEditReadiness();
+function selectedRoute(value: string | null): RepairProviderRoute {
+  return value === "qwen-image-edit-max" ? value : "qwen-image-3";
+}
+
+function readinessFor(route: RepairProviderRoute) {
+  if (route !== "qwen-image-3") return getQwenImageEditReadiness();
+  const readiness = getQwenImage3Readiness(process.env);
+  return {
+    adapterReady: true as const,
+    providerId: QWEN_IMAGE_3_PROVIDER_ID,
+    modelSnapshot: QWEN_IMAGE_3_MODEL,
+    region: "cn-beijing" as const,
+    ...readiness,
+    maxSourceBytes: QWEN_IMAGE_3_MAX_IMAGE_BYTES,
+    maxReferenceImages: QWEN_IMAGE_3_MAX_REFERENCES,
+    outputMaxDimension: 2048,
+    outputPersistence: "BROWSER_PROJECT" as const,
+    humanFinalReviewRequired: true as const,
+    autoPublishEnabled: false as const,
+  };
+}
+
+function capabilityResponse(route: RepairProviderRoute) {
+  const readiness = readinessFor(route);
   return {
     adapter_ready: readiness.adapterReady,
     provider_id: readiness.providerId,
@@ -75,19 +107,22 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-export function GET() {
-  return Response.json(capabilityResponse(), {
+export function GET(request: Request) {
+  const route = selectedRoute(new URL(request.url).searchParams.get("route"));
+  return Response.json(capabilityResponse(route), {
     headers: { "Cache-Control": "no-store" },
   });
 }
 
 export async function POST(request: Request) {
-  const readiness = getQwenImageEditReadiness();
-  if (!readiness.liveReady) {
+  const requestedRoute = selectedRoute(new URL(request.url).searchParams.get("route"));
+  const headerReadiness = readinessFor(requestedRoute);
+  // Authorization is checked before request.formData() so blocked requests never read image bytes.
+  if (!headerReadiness.liveReady) {
     return errorResponse(
       403,
       "REPAIR_PROVIDER_NOT_AUTHORIZED",
-      `千问改图仍被授权 Gate 阻断：${readiness.blockers.join(",")}`,
+      `千问改图仍被授权 Gate 阻断：${headerReadiness.blockers.join(",")}`,
     );
   }
   const contentLength = Number(request.headers.get("content-length") || 0);
@@ -100,6 +135,10 @@ export async function POST(request: Request) {
     form = await request.formData();
   } catch {
     return errorResponse(400, "INVALID_FORM_DATA", "无法读取改图任务。");
+  }
+  const route = selectedRoute(typeof form.get("route") === "string" ? String(form.get("route")) : null);
+  if (route !== requestedRoute) {
+    return errorResponse(409, "PROVIDER_ROUTE_MISMATCH", "改图模型路由与当前授权检查不一致。");
   }
   if (form.get("consent") !== QWEN_IMAGE_EDIT_DATA_SCOPE) {
     return errorResponse(
@@ -114,16 +153,23 @@ export async function POST(request: Request) {
   );
   const prompt = form.get("prompt");
   const claimedSha256 = form.get("sourceSha256");
+  const sourceWidth = Number(form.get("sourceWidth"));
+  const sourceHeight = Number(form.get("sourceHeight"));
+  const maxReferences = route === "qwen-image-3" ? QWEN_IMAGE_3_MAX_REFERENCES : QWEN_IMAGE_EDIT_MAX_REFERENCES;
+  const maxImageBytes = route === "qwen-image-3" ? QWEN_IMAGE_3_MAX_IMAGE_BYTES : QWEN_IMAGE_EDIT_MAX_SOURCE_BYTES;
   if (
     !(source instanceof File) ||
     !validImage(source) ||
-    references.length > QWEN_IMAGE_EDIT_MAX_REFERENCES ||
+    source.size > maxImageBytes ||
+    references.length > maxReferences ||
     references.some((file) => !validImage(file)) ||
     typeof prompt !== "string" ||
     !prompt.trim() ||
     prompt.length > 4_000 ||
     typeof claimedSha256 !== "string" ||
-    !/^[a-f0-9]{64}$/.test(claimedSha256)
+    !/^[a-f0-9]{64}$/.test(claimedSha256) ||
+    !Number.isInteger(sourceWidth) || sourceWidth <= 0 ||
+    !Number.isInteger(sourceHeight) || sourceHeight <= 0
   ) {
     return errorResponse(422, "INVALID_REPAIR_INPUT", "改图任务缺少有效图片、Prompt 或素材指纹。");
   }
@@ -137,21 +183,32 @@ export async function POST(request: Request) {
   }
 
   try {
-    const provider = createGovernedQwenImageEditProvider();
-    const result = await provider.edit({
-      source: {
-        bytes: new Uint8Array(await source.arrayBuffer()),
-        mimeType: source.type as "image/jpeg" | "image/png" | "image/webp",
-      },
-      references: await Promise.all(
-        references.map(async (file) => ({
-          bytes: new Uint8Array(await file.arrayBuffer()),
-          mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
-        })),
-      ),
-      prompt,
-      signal: request.signal,
-    });
+    const sourceInput = {
+      bytes: new Uint8Array(await source.arrayBuffer()),
+      mimeType: source.type as "image/jpeg" | "image/png" | "image/webp",
+    };
+    const referenceInputs = await Promise.all(
+      references.map(async (file) => ({
+        bytes: new Uint8Array(await file.arrayBuffer()),
+        mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
+      })),
+    );
+    const result = route === "qwen-image-3"
+      ? await createQwenImage3Provider(process.env).edit({
+          source: sourceInput,
+          references: referenceInputs,
+          prompt,
+          negativePrompt: "禁止改变人物身份、姿势、脸、手脚、背景、镜头、构图和画幅；禁止添加文字、水印、促销信息或未提供的商品细节；禁止裁切成商品局部特写。",
+          sourceWidth,
+          sourceHeight,
+          signal: request.signal,
+        })
+      : await createGovernedQwenImageEditProvider().edit({
+          source: sourceInput,
+          references: referenceInputs,
+          prompt,
+          signal: request.signal,
+        });
     return Response.json(
       {
         schema_version: "visionqa-repair-provider-response-v0.1",
@@ -179,7 +236,7 @@ export async function POST(request: Request) {
       },
     );
   } catch (error) {
-    if (error instanceof QwenImageEditProviderError) {
+    if (error instanceof QwenImageEditProviderError || error instanceof QwenImage3ProviderError) {
       const status =
         error.code === "AUTHENTICATION"
           ? 401
@@ -190,7 +247,7 @@ export async function POST(request: Request) {
               : error.code === "INVALID_INPUT"
                 ? 422
                 : 502;
-      return errorResponse(status, error.code, error.message, error.retryable);
+      return errorResponse(status, error.code, error.message, "retryable" in error ? Boolean(error.retryable) : false);
     }
     return errorResponse(500, "REPAIR_PROVIDER_FAILED", "千问改图任务执行失败。");
   }
