@@ -258,6 +258,24 @@ test("AI model image repair never rejects a draft merely for missing promotion o
   );
 });
 
+test("AI model image repair treats references as authoritative SKU truth", () => {
+  const request = buildQwenCompatibleRequestBody({
+    ...input,
+    references: [{ url: "data:image/png;base64,fixture", role: "reference" }],
+    commercialTemplate: {
+      id: "ai_model_image_repair",
+      version: "0.3.0",
+      assessmentScope: "以商品真值核对候选图。",
+    },
+  });
+  const messages = request.messages as Array<{ content: Array<{ type: string; text?: string }> }>;
+  const prompt = messages[0].content[0].text ?? "";
+  assert.match(prompt, /authoritative customer-approved SKU truth references/);
+  assert.match(prompt, /exact button count/);
+  assert.match(prompt, /Duplicated, missing, added, moved or malformed SKU details/);
+  assert.doesNotMatch(prompt, /are customer-approved historical references/);
+});
+
 test("local Base64 canary stays disabled until every explicit gate and API key exist", () => {
   let fetchCalls = 0;
   const readiness = getLocalCanaryReadiness({

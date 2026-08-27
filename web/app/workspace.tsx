@@ -585,6 +585,7 @@ const defaultCustomerProfile: CustomerProfileInput = {
   scenarios: ["通勤"],
   purchaseDrivers: ["版型", "搭配效率"],
   skuLinks: [],
+  skuFacts: [],
 };
 
 const imageNames = [
@@ -2865,6 +2866,15 @@ function CustomerWorkflow({
               onChange={(event) => setCustomerProfile((current) => ({
                 ...current,
                 skuLinks: event.target.value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).slice(0, 20),
+              }))} />
+          </label>
+          <label className="field-stack">
+            <span>确认过的商品事实，每行一条</span>
+            <textarea rows={3} value={(customerProfile.skuFacts ?? []).join("\n")}
+              placeholder={"纽扣总数：4\n正确刺绣：左胸 1 枚\n右胸无刺绣"}
+              onChange={(event) => setCustomerProfile((current) => ({
+                ...current,
+                skuFacts: event.target.value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).slice(0, 24),
               }))} />
           </label>
           <label className="csv-import">

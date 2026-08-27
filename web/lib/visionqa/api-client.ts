@@ -48,6 +48,7 @@ export type CustomerProfileInput = {
   scenarios: string[];
   purchaseDrivers: string[];
   skuLinks: string[];
+  skuFacts: string[];
 };
 
 const LIVE_UPLOAD_TARGET_BYTES = 900 * 1024;
@@ -206,6 +207,7 @@ export async function evaluateLiveCandidate(input: {
     scenarios: [],
     purchaseDrivers: [],
     skuLinks: [],
+    skuFacts: [],
   }));
   form.set("consent", "confirmed");
   const requestId = input.requestId ?? crypto.randomUUID();

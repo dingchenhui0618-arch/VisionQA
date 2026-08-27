@@ -1,0 +1,39 @@
+{
+  "schema_version": "visionqa-synthetic-sku-facts-v0.1",
+  "case_id": "SYN-VQA-GRAY-CARDIGAN-001",
+  "evidence_label": "SYNTHETIC_INTERNAL_TEST_ONLY",
+  "category": "womens_cropped_cardigan",
+  "truth_asset": {
+    "name": "product-truth-grid.png",
+    "sha256": "9ac3720f4e209f763b54d21e624a4cc0ff8c00c3b4256df020536a980bb4e22b",
+    "width": 1254,
+    "height": 1254
+  },
+  "candidate_asset": {
+    "name": "ai-model-draft-controlled-defect.png",
+    "sha256": "9354fc8b43a199a2f47101b4574047b4d05c5f81ff13c3d6db4ef343db20124e",
+    "width": 1024,
+    "height": 1536
+  },
+  "locked_attributes": [
+    "暖浅灰色细罗纹针织",
+    "圆领长袖",
+    "直线短款下摆",
+    "正中恰好四颗哑光深灰纽扣",
+    "穿着者左胸恰好一枚黑色五瓣几何花刺绣",
+    "穿着者右胸无刺绣或装饰",
+    "无口袋、无拉链、无品牌文字"
+  ],
+  "controlled_defect": {
+    "category": "PRINT_EMBROIDERY_DUPLICATION",
+    "location": "穿着者右胸（画面左侧）",
+    "observation": "多出一枚商品真值不存在的黑色五瓣花复制刺绣，且略低于正确刺绣。",
+    "expected_action": "只删除穿着者右胸多出的复制刺绣，恢复连续一致的浅灰罗纹针织面料。"
+  },
+  "non_target_invariants": [
+    "人物身份、脸、发型、表情、姿势、手部与人体比例",
+    "四颗纽扣、正确的左胸刺绣、领口、袖子与下摆",
+    "黑色长裤、黑色乐福鞋、背景、光线、镜头与2:3全身画幅"
+  ],
+  "commercial_evidence": "NOT_REAL_CUSTOMER_EVIDENCE"
+}

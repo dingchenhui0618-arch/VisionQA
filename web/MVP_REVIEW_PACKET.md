@@ -1,4 +1,4 @@
-# VisionQA v0.6 MVP Review Packet
+# VisionQA v0.7 MVP Review Packet
 
 ## 1. Brief and success definition
 
@@ -74,6 +74,8 @@ npm run lint
 - Evidence integrity：未接 API 的 Provider 均显示“未配置”；示例内容保持示例标记。
 - Security/privacy：本轮没有新增凭据或外部图片传输。
 - Residual high risk：非目标区域仍会再渲染；单案例不能证明稳定可交付；单次实际费用、真实 SKU、客户采用和付费均缺失。
+- 诊断风险：灰色开衫案例中，权威商品真值与结构化 SKU 事实改善了主错误识别，但三次诊断仍分别出现漏检或假阳性。自动诊断只能生成候选问题，必须由用户／美工确认后才能进入改图。
+- 独立 QA：新开衫案例的独立子 Agent 连续三次因上游连接中断，状态 `NOT_COMPLETED_TOOL_FAILURE`；当前只有自动构图 Gate 与实现方人工复验，不能宣称独立验收完成。
 - Compatibility boundary：持久化评估结果仍使用历史 `evaluation-result-v0.3` 的商业字段 ID。当前已增加 `product-expression-v0.1` 运行时校验和旧版诚实投影：只迁移具有直接对应证据的字段，其余保持 `NOT_ASSESSABLE`；真实 Qwen 尚未原生返回新六维度，不能宣称已经完成新维度标定。
 
 ## 2026-08-20 增量交付：商品表达契约与本地营销智能体
@@ -109,6 +111,8 @@ npm run lint
 |---|---|---|---|
 | 五阶段界面可运行 | build、tests、browser QA | supported | 仅本地原型 |
 | Qwen 3 可在受控样例移除错误贴袋并保留全身模特 | 一次真实调用、Receipt、独立视觉 QA | supported for this case | 不可外推为一般成功率 |
+| VisionQA 可在人工确认问题后删除重复刺绣并保留全身模特 | 灰色开衫合成案例、Qwen Image 3 Receipt、前后对比、自动漂移 Gate | provisional | 仅合成案例；独立 QA 未完成；客户交付阻断 |
+| 单次 Qwen VL 诊断可可靠自动决定修图 | 三次灰色开衫诊断 | unsupported | 存在漏检和相互矛盾的假阳性 |
 | Qwen 3 是最适合服饰改图的模型 | 无同样本多模型对照 | unsupported | 需要真实 SKU 基准集 |
 | 客户愿意付款 | 无 | unsupported | 需要真实订单 |
 

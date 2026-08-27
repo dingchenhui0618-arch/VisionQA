@@ -201,10 +201,11 @@ type CustomerProfile = {
   scenarios: string[];
   purchaseDrivers: string[];
   skuLinks: string[];
+  skuFacts: string[];
 };
 
 function parseCustomerProfile(value: FormDataEntryValue | null): CustomerProfile {
-  const empty = { styles: [], priceMin: "", priceMax: "", audiences: [], ageRanges: [], genderProfiles: [], cityTiers: [], audienceSegments: [], scenarios: [], purchaseDrivers: [], skuLinks: [] };
+  const empty = { styles: [], priceMin: "", priceMax: "", audiences: [], ageRanges: [], genderProfiles: [], cityTiers: [], audienceSegments: [], scenarios: [], purchaseDrivers: [], skuLinks: [], skuFacts: [] };
   if (typeof value !== "string") return empty;
   try {
     const source = JSON.parse(value) as Partial<CustomerProfile>;
@@ -225,6 +226,7 @@ function parseCustomerProfile(value: FormDataEntryValue | null): CustomerProfile
       scenarios: list(source.scenarios, 12),
       purchaseDrivers: list(source.purchaseDrivers, 12),
       skuLinks: list(source.skuLinks, 20),
+      skuFacts: list(source.skuFacts, 24),
     };
   } catch {
     return empty;
@@ -357,6 +359,7 @@ export async function POST(request: Request) {
     `场景：${customerProfile.scenarios.join("、") || "未提供"}`,
     `决策驱动：${customerProfile.purchaseDrivers.join("、") || "未提供"}`,
     `SKU 链接：${customerProfile.skuLinks.join("；") || "未提供"}`,
+    `客户确认的 SKU 事实：${customerProfile.skuFacts.join("；") || "未提供"}`,
   ].join("。 ");
   const missingContext = [
     ...(referenceStatus === "complete"
@@ -393,13 +396,18 @@ export async function POST(request: Request) {
           url: `data:${candidate.type};base64,${arrayBufferToBase64(bytes)}`,
         },
         references: referenceInputs,
-        lockedAttributes: ["商品款式", "颜色", "Logo", "面料纹理"],
+        lockedAttributes: customerProfile.skuFacts.length
+          ? customerProfile.skuFacts
+          : ["商品款式", "颜色", "Logo", "面料纹理"],
         taxonomyVersion: "visionqa-taxonomy-0.3.0",
         commercialTemplate: (() => {
           const template = resolveCommercialTemplate(templateId, channel, placement);
+          const referenceMeaning = template.id === "ai_model_image_repair"
+            ? "其余图片是客户确认的权威商品真值，用于逐项核对颜色、版型、纽扣、口袋、图案、刺绣、Logo、材质与结构；必须优先发现候选图中的新增、缺失、复制、错位或变形细节。"
+            : "其余图片是客户历史优秀参考，只用于风格、材质与商业表达一致性比较。";
           return {
             ...template,
-            assessmentScope: `${template.assessmentScope} 客户画像：${profileSummary}。参考图共 ${referenceInputs.length} 张；第一张图片是候选图，其余图片是客户历史优秀参考，只用于风格、材质与商业表达一致性比较。SKU 链接仅作为文本上下文，不代表已抓取远程图片。`,
+            assessmentScope: `${template.assessmentScope} 客户画像：${profileSummary}。参考图共 ${referenceInputs.length} 张；第一张图片是候选图，${referenceMeaning} SKU 链接仅作为文本上下文，不代表已抓取远程图片。`,
           };
         })(),
         promptVersion: "vision-observer-0.3.0-calibrated",

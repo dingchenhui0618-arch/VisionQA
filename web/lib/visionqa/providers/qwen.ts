@@ -26,6 +26,16 @@ interface QwenVisionAdapterOptions {
 let activeQwenRequests = 0;
 
 function buildStrictPrompt(input: ProviderEvaluationInput): string {
+  const repairTruthInstructions = input.commercialTemplate.id === "ai_model_image_repair"
+    ? [
+        `Image order: image 1 is the candidate under review; images 2-${input.references.length + 1} are authoritative customer-approved SKU truth references, not style inspiration. Treat visible SKU facts in those references as the source of truth.`,
+        "Before scoring aesthetics, compare the candidate against SKU truth item by item: garment color, silhouette, neckline, sleeve and hem structure, exact button count, pockets, zippers, prints, embroidery, Logo/wordmark count, shape and placement, material texture and visible construction details.",
+        "Duplicated, missing, added, moved or malformed SKU details in the candidate are primary merchandise-consistency defects. Report each visible mismatch directly; do not reinterpret an extra duplicated embroidery or print as a minor style-position preference.",
+        "When describing left/right, state both image-side and wearer-side when confidently visible. Never report a truth-reference defect as a candidate defect.",
+      ]
+    : [
+        `Image order: image 1 is the candidate under review; images 2-${input.references.length + 1} are customer-approved historical references. Do not report reference-image defects as candidate-image defects.`,
+      ];
   return [
     "You are the VisionQA visual observation layer.",
     "All user-facing text must be written in Simplified Chinese, including observation, impact, evidence, summary, strengths, gaps, and requiredHumanChecks. Only machine fields such as issue_code and enum values may remain in English.",
@@ -35,7 +45,7 @@ function buildStrictPrompt(input: ProviderEvaluationInput): string {
     `Commercial template: ${input.commercialTemplate.id}@${input.commercialTemplate.version}`,
     `Assessment scope: ${input.commercialTemplate.assessmentScope}`,
     `Locked attributes: ${input.lockedAttributes.join(", ") || "none"}`,
-    `Image order: image 1 is the candidate under review; images 2-${input.references.length + 1} are customer-approved historical references. Do not report reference-image defects as candidate-image defects.`,
+    ...repairTruthInstructions,
     "Use only visible evidence from the input image. Do not guess or fabricate evidence. 不得猜测或补造证据。If evidence is insufficient, set score to null and explain the missing evidence in summary or requiredHumanChecks.",
     "Apply this strict calibration scale to every scored field: 90-100 is exceptional and requires concrete visible evidence that the image has almost no meaningful gap for the stated placement; 80-89 is strong professional commercial work with normal improvable gaps; 70-79 is usable but needs clear optimization; below 70 needs substantial rework. A polished or attractive image is not automatically 90+.",
     "The human calibration reference distribution for strong, already-used apparel commercial images is typically 82-91. Do not compress most good images into 90-100. Lifestyle campaign images require the same strict evidence standard for 90+ as product main images.",

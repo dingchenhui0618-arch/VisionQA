@@ -6,6 +6,15 @@
 
 ## 2026-08-26 完整 SKU 真实修正闭环准备
 
+### 2026-08-27 灰色针织开衫 ImageGen → 诊断 → 修正 → 交付
+
+- 内置 ImageGen 新建 `SYN-VQA-GRAY-CARDIGAN-001`：商品真值为四颗纽扣、左胸单枚黑色五瓣刺绣的暖浅灰针织开衫；错误模特图在右胸增加复制刺绣。
+- 首次诊断漏检主错误。修复“参考图只是历史优秀参考”的错误提示契约后，模型识别重复刺绣但误报纽扣数量。新增结构化 SKU 事实后，模型正确识别主错误和四纽扣事实，但仍误报正确刺绣缺失。
+- 新增工作台“确认过的商品事实”输入，并把事实传入 Provider 锁定属性。自动诊断定位为问题候选，不允许直接自动改图。
+- 人工确认主问题后，Qwen Image 3.0 Pro 一次修正成功，保持完整全身构图并删除错误刺绣；本机漂移 Gate 通过，状态为 `HUMAN_REVIEW_CANDIDATE`。
+- 生成前后对比与 2560×3840 本机重采样文件；不宣称 AI 细节重建。独立 QA 因协作通道连续断连未完成，客户交付继续阻断。
+- 当前 Gate：`STRUCTURED_SKU_FACTS_ENABLED / AUTO_DIAGNOSIS_CANDIDATE_ONLY / HUMAN_ISSUE_CONFIRMATION_REQUIRED / QWEN_IMAGE_3_REPAIR_SUCCEEDED / HUMAN_REVIEW_CANDIDATE / INDEPENDENT_QA_NOT_COMPLETED / CUSTOMER_DELIVERY_BLOCKED`。
+
 ### 2026-08-27 Qwen Image 3.0 Pro 首次受控闭环
 
 - 产品结果契约更新为：客户先看“具体问题、可修方式、修改前后、是否可交付”，不以总分作为前台主结果。已知问题可由用户直接确认并进入修正，不强制先跑综合评分。

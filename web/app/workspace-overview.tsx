@@ -62,7 +62,7 @@ export function WorkspaceBaseline({
     }));
   };
 
-  const hasBaseline = referenceFiles.length > 0 || customerProfile.skuLinks.length > 0;
+  const hasBaseline = referenceFiles.length > 0 || customerProfile.skuLinks.length > 0 || (customerProfile.skuFacts ?? []).length > 0;
 
   return (
     <section className="workspace-page baseline-page" aria-labelledby="baseline-title">
@@ -124,6 +124,24 @@ export function WorkspaceBaseline({
             />
           </label>
           <p className="input-route-status">已加入 {customerProfile.skuLinks.length} 个 SKU 链接</p>
+          <label className="field-stack">
+            <span>确认过的商品事实</span>
+            <textarea
+              rows={5}
+              value={(customerProfile.skuFacts ?? []).join("\n")}
+              placeholder={"每行一条，例如：\n纽扣总数：4\n正确刺绣：左胸 1 枚\n右胸无刺绣"}
+              onChange={(event) =>
+                setCustomerProfile((current) => ({
+                  ...current,
+                  skuFacts: event.target.value
+                    .split(/\r?\n/)
+                    .map((item) => item.trim())
+                    .filter(Boolean)
+                    .slice(0, 24),
+                }))
+              }
+            />
+          </label>
         </section>
 
         <section className="baseline-image-sheet" aria-labelledby="reference-image-title">

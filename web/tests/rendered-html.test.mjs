@@ -64,6 +64,7 @@ test("keeps the focused product and model-image repair workflow in the implement
   assert.match(workspaceSource, /修正与交付/);
   assert.match(workspaceSource, /const visibleAreas/);
   assert.match(baselineSource, /SKU 链接/);
+  assert.match(baselineSource, /确认过的商品事实/);
   assert.match(baselineSource, /上传商品白底图或官方确认稿/);
   assert.match(baselineSource, /profile-sidebar/);
   assert.match(baselineSource, /编辑商品策略与人群画像/);
@@ -180,6 +181,8 @@ test("keeps the consent gate and focused model-image diagnosis launch", async ()
   assert.match(liveRouteSource, /parseCustomerProfile/);
   assert.match(liveRouteSource, /历史参考图最多上传/);
   assert.match(liveRouteSource, /商品参考图未进入模型上下文/);
+  assert.match(liveRouteSource, /客户确认的 SKU 事实/);
+  assert.match(liveRouteSource, /lockedAttributes: customerProfile\.skuFacts/);
   assert.match(liveRouteSource, /review_policy: "HUMAN_REVIEW_REQUIRED"/);
   assert.match(liveRouteSource, /auto_pass_enabled: false/);
   assert.match(liveRouteSource, /ai_model_image_repair/);
