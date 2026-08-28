@@ -35,14 +35,14 @@ test("server-renders the truthful VisionQA login entry", async () => {
   const html = await response.text();
   assert.match(html, /<html lang="zh-CN">/i);
   assert.match(html, /<title>VisionQA · AI 模特图修正与交付工作台<\/title>/i);
-  assert.match(html, /把 AI 模特草图，修成可交付商品图。/);
-  assert.match(html, /建立商品真值/);
-  assert.match(html, /上传 AI 模特草图/);
-  assert.match(html, /定位商品与人体问题/);
-  assert.match(html, /修正、复验并输出 4K/);
-  assert.match(html, /登录工作台/);
-  assert.match(html, /正式账户认证尚未接入/);
-  assert.match(html, /进入内部预览工作台/);
+  assert.match(html, /看清问题，修好再交付。/);
+  assert.match(html, /选择商品真值和待修图片/);
+  assert.match(html, /确认问题与修改边界/);
+  assert.match(html, /对比结果并人工放行/);
+  assert.match(html, /先用一个案例试试/);
+  assert.match(html, /无需注册/);
+  assert.match(html, /开始试用/);
+  assert.doesNotMatch(html, /工作邮箱|请输入密码|忘记密码/);
   assert.doesNotMatch(html, /真实客户已采用|已付款|自动放行已开启|认证成功/);
 });
 
@@ -57,7 +57,7 @@ test("keeps the focused product and model-image repair workflow in the implement
   const deliverySource = await readFile(new URL("../app/workspace-growth.tsx", import.meta.url), "utf8");
   assert.match(workspaceSource, /type WorkspaceArea = "overview" \| "baseline" \| "intake" \| "review" \| "repair" \| "delivery"/);
   assert.match(workspaceSource, /项目总览/);
-  assert.match(workspaceSource, /当前唯一下一步/);
+  assert.match(workspaceSource, /当前任务/);
   assert.match(workspaceSource, /商品真值/);
   assert.match(workspaceSource, /AI 模特草图/);
   assert.match(workspaceSource, /问题诊断/);
@@ -129,14 +129,14 @@ test("keeps the batch and evidence workflow behind quality review", async () => 
   );
   assert.doesNotMatch(workspaceSource, /aria-label="筛选"/);
   assert.match(workspaceSource, /aria-label="候选图片"/);
-  assert.match(workspaceSource, /打开证据详情/);
+  assert.match(workspaceSource, /查看问题证据/);
   assert.match(workspaceSource, /综合评分/);
   assert.match(workspaceSource, /四项质量维度/);
   assert.match(workspaceSource, /商品表达效能/);
   assert.match(workspaceSource, /修复 Prompt/);
   assert.match(workspaceSource, /review-decision-brief/);
   assert.match(workspaceSource, /review-analysis-details/);
-  assert.match(workspaceSource, /view === "evidence"/);
+  assert.match(workspaceSource, /view === "grid"/);
   assert.doesNotMatch(workspaceSource, /Your site is taking shape|react-loading-skeleton/);
 });
 
@@ -145,21 +145,19 @@ test("keeps the consent gate and focused model-image diagnosis launch", async ()
     new URL("../app/workspace.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(workspaceSource, /商品真值与 SKU/);
-  assert.match(workspaceSource, /客户画像/);
-  assert.match(workspaceSource, /分析图片问题/);
+  assert.match(workspaceSource, /选择待修图片/);
+  assert.match(workspaceSource, /直接描述问题/);
+  assert.match(workspaceSource, /让 AI 先找问题/);
   assert.match(workspaceSource, /type="file"/);
-  assert.match(workspaceSource, /AI 模特草图与.*商品真值图可发送至阿里云百炼/);
-  assert.match(workspaceSource, /开始 AI 问题诊断/);
+  assert.match(workspaceSource, /同意将当前图片与.*商品真值图发送至阿里云百炼/);
+  assert.match(workspaceSource, /开始 AI 判断/);
   assert.match(workspaceSource, /服务端不留存原图/);
-  assert.match(workspaceSource, /本机项目会保存工作集/);
-  assert.match(workspaceSource, /一次最多 3 张/);
-  assert.match(workspaceSource, /商品 SKU 链接/);
-  assert.match(workspaceSource, /确认 AI 生成/);
+  assert.match(workspaceSource, /建议一次处理一张/);
+  assert.match(workspaceSource, /AI 生成/);
+  assert.doesNotMatch(workspaceSource, /商品真值与 SKU|客户画像/);
   assert.match(workspaceSource, /function DeliveryWorkspace/);
   assert.match(workspaceSource, /下载选中原图 ZIP/);
   assert.match(workspaceSource, /下载评审 CSV/);
-  assert.match(workspaceSource, /隐私与授权/);
   assert.doesNotMatch(workspaceSource, /Fixture 演示|Canary|本地确定性回放|待标定/);
   assert.match(workspaceSource, /sha256Blob\(file\)/);
   assert.match(workspaceSource, /LOCAL_EVALUATION_MODE/);
@@ -211,14 +209,14 @@ test("keeps evidence-led analysis internal while customer results stay problem-l
   ]);
   assert.match(workspaceSource, /内部分析、Prompt 与审计细节/);
   assert.match(workspaceSource, /问题与建议/);
-  assert.match(workspaceSource, /确认问题并进入修正/);
-  assert.match(workspaceSource, /从头体验开衫案例/);
-  assert.match(workspaceSource, /查看完整修正结果/);
-  assert.match(workspaceSource, /不调用模型 · 不产生费用/);
+  assert.match(workspaceSource, /查看处理建议/);
+  assert.match(workspaceSource, /开始开衫案例/);
+  assert.match(workspaceSource, /查看完整示例/);
+  assert.match(workspaceSource, /案例载入不调用模型/);
   assert.match(workspaceSource, /缺陷案例库 · 5/);
   assert.match(boundarySource, /小错 · 多一颗纽扣/);
   assert.match(boundarySource, /大错 · 额外手臂/);
-  assert.match(workspaceSource, /可让 AI 识别，也可直接描述问题/);
+  assert.match(workspaceSource, /直接描述问题/);
   assert.match(workspaceSource, /智能边界建议/);
   assert.match(workspaceSource, /sha256 !== selectedCase\.sha256/);
   assert.match(workspaceSource, /文件哈希与冻结登记不一致，已停止载入/);

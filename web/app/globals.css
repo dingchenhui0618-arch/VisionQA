@@ -5756,10 +5756,272 @@ h3 {
   }
 
   .review-page .inspector {
-    grid-row: 1;
+    grid-row: 2;
   }
 
   .review-page .gallery {
-    grid-row: 2;
+    grid-row: 1;
   }
+}
+
+/* VisionQA public trial: distilled task flow */
+
+.trial-entry {
+  display: grid;
+  gap: 2rem;
+}
+
+.trial-entry .login-form-heading h2 {
+  max-width: 12ch;
+  font-size: 2.25rem;
+  line-height: 1.12;
+}
+
+.trial-entry .login-form-heading p {
+  max-width: 32rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.trial-start-button {
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  border: 1px solid #111111;
+  border-radius: 0.5rem;
+  background: #111111;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 680;
+  cursor: pointer;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.trial-start-button:hover { background: #2b2b2b; }
+.trial-start-button:active { transform: scale(0.98); }
+.trial-start-button:focus-visible { outline: 2px solid #111111; outline-offset: 3px; }
+.trial-start-button span { font-size: 1.125rem; }
+
+.trial-assurances {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line-strong);
+  list-style: none;
+}
+
+.trial-assurances li {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.trial-assurances strong { font-size: 0.8125rem; }
+.trial-assurances span { color: var(--muted); font-size: 0.75rem; }
+
+.trial-boundary {
+  max-width: 32rem;
+  margin: 0;
+  color: var(--faint);
+  font-size: 0.6875rem;
+  line-height: 1.55;
+}
+
+.workspace-rail-nav nav button {
+  display: flex;
+  padding-inline: 0.75rem;
+}
+
+.rail-governance {
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-color: var(--line);
+  background: transparent;
+}
+
+.rail-experience > button:first-of-type {
+  border-color: #171717;
+  background: #171717;
+  color: #ffffff;
+}
+
+.rail-experience > button:nth-of-type(2) {
+  border-color: var(--line-strong);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+.workspace-topbar .topbar-actions {
+  gap: 0.5rem;
+}
+
+.workspace-topbar .icon-button {
+  width: auto;
+  min-width: 3.25rem;
+  padding-inline: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.overview-focus {
+  grid-template-columns: minmax(14rem, 21rem) minmax(0, 1fr);
+}
+
+.overview-next-action {
+  align-content: center;
+  min-height: 24rem;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.overview-stage-ledger {
+  grid-template-columns: 12rem minmax(0, 1fr);
+}
+
+.project-history > summary {
+  min-height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.project-history > summary::-webkit-details-marker { display: none; }
+.project-history > summary h2 { margin: 0; font-size: 0.875rem; }
+.project-history > summary span { color: var(--faint); font-size: 0.6875rem; }
+.project-history > summary + dl { border-top: 1px solid var(--line); }
+
+.customer-workflow {
+  margin-bottom: 1rem;
+  border-color: var(--line);
+}
+
+.workflow-header {
+  min-height: 4.5rem;
+  padding: 0 1rem;
+}
+
+.workflow-header h2 { font-size: 0.9375rem; }
+.workflow-header p { margin-top: 0.25rem; font-size: 0.75rem; }
+.workflow-header > strong { font-size: 0.6875rem; }
+
+.review-page .workflow-sections {
+  grid-template-columns: 1fr;
+}
+
+.review-page .workflow-block-wide {
+  grid-column: auto;
+  padding: 1rem;
+  border: 0;
+}
+
+.workflow-block-wide > header {
+  margin-bottom: 1rem;
+}
+
+.workflow-block-wide > header h2 { font-size: 1rem; }
+.workflow-block-wide > header p { margin-top: 0.25rem; font-size: 0.75rem; }
+
+.batch-summary {
+  justify-content: flex-start;
+  gap: 1rem;
+}
+
+.manual-issue-entry,
+.ai-diagnosis-option,
+.submission-context-details {
+  border-top: 1px solid var(--line);
+}
+
+.manual-issue-entry > summary,
+.ai-diagnosis-option > summary,
+.submission-context-details > summary {
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  list-style: none;
+}
+
+.manual-issue-entry > summary::-webkit-details-marker,
+.ai-diagnosis-option > summary::-webkit-details-marker,
+.submission-context-details > summary::-webkit-details-marker { display: none; }
+
+.manual-issue-entry > summary::after,
+.ai-diagnosis-option > summary::after,
+.submission-context-details > summary::after { content: "+"; color: var(--faint); }
+.manual-issue-entry[open] > summary::after,
+.ai-diagnosis-option[open] > summary::after,
+.submission-context-details[open] > summary::after { content: "−"; }
+
+.ai-diagnosis-option > div {
+  display: grid;
+  gap: 1rem;
+  padding: 0.25rem 0 1rem;
+}
+
+.ai-diagnosis-option small { color: var(--faint); font-size: 0.6875rem; }
+.ai-diagnosis-option .primary-button { justify-self: start; }
+.data-state-notice { margin-bottom: 1rem; padding-block: 0.75rem; }
+
+@media (max-width: 72rem) {
+  .vision-workbench-shell { display: block; }
+  .workspace-rail-nav { display: none; }
+  .workspace-mobile-nav {
+    position: sticky;
+    top: 4rem;
+    z-index: 9;
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    overflow-x: auto;
+  }
+  .workspace-mobile-nav button {
+    flex: 0 0 auto;
+    min-height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .workspace-mobile-nav button[aria-current="page"] {
+    background: var(--blue-soft);
+    color: var(--blue-deep);
+    font-weight: 650;
+  }
+}
+
+@media (max-width: 48rem) {
+  .login-statement { margin-block: 3rem 1.5rem; }
+  .login-statement ol { margin-top: 2rem; }
+  .login-form-panel { padding-block: 2rem; }
+  .trial-entry { gap: 1.5rem; }
+  .trial-entry .login-form-heading h2 { font-size: 1.75rem; }
+  .trial-assurances li { grid-template-columns: 5rem minmax(0, 1fr); }
+  .overview-focus { grid-template-columns: 1fr; }
+  .overview-next-action { min-height: auto; }
+  .overview-stage-ledger { grid-template-columns: 1fr; }
+  .project-history > summary { align-items: flex-start; flex-direction: column; justify-content: center; }
+  .manual-issue-entry-content { padding-inline: 0; }
+  .tag-field > div { gap: 0.375rem; }
+  .tag-field button { min-height: 2.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trial-start-button { transition: background-color 120ms linear; }
+  .trial-start-button:active { transform: none; }
 }

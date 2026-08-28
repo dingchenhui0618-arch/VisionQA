@@ -1173,36 +1173,6 @@ function Status({ value }: { value: Decision }) {
   );
 }
 
-function DataSourceBadge({ state }: { state: DataState }) {
-  const label =
-    state.kind === "live"
-      ? "问题分析完成"
-      : state.kind === "synthetic-ground-truth"
-        ? "合成样例真值"
-      : state.kind === "synthetic-library"
-        ? "合成内部案例"
-      : state.kind === "human-confirmed"
-        ? "用户确认问题"
-      : state.kind === "live-loading"
-        ? "问题分析中"
-        : state.kind === "live-error"
-          ? "分析失败"
-          : state.kind === "real"
-      ? "已保存评估"
-      : state.kind === "local"
-        ? "等待问题诊断"
-      : state.kind === "loading"
-        ? "正在读取评估"
-        : state.kind === "fallback"
-          ? "评估读取失败"
-          : "示例项目";
-  return (
-    <span className={`data-source-badge ${state.kind}`} role="status">
-      {label}
-    </span>
-  );
-}
-
 function DataStateNotice({ state }: { state: DataState }) {
   if (state.kind === "fixture") {
     return (
@@ -1263,17 +1233,16 @@ function DataStateNotice({ state }: { state: DataState }) {
   if (state.kind === "synthetic-library") {
     return (
       <div className="data-state-notice local" role="status">
-        已载入合成内部案例 {state.caseId} · {state.candidateName}。素材只用于本机流程测试，
-        不是客户图片、模型效果或商业证据；可选择 AI 识别或直接描述问题。
+        合成试用案例 {state.caseId}，不是客户或商业证据。
       </div>
     );
   }
   if (state.kind === "human-confirmed") {
     return (
       <div className="data-state-notice real" role="status">
-        已记录 {state.candidateName} 的用户确认问题。{state.evidenceMode
-          ? "该素材仍为合成内部案例，不是客户或模型效果证据；"
-          : "当前没有生成评分；"}修正任务将以商品真值、具体问题和前后复验为准。
+        {state.evidenceMode
+          ? `已确认合成案例 ${state.fixtureCaseId ?? ""} 的问题，不是模型或客户证据。`
+          : `已确认 ${state.candidateName} 的问题，等待修正。`}
       </div>
     );
   }
@@ -2542,37 +2511,30 @@ export function Workspace() {
           <span>当前项目</span>
           <strong>{projectTitle}</strong>
           <small>{sourceLabel}</small>
-          {projectRecord && (
-            <small className="rail-project-id">
-              {projectRecord.projectId.slice(0, 8)} · v{projectRecord.revision}
-            </small>
-          )}
         </div>
         <nav aria-label="工作台导航">
-          {visibleAreas.map((item, index) => (
+          {visibleAreas.map((item) => (
             <button
               key={item}
               type="button"
               aria-current={area === item ? "page" : undefined}
               onClick={() => setArea(item)}
             >
-              <span>{String(index).padStart(2, "0")}</span>
               {areaLabel[item]}
             </button>
           ))}
         </nav>
         <div className="rail-governance" role="note">
-          <span>交付规则</span>
-          <strong>人工终审始终开启</strong>
-          <p>自动放行关闭。参考范围不会从局部通过扩张为完整 SKU 通过。</p>
+          <strong>人工终审开启</strong>
+          <p>系统不会自动放行图片。</p>
         </div>
         <div className="rail-experience" aria-label="本地体验案例">
-          <span>本地体验</span>
+          <span>试用案例</span>
           <button type="button" onClick={() => void loadCardiganExperienceCase("start")}>
-            从头体验开衫案例
+            开始开衫案例
           </button>
           <button type="button" onClick={() => void loadCardiganExperienceCase("complete")}>
-            查看完整修正结果
+            查看完整示例
           </button>
           <details className="rail-case-library">
             <summary>缺陷案例库 · 5</summary>
@@ -2585,7 +2547,7 @@ export function Workspace() {
               ))}
             </div>
           </details>
-          <small>不调用模型 · 不产生费用</small>
+          <small>案例载入不调用模型</small>
         </div>
       </aside>
 
@@ -2596,48 +2558,14 @@ export function Workspace() {
             <strong>{projectTitle}</strong>
           </div>
           <div className="topbar-actions">
-            {area === "review" && (
-              <label className="template-control">
-                <span>内部分析规则</span>
-                <select
-                  value={commercialTemplateId}
-                  disabled={
-                    dataState.kind === "real" ||
-                    dataState.kind === "local" ||
-                    dataState.kind === "live" ||
-                    dataState.kind === "live-loading"
-                  }
-                  onChange={(event) =>
-                    setCommercialTemplateId(event.target.value as CommercialTemplateId)
-                  }
-                >
-                  {commercialTemplates.map((template) => (
-                    <option value={template.id} key={template.id}>
-                      {template.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
             <ProjectSaveStatus state={projectPersistence} />
-            <DataSourceBadge state={dataState} />
-            {area === "review" && (
-              <div className="view-switch" aria-label="评审视图">
-                <button type="button" aria-pressed={view === "grid"} onClick={() => setView("grid")}>
-                  批次
-                </button>
-                <button type="button" aria-pressed={view === "evidence"} onClick={() => setView("evidence")}>
-                  证据
-                </button>
-              </div>
-            )}
             <button
               className="icon-button"
               type="button"
               aria-label="退出内部预览"
               onClick={() => setPreviewOpen(false)}
             >
-              退
+              退出
             </button>
           </div>
         </header>
@@ -2723,9 +2651,6 @@ export function Workspace() {
                 onLoadSyntheticGroundTruth={loadSyntheticGroundTruth}
                 onConfirmManualIssue={confirmManualIssue}
                 referenceFiles={referenceFiles}
-                setReferenceFiles={setReferenceFiles}
-                customerProfile={customerProfile}
-                setCustomerProfile={setCustomerProfile}
                 batchCandidates={batchCandidates}
                 toggleBatchSelection={toggleBatchSelection}
               />
@@ -2886,29 +2811,27 @@ function ProjectOverview({
   const hasBaseline = referenceCount > 0 || skuCount > 0;
   const isDemo = candidateCount === 0;
   const next = !hasBaseline
-    ? { area: "baseline" as const, eyebrow: "当前唯一下一步", title: "建立商品真值", detail: "先上传真实白底图、细节图或官方确认稿，后续修正才有稳定的商品比较依据。" }
+    ? { area: "baseline" as const, eyebrow: "下一步", title: "建立商品真值", detail: "先放入白底图或官方确认稿。" }
     : candidateCount === 0
-      ? { area: "intake" as const, eyebrow: "商品真值已建立", title: "上传 AI 模特草图", detail: "当前只处理同一 SKU、同一用途的 1–3 张模特母图，不混入详情页和促销排版。" }
+      ? { area: "intake" as const, eyebrow: "下一步", title: "上传待修图片", detail: "建议一次处理一张图。" }
       : completedCount < candidateCount
-        ? { area: "review" as const, eyebrow: "草图等待诊断", title: "定位商品与人体问题", detail: `当前 ${completedCount}/${candidateCount} 张已有结果。先完成问题定位，再决定局部修正还是重新生成。` }
+        ? { area: "review" as const, eyebrow: "下一步", title: "确认图片问题", detail: "直接描述问题，或让 AI 先找问题。" }
         : reviewedCount < completedCount
-          ? { area: "review" as const, eyebrow: "AI 结果已返回", title: "完成人工终审", detail: `已有 ${completedCount} 张评审结果，其中 ${reviewedCount} 张留有人工作业记录。自动放行保持关闭。` }
-          : { area: "repair" as const, eyebrow: "问题结论已确认", title: "进入修正与交付", detail: "修正商品结构、人体异常或非目标漂移，复验完成后再生成 4K 交付文件。" };
+          ? { area: "review" as const, eyebrow: "下一步", title: "确认处理建议", detail: "确认后进入修正。" }
+          : { area: "repair" as const, eyebrow: "下一步", title: "修正并对比结果", detail: "人工复验后再交付。" };
 
   const stages: Array<{ area: "baseline" | "intake" | "review" | "repair"; label: string; detail: string; status: string }> = [
-    { area: "baseline", label: "商品真值", detail: "白底图、SKU 与不可修改属性", status: hasBaseline ? "已建立" : "待补齐" },
-    { area: "intake", label: "AI 模特草图", detail: "一次处理同一 SKU 的 1–3 张母图", status: candidateCount ? `${candidateCount} 张` : "未上传" },
-    { area: "review", label: "问题诊断", detail: "商品漂移、人体异常与可修复性", status: isDemo ? "示例可浏览" : `${completedCount}/${candidateCount} 完成` },
-    { area: "repair", label: "修正与交付", detail: "改图、前后复验与 4K 文件", status: reviewedCount ? "可进入" : "等待确认" },
+    { area: "baseline", label: "商品真值", detail: "白底图与确认事实", status: hasBaseline ? "完成" : "待补充" },
+    { area: "intake", label: "待修图片", detail: "同一 SKU 的一张图", status: candidateCount ? `${candidateCount} 张` : "未上传" },
+    { area: "review", label: "问题判断", detail: "确认问题和处理边界", status: isDemo ? "可试用" : `${completedCount}/${candidateCount}` },
+    { area: "repair", label: "修正交付", detail: "前后对比与人工复验", status: reviewedCount ? "可进入" : "等待" },
   ];
 
   return (
     <section className="workspace-page overview-page" aria-labelledby="overview-title">
       <header className="page-heading">
         <div>
-          <p className="page-context">项目总览</p>
-          <h1 id="overview-title">一个 SKU，修好一张模特母图。</h1>
-          <p>只看当前状态与下一步。</p>
+          <h1 id="overview-title">当前任务</h1>
         </div>
       </header>
 
@@ -2922,28 +2845,20 @@ function ProjectOverview({
           <h2>{next.title}</h2>
           <p>{next.detail}</p>
           <div className="overview-actions">
-            <button className="primary-button" type="button" onClick={() => onNavigate(next.area)}>继续当前任务</button>
-            <button className="quiet-button" type="button" onClick={() => onNavigate("baseline")}>查看商品信息</button>
+            <button className="primary-button" type="button" onClick={() => onNavigate(next.area)}>继续</button>
           </div>
         </div>
-        <dl className="overview-batch-facts">
-          <div><dt>基准输入</dt><dd>{referenceCount + skuCount}</dd></div>
-          <div><dt>候选素材</dt><dd>{candidateCount || "—"}</dd></div>
-          <div><dt>评审完成</dt><dd>{candidateCount ? `${completedCount}/${candidateCount}` : "—"}</dd></div>
-          <div><dt>人工记录</dt><dd>{reviewedCount || "—"}</dd></div>
-        </dl>
       </section>
 
       <section className="overview-stage-ledger" aria-labelledby="overview-stage-title">
         <div className="rail-intro">
-          <span>四步返修工作流</span>
-          <h2 id="overview-stage-title">先修好模特母图，再进入详情与促销排版。</h2>
-          <p>{sourceLabel}。当前不存在的客户事实保持为空，不用示例内容补齐。</p>
+          <h2 id="overview-stage-title">处理流程</h2>
+          <p>{sourceLabel}</p>
         </div>
         <div className="rail-stages">
           {stages.map((stage, index) => (
             <button key={stage.area} type="button" onClick={() => onNavigate(stage.area)}>
-              <span className="rail-index">{String(index + 1).padStart(2, "0")}</span>
+              <span className="rail-index">{index + 1}</span>
               <span><strong>{stage.label}</strong><small>{stage.detail}</small></span>
               <span className="rail-action">{stage.status}</span>
             </button>
@@ -2952,14 +2867,14 @@ function ProjectOverview({
       </section>
 
       {projectRecord && (
-        <section className="project-history" aria-labelledby="project-history-title">
-          <header>
+        <details className="project-history" aria-labelledby="project-history-title">
+          <summary>
             <div>
-              <span>本机项目记录</span>
-              <h2 id="project-history-title">可恢复，也能说明发生过什么。</h2>
+              <h2 id="project-history-title">本机项目记录</h2>
+              <span>项目 {projectRecord.projectId.slice(0, 8)} · v{projectRecord.revision}</span>
             </div>
             <ProjectSaveStatus state={projectPersistence} />
-          </header>
+          </summary>
           <dl>
             <div>
               <dt>项目标识</dt>
@@ -2998,7 +2913,7 @@ function ProjectOverview({
           <p>
             本阶段仅保存在当前设备与浏览器中，不会上传客户图片；清除站点数据会同时清除本机项目。
           </p>
-        </section>
+        </details>
       )}
     </section>
   );
@@ -3049,9 +2964,6 @@ function CustomerWorkflow({
   onLoadSyntheticGroundTruth,
   onConfirmManualIssue,
   referenceFiles,
-  setReferenceFiles,
-  customerProfile,
-  setCustomerProfile,
   batchCandidates,
   toggleBatchSelection,
 }: {
@@ -3073,25 +2985,11 @@ function CustomerWorkflow({
     note: string,
   ) => void;
   referenceFiles: File[];
-  setReferenceFiles: (files: File[]) => void;
-  customerProfile: CustomerProfileInput;
-  setCustomerProfile: Dispatch<SetStateAction<CustomerProfileInput>>;
   batchCandidates: BatchCandidate[];
   toggleBatchSelection: (id: number) => void;
 }) {
-  const styleOptions = ["简约通勤", "轻奢质感", "甜酷潮流", "自然松弛", "高级极简"];
-  const audienceOptions = ["18-24 岁年轻女性", "25-35 岁都市女性", "35-45 岁品质女性", "大码人群"];
-  const toggleProfileTag = (field: "styles" | "audiences", value: string) => {
-    setCustomerProfile((current) => ({
-      ...current,
-      [field]: current[field].includes(value)
-        ? current[field].filter((item) => item !== value)
-        : [...current[field], value],
-    }));
-  };
   const completed = batchCandidates.filter((item) => item.status === "done").length;
   const failed = batchCandidates.filter((item) => item.status === "error").length;
-  const selectedCount = batchCandidates.filter((item) => item.selected).length;
   const processing = state.kind === "processing" || liveRunning;
   const [manualIssueCategory, setManualIssueCategory] =
     useState<ManualIssueCategory>("商品结构");
@@ -3106,95 +3004,24 @@ function CustomerWorkflow({
   ];
 
   return (
-    <details className="customer-workflow" open={batchCandidates.length > 0}>
+    <details className="customer-workflow" open={batchCandidates.length > 0 && completed === 0}>
       <summary className="workflow-header">
         <div>
-          <span>第三步 · 问题诊断</span>
-          <h2 id="customer-workflow-title">确认商品真值并开始诊断</h2>
-          <p>定位问题，给出修正建议。</p>
+          <h2 id="customer-workflow-title">{completed > 0 ? "图片准备已完成" : "准备问题判断"}</h2>
+          <p>{completed > 0 ? "需要时可重新上传或修改问题。" : "上传图片后，直接描述问题或使用 AI 判断。"}</p>
         </div>
-        <strong>{batchCandidates.length > 0 ? `${batchCandidates.length} 张素材已载入` : "展开评审准备"}</strong>
+        <strong>{batchCandidates.length > 0 ? `${batchCandidates.length} 张图片` : "展开"}</strong>
       </summary>
 
       <div className="workflow-sections">
-        <section className="workflow-block">
-          <header><span className="workflow-step mono">01</span><div><h2>商品真值与 SKU</h2><p>最多保存 4 张，改图时选择 1–2 张。</p></div></header>
-          <div className="workflow-actions">
-            <label className="secondary-file-button">
-              <input type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={processing}
-                onChange={(event) => {
-                  setReferenceFiles(Array.from(event.currentTarget.files ?? []).slice(0, 4));
-                  event.currentTarget.value = "";
-                }} />
-              选择商品真值图
-            </label>
-            <span className="context-count">已引用 {referenceFiles.length} 张商品真值</span>
-          </div>
-          {referenceFiles.length > 0 && (
-            <ul className="compact-file-list">{referenceFiles.map((file) => <li key={`${file.name}-${file.size}`}>{file.name}</li>)}</ul>
-          )}
-          <label className="field-stack">
-            <span>商品 SKU 链接，每行一个</span>
-            <textarea rows={2} value={customerProfile.skuLinks.join("\n")}
-              placeholder="https://detail.tmall.com/item.htm?id=..."
-              onChange={(event) => setCustomerProfile((current) => ({
-                ...current,
-                skuLinks: event.target.value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).slice(0, 20),
-              }))} />
-          </label>
-          <label className="field-stack">
-            <span>确认过的商品事实，每行一条</span>
-            <textarea rows={3} value={(customerProfile.skuFacts ?? []).join("\n")}
-              placeholder={"纽扣总数：4\n正确刺绣：左胸 1 枚\n右胸无刺绣"}
-              onChange={(event) => setCustomerProfile((current) => ({
-                ...current,
-                skuFacts: event.target.value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).slice(0, 24),
-              }))} />
-          </label>
-          <label className="csv-import">
-            导入 SKU CSV
-            <input type="file" accept=".csv,text/csv" onChange={async (event) => {
-              const file = event.currentTarget.files?.[0];
-              if (!file) return;
-              const values = (await file.text()).split(/[\r\n,]+/).map((item) => item.trim()).filter((item) => /^https?:\/\//i.test(item));
-              setCustomerProfile((current) => ({ ...current, skuLinks: values.slice(0, 20) }));
-              event.currentTarget.value = "";
-            }} />
-          </label>
-        </section>
-
-        <section className="workflow-block">
-          <header><span className="workflow-step mono">02</span><div><h2>客户画像</h2><p>补充商品使用场景。</p></div></header>
-          <fieldset className="tag-field"><legend>目标风格</legend><div>{styleOptions.map((option) => (
-            <button type="button" key={option} aria-pressed={customerProfile.styles.includes(option)} onClick={() => toggleProfileTag("styles", option)}>{option}</button>
-          ))}</div></fieldset>
-          <div className="price-range">
-            <label><span>最低价</span><input inputMode="numeric" value={customerProfile.priceMin} onChange={(event) => setCustomerProfile((current) => ({ ...current, priceMin: event.target.value.replace(/[^0-9.]/g, "") }))} /></label>
-            <span>至</span>
-            <label><span>最高价</span><input inputMode="numeric" value={customerProfile.priceMax} onChange={(event) => setCustomerProfile((current) => ({ ...current, priceMax: event.target.value.replace(/[^0-9.]/g, "") }))} /></label>
-          </div>
-          <fieldset className="tag-field"><legend>目标人群</legend><div>{audienceOptions.map((option) => (
-            <button type="button" key={option} aria-pressed={customerProfile.audiences.includes(option)} onClick={() => toggleProfileTag("audiences", option)}>{option}</button>
-          ))}</div></fieldset>
-          <p className="profile-summary">当前画像：{customerProfile.styles.join("、") || "未选择风格"} · {customerProfile.priceMin || "?"}-{customerProfile.priceMax || "?"} 元 · {customerProfile.audiences.join("、") || "未选择人群"}</p>
-        </section>
-
         <section className="workflow-block workflow-block-wide">
-          <header><span className="workflow-step mono">诊断</span><div><h2>分析图片问题</h2><p>一次最多 3 张同用途图片。</p></div></header>
-          <div className="submission-context compact-context">
-            <label>渠道<input value={submissionContext.channel} onChange={(event) => setSubmissionContext((current) => ({ ...current, channel: event.target.value }))} disabled={processing} /></label>
-            <label>图位<input value={submissionContext.placement} onChange={(event) => setSubmissionContext((current) => ({ ...current, placement: event.target.value }))} disabled={processing} /></label>
-            <label>素材来源<select value={submissionContext.provenanceStatus} onChange={(event) => setSubmissionContext((current) => ({ ...current, provenanceStatus: event.target.value as SubmissionContext["provenanceStatus"] }))} disabled={processing}><option value="confirmed_ai">确认 AI 生成</option><option value="confirmed_real">确认真人／实拍</option><option value="unknown">暂不确定</option></select></label>
-          </div>
+          <header><div><h2>选择待修图片</h2><p>建议一次处理一张。</p></div></header>
           <div className="workflow-actions">
             <label className={`file-button ${processing ? "disabled" : ""}`}>
               <input type="file" multiple accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" disabled={processing}
                 onChange={(event) => { void onSelect(Array.from(event.currentTarget.files ?? [])); event.currentTarget.value = ""; }} />
               {state.kind === "processing" ? "正在建立任务" : batchCandidates.length ? "更换模特草图" : "选择 AI 模特草图"}
             </label>
-            <button className="primary-button" type="button" disabled={processing || !candidate || !liveConsent || !liveCapability?.configured || liveCapability.remainingRequests < 1} onClick={() => void onRunLive()}>
-              {liveRunning ? `正在分析 ${completed + 1}/${batchCandidates.length} · 最长约 3 分钟` : "开始分析图片问题"}
-            </button>
             {syntheticGroundTruthEligible && completed === 0 && (
               <button
                 className="quiet-button"
@@ -3202,14 +3029,14 @@ function CustomerWorkflow({
                 disabled={processing}
                 onClick={onLoadSyntheticGroundTruth}
               >
-                载入受控样例真值
+                使用案例答案
               </button>
             )}
             {batchCandidates.length > 0 && <button className="quiet-button" type="button" disabled={processing} onClick={onRestore}>清空批次</button>}
           </div>
           {batchCandidates.length > 0 && (
             <div className="batch-queue" aria-live="polite">
-              <div className="batch-summary"><span>共 {batchCandidates.length} 张</span><span>完成 {completed}</span><span>失败 {failed}</span><span>已选 {selectedCount}</span></div>
+              <div className="batch-summary"><span>{batchCandidates.length} 张图片</span><span>{completed ? `${completed} 张已判断` : "等待判断"}</span>{failed > 0 && <span>{failed} 张失败</span>}</div>
               <ul>{batchCandidates.map((item) => (
                 <li key={item.id}>
                   <label><input type="checkbox" checked={item.selected} onChange={() => toggleBatchSelection(item.id)} /><SafeImage src={item.src} alt={item.file.name} /><span title={item.file.name}>{item.file.name}</span></label>
@@ -3226,8 +3053,8 @@ function CustomerWorkflow({
             </div>
           )}
           {batchCandidates.length > 0 && (
-            <details className="manual-issue-entry" open>
-              <summary>我已经知道问题，直接告诉系统</summary>
+            <details className="manual-issue-entry" open={completed === 0}>
+              <summary>直接描述问题</summary>
               <div className="manual-issue-entry-content">
                 <fieldset className="tag-field">
                   <legend>问题属于哪一类</legend>
@@ -3263,21 +3090,35 @@ function CustomerWorkflow({
                       setManualIssueNote("");
                     }}
                   >
-                    确认问题并进入修正
+                    查看处理建议
                   </button>
-                  <span>这条记录来自用户确认，不会冒充 AI 自动发现。</span>
                 </div>
               </div>
             </details>
           )}
-          <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured || liveCapability.remainingRequests < 1} onChange={(event) => setLiveConsent(event.target.checked)} /><span>我确认当前 AI 模特草图与 {referenceFiles.length} 张商品真值图可发送至阿里云百炼。服务端不留存原图，本机项目会保存工作集；所有结果必须人工终审。</span></label>
+          {batchCandidates.length > 0 && (
+            <details className="ai-diagnosis-option">
+              <summary>让 AI 先找问题</summary>
+              <div>
+                <details className="submission-context-details">
+                  <summary>图片用途</summary>
+                  <div className="submission-context compact-context">
+                    <label>渠道<input value={submissionContext.channel} onChange={(event) => setSubmissionContext((current) => ({ ...current, channel: event.target.value }))} disabled={processing} /></label>
+                    <label>图位<input value={submissionContext.placement} onChange={(event) => setSubmissionContext((current) => ({ ...current, placement: event.target.value }))} disabled={processing} /></label>
+                    <label>素材来源<select value={submissionContext.provenanceStatus} onChange={(event) => setSubmissionContext((current) => ({ ...current, provenanceStatus: event.target.value as SubmissionContext["provenanceStatus"] }))} disabled={processing}><option value="confirmed_ai">AI 生成</option><option value="confirmed_real">真人实拍</option><option value="unknown">暂不确定</option></select></label>
+                  </div>
+                </details>
+                <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured || liveCapability.remainingRequests < 1} onChange={(event) => setLiveConsent(event.target.checked)} /><span>同意将当前图片与 {referenceFiles.length} 张商品真值图发送至阿里云百炼。</span></label>
+                <button className="primary-button" type="button" disabled={processing || !candidate || !liveConsent || !liveCapability?.configured || liveCapability.remainingRequests < 1} onClick={() => void onRunLive()}>
+                  {liveRunning ? `正在分析 ${completed + 1}/${batchCandidates.length}` : "开始 AI 判断"}
+                </button>
+                <small>服务端不留存原图，结果仍需人工确认。</small>
+              </div>
+            </details>
+          )}
         </section>
 
       </div>
-      <p className="data-processing-note">
-        隐私与授权：只有确认授权并点击开始分析后，待修图与本次选择的商品真值图才会发送至阿里云百炼。
-        服务端不留存原图；当前验收环境中的项目、问题结果与人工选择保存在本机工作集。
-      </p>
     </details>
   );
 }
