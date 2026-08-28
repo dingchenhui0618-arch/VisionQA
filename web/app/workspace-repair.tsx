@@ -33,6 +33,10 @@ import {
   LOCAL_UPSCALE_CAPABILITY,
   type UpscaleJobReceipt,
 } from "../lib/visionqa/upscale";
+import {
+  inferRepairBoundary,
+  resolveRepairBoundaryCategory,
+} from "../lib/visionqa/repair-boundary";
 
 type RepairAsset = {
   id: number;
@@ -40,7 +44,13 @@ type RepairAsset = {
   productLabel: string;
   repairPrompt: string;
   lockedAttributes: string;
-  issues: Array<{ title: string; severity: string }>;
+  issues: Array<{ title: string; severity: string; skill?: string }>;
+  fixtureCaseId?: string;
+  evidenceMode?: "SYNTHETIC_INTERNAL_TEST_ONLY";
+  assetOrigin?: "IMAGEGEN_SYNTHETIC_INTERNAL";
+  notRealCustomerEvidence?: boolean;
+  notModelEffectivenessEvidence?: boolean;
+  notCommercialEvidence?: boolean;
 };
 
 type RepairWorkspaceProps = {
@@ -136,6 +146,16 @@ export function RepairWorkspace({
   useEffect(() => () => { if (outputUrl) URL.revokeObjectURL(outputUrl); }, [outputUrl]);
 
   const selectedProvider = providers.find((item) => item.id === provider)!;
+  const firstIssue = asset.issues[0];
+  const boundaryCategory = resolveRepairBoundaryCategory(
+    firstIssue?.skill,
+    firstIssue?.title ?? "",
+  );
+  const repairBoundary = firstIssue
+    ? inferRepairBoundary(boundaryCategory, firstIssue.title, {
+        caseId: asset.fixtureCaseId,
+      })
+    : null;
   const selectedQwenRoute = "route" in selectedProvider
     ? selectedProvider.route as RepairProviderRoute
     : null;
@@ -275,6 +295,11 @@ export function RepairWorkspace({
       human_review_checks: checks,
       selected_product_truth_files: selectedReferenceFiles.map((file) => file.name),
       human_final_review_required: true,
+      evidence_mode: asset.evidenceMode ?? null,
+      asset_origin: asset.assetOrigin ?? null,
+      not_real_customer_evidence: asset.notRealCustomerEvidence ?? false,
+      not_model_effectiveness_evidence: asset.notModelEffectivenessEvidence ?? false,
+      not_commercial_evidence: asset.notCommercialEvidence ?? false,
       provider_job: providerJob,
       collaboration,
     };
@@ -572,6 +597,12 @@ export function RepairWorkspace({
         <button className="quiet-button" type="button" onClick={onBack}>返回问题诊断</button>
       </header>
 
+      {asset.evidenceMode === "SYNTHETIC_INTERNAL_TEST_ONLY" && (
+        <p className="repair-provider-note" role="status">
+          合成内部案例 {asset.fixtureCaseId ?? ""} · 仅用于本机流程与路由验证，不是客户图片、模型效果或商业证据。
+        </p>
+      )}
+
       <details className="repair-agent-ledger">
         <summary>
           <div>
@@ -613,6 +644,20 @@ export function RepairWorkspace({
           <div><span>必须锁定</span><strong>{asset.lockedAttributes || (diagnosisReady ? "等待商品真值确认" : "等待真实诊断与商品真值")}</strong></div>
           <div className="repair-prompt-row"><span>改图 Prompt</span><p>{asset.repairPrompt || "当前图片尚未形成真实修正 Prompt。请返回问题诊断，不会用示例内容补齐。"}</p><button className="text-button" type="button" disabled={!repairPlanReady} onClick={() => void copyPrompt()}>{copied ? "已复制" : "复制"}</button></div>
         </div>
+        {repairBoundary && (
+          <section className="repair-boundary" aria-label="智能修图边界">
+            <header>
+              <div><span>智能边界建议</span><strong>{repairBoundary.strategyLabel}</strong></div>
+              <small>{repairBoundary.version} · 仅建议，需人工确认</small>
+            </header>
+            <dl>
+              <div><dt>允许修改</dt><dd>{repairBoundary.allowedRegion}</dd></div>
+              <div><dt>必须锁定</dt><dd>{repairBoundary.lockedRegions.join("；")}</dd></div>
+              <div><dt>停止条件</dt><dd>{repairBoundary.stopConditions.join("；")}</dd></div>
+            </dl>
+            <p>{repairBoundary.rationale}</p>
+          </section>
+        )}
         <div className="repair-reference-selector">
           <div>
             <span>本次改图参考</span>

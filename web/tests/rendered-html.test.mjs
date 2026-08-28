@@ -205,20 +205,27 @@ test("keeps score bands consistent while allowing blocker gate overrides", async
 });
 
 test("keeps evidence-led analysis internal while customer results stay problem-led", async () => {
-  const workspaceSource = await readFile(
-    new URL("../app/workspace.tsx", import.meta.url),
-    "utf8",
-  );
+  const [workspaceSource, boundarySource] = await Promise.all([
+    readFile(new URL("../app/workspace.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/visionqa/repair-boundary.ts", import.meta.url), "utf8"),
+  ]);
   assert.match(workspaceSource, /内部分析、Prompt 与审计细节/);
   assert.match(workspaceSource, /问题与建议/);
   assert.match(workspaceSource, /确认问题并进入修正/);
   assert.match(workspaceSource, /从头体验开衫案例/);
   assert.match(workspaceSource, /查看完整修正结果/);
   assert.match(workspaceSource, /不调用模型 · 不产生费用/);
+  assert.match(workspaceSource, /缺陷案例库 · 5/);
+  assert.match(boundarySource, /小错 · 多一颗纽扣/);
+  assert.match(boundarySource, /大错 · 额外手臂/);
+  assert.match(workspaceSource, /可让 AI 识别，也可直接描述问题/);
+  assert.match(workspaceSource, /智能边界建议/);
+  assert.match(workspaceSource, /sha256 !== selectedCase\.sha256/);
+  assert.match(workspaceSource, /文件哈希与冻结登记不一致，已停止载入/);
   assert.match(workspaceSource, /综合评分/);
   assert.match(workspaceSource, /视觉重心/);
   assert.match(workspaceSource, /原商品一致性/);
-  assert.match(workspaceSource, /只修正以下用户确认问题/);
+  assert.match(workspaceSource, /buildBoundaryAwareRepairPrompt/);
   assert.doesNotMatch(workspaceSource, /平台商品表达/);
 });
 

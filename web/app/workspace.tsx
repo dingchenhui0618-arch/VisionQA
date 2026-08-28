@@ -42,6 +42,12 @@ import { projectLegacyCommercialMetrics } from "../lib/visionqa/product-expressi
 import type { UpscaleJobReceipt } from "../lib/visionqa/upscale";
 import type { RepairProviderJobSnapshot } from "../lib/visionqa/repair-provider-contract";
 import {
+  buildBoundaryAwareRepairPrompt,
+  inferRepairBoundary,
+  SYNTHETIC_REPAIR_CASES,
+  syntheticRepairCase,
+} from "../lib/visionqa/repair-boundary";
+import {
   SYNTHETIC_TROUSERS_CASE_ID,
   isSyntheticTrousersGroundTruthEligible,
 } from "../lib/visionqa/synthetic-ground-truth";
@@ -139,6 +145,11 @@ type EvaluatedAsset = Asset & {
   modelSnapshot?: string;
   providerLatencyMs?: number;
   referenceCount?: number;
+  evidenceMode?: "SYNTHETIC_INTERNAL_TEST_ONLY";
+  assetOrigin?: "IMAGEGEN_SYNTHETIC_INTERNAL";
+  notRealCustomerEvidence?: boolean;
+  notModelEffectivenessEvidence?: boolean;
+  notCommercialEvidence?: boolean;
 };
 
 type DataState =
@@ -160,7 +171,13 @@ type DataState =
       latencyMs: number;
     }
   | { kind: "synthetic-ground-truth"; caseId: string }
-  | { kind: "human-confirmed"; candidateName: string }
+  | { kind: "synthetic-library"; candidateName: string; caseId: string }
+  | {
+      kind: "human-confirmed";
+      candidateName: string;
+      evidenceMode?: "SYNTHETIC_INTERNAL_TEST_ONLY";
+      fixtureCaseId?: string;
+    }
   | {
       kind: "live-error";
       candidateName: string;
@@ -295,6 +312,9 @@ const CARDIGAN_EXPERIENCE_CASE_ID = "SYN-VQA-GRAY-CARDIGAN-001";
 const CARDIGAN_EXPERIENCE_ISSUE =
   "画面左侧／穿着者右胸多出商品真值中不存在的黑色五瓣花刺绣；只删除这枚错误刺绣，保留画面右侧／穿着者左胸的正确刺绣、四颗纽扣、人物和其他区域。";
 
+const isSyntheticRepairLibraryCase = (caseId: string | undefined) =>
+  Boolean(syntheticRepairCase(caseId));
+
 async function publicImageFile(url: string, name: string): Promise<File> {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`无法载入本地体验素材：${name}`);
@@ -375,6 +395,11 @@ function stripEvaluatedAsset(asset: EvaluatedAsset): StoredEvaluatedAsset {
     modelSnapshot: asset.modelSnapshot,
     providerLatencyMs: asset.providerLatencyMs,
     referenceCount: asset.referenceCount,
+    evidenceMode: asset.evidenceMode,
+    assetOrigin: asset.assetOrigin,
+    notRealCustomerEvidence: asset.notRealCustomerEvidence,
+    notModelEffectivenessEvidence: asset.notModelEffectivenessEvidence,
+    notCommercialEvidence: asset.notCommercialEvidence,
   };
 }
 
@@ -994,10 +1019,17 @@ function humanConfirmedIssueAsset(
 ): EvaluatedAsset {
   const template = commercialTemplates.find((item) => item.id === templateId)!;
   const issueText = note.trim();
+  const syntheticInternal = isSyntheticRepairLibraryCase(candidate.fixtureCaseId);
+  const boundary = inferRepairBoundary(category, issueText, {
+    caseId: candidate.fixtureCaseId,
+  });
+  const repairPrompt = buildBoundaryAwareRepairPrompt(boundary);
+  const needsRegeneration = boundary.strategy === "REGENERATE";
+  const blocked = boundary.strategy === "BLOCKED";
   return {
     id: candidate.id,
     src: candidate.src,
-    decision: "REVIEW",
+    decision: needsRegeneration || blocked ? "REJECT" : "REVIEW",
     score: Number.NaN,
     scoreAvailable: false,
     diagnosisReady: true,
@@ -1008,19 +1040,21 @@ function humanConfirmedIssueAsset(
         id: `human-${category}`,
         title: issueText,
         skill: category,
-        severity: "Major",
+        severity: needsRegeneration || blocked ? "Blocker" : "Major",
         observation: `由用户确认的${category}问题：${issueText}`,
-        impact: "该问题需要在进入详情页、排版或上架流程前处理，并复验其他已正确区域。",
-        rule: "只修正用户确认的目标问题；商品真值、人物身份、画幅、背景与非目标区域不得发生不可接受变化。",
+        impact: blocked
+          ? "当前证据不足，不能让模型猜测商品事实。"
+          : needsRegeneration
+            ? "该问题不适合危险局修，应整体重生成后重新复验。"
+            : "该问题需要在进入详情页、排版或上架流程前处理，并复验其他已正确区域。",
+        rule: `${boundary.strategy} · ${boundary.allowedRegion}；停止条件：${boundary.stopConditions.join("；")}`,
         marker: { x: 50, y: 50 },
       },
     ],
     commercialAssessment:
       "用户已确认一个具体问题，当前没有运行综合评分；后续以修正前后和人工复验作为结果。",
-    repairPrompt:
-      `只修正以下用户确认问题：${issueText}。以本次商品真值图中可见的颜色、版型、结构、材质、图案、Logo与细节为依据。保持原图人物身份、面部、发型、姿势、手脚、服装其他正确区域、背景、光线、镜头、构图、画幅和非目标区域不变。不要裁切、拉近、重新摆拍、增加促销文字或创造未提供的商品细节。`,
-    lockedAttributes:
-      "本次商品真值范围内的颜色、版型、结构、材质、图案与Logo；原图人物、背景、镜头、构图、画幅及所有非目标区域",
+    repairPrompt,
+    lockedAttributes: boundary.lockedRegions.join("、"),
     commercial: {
       templateId,
       templateVersion: template.version,
@@ -1032,14 +1066,19 @@ function humanConfirmedIssueAsset(
       gaps: [issueText],
       metrics: [],
     },
-    promptProvenance: "human-confirmed-issue-v0.1",
+    promptProvenance: `${boundary.version} · 用户确认问题 · 智能边界建议待人工确认`,
     calibrationStatus: "UNCALIBRATED",
-    modelStatus: "HUMAN_CONFIRMED",
+    modelStatus: `HUMAN_CONFIRMED_${boundary.strategy}`,
     markerAvailable: false,
     evaluationMode: "HUMAN_CONFIRMED_ISSUE",
     fixtureCaseId: candidate.fixtureCaseId,
     persistedEvaluation: false,
     referenceCount: 0,
+    evidenceMode: syntheticInternal ? "SYNTHETIC_INTERNAL_TEST_ONLY" : undefined,
+    assetOrigin: syntheticInternal ? "IMAGEGEN_SYNTHETIC_INTERNAL" : undefined,
+    notRealCustomerEvidence: syntheticInternal || undefined,
+    notModelEffectivenessEvidence: syntheticInternal || undefined,
+    notCommercialEvidence: syntheticInternal || undefined,
   };
 }
 
@@ -1059,9 +1098,11 @@ function buildApiAsset(
     providerLatencyMs?: number;
     id?: number;
     referenceCount?: number;
+    fixtureCaseId?: string;
   } = {},
 ): EvaluatedAsset {
   const fixture = assets[0];
+  const syntheticInternal = isSyntheticRepairLibraryCase(options.fixtureCaseId);
   return {
     ...fixture,
     id: options.id ?? 1,
@@ -1105,6 +1146,12 @@ function buildApiAsset(
     modelSnapshot: options.modelSnapshot,
     providerLatencyMs: options.providerLatencyMs,
     referenceCount: options.referenceCount,
+    fixtureCaseId: options.fixtureCaseId,
+    evidenceMode: syntheticInternal ? "SYNTHETIC_INTERNAL_TEST_ONLY" : undefined,
+    assetOrigin: syntheticInternal ? "IMAGEGEN_SYNTHETIC_INTERNAL" : undefined,
+    notRealCustomerEvidence: syntheticInternal || undefined,
+    notModelEffectivenessEvidence: syntheticInternal || undefined,
+    notCommercialEvidence: syntheticInternal || undefined,
   };
 }
 
@@ -1132,6 +1179,8 @@ function DataSourceBadge({ state }: { state: DataState }) {
       ? "问题分析完成"
       : state.kind === "synthetic-ground-truth"
         ? "合成样例真值"
+      : state.kind === "synthetic-library"
+        ? "合成内部案例"
       : state.kind === "human-confirmed"
         ? "用户确认问题"
       : state.kind === "live-loading"
@@ -1211,11 +1260,20 @@ function DataStateNotice({ state }: { state: DataState }) {
       </div>
     );
   }
+  if (state.kind === "synthetic-library") {
+    return (
+      <div className="data-state-notice local" role="status">
+        已载入合成内部案例 {state.caseId} · {state.candidateName}。素材只用于本机流程测试，
+        不是客户图片、模型效果或商业证据；可选择 AI 识别或直接描述问题。
+      </div>
+    );
+  }
   if (state.kind === "human-confirmed") {
     return (
       <div className="data-state-notice real" role="status">
-        已记录 {state.candidateName} 的用户确认问题。当前没有生成评分；修正任务将以商品真值、
-        具体问题和前后复验为准。
+        已记录 {state.candidateName} 的用户确认问题。{state.evidenceMode
+          ? "该素材仍为合成内部案例，不是客户或模型效果证据；"
+          : "当前没有生成评分；"}修正任务将以商品真值、具体问题和前后复验为准。
       </div>
     );
   }
@@ -1919,6 +1977,85 @@ export function Workspace() {
     }
   };
 
+  const loadSyntheticRepairCase = async (
+    caseId: (typeof SYNTHETIC_REPAIR_CASES)[number]["id"],
+  ) => {
+    const selectedCase = SYNTHETIC_REPAIR_CASES.find((item) => item.id === caseId);
+    if (!selectedCase) return;
+    setIntakeState({ kind: "processing", candidateName: selectedCase.label });
+    try {
+      const [truthFile, candidateFile] = await Promise.all([
+        publicImageFile("/fashion/repair-library/product-truth-grid.png", "product-truth-grid.png"),
+        publicImageFile(`/fashion/repair-library/${selectedCase.file}`, selectedCase.file),
+      ]);
+      batchCandidates.forEach((item) => URL.revokeObjectURL(item.src));
+      const sha256 = await sha256Blob(candidateFile);
+      if (sha256 !== selectedCase.sha256) {
+        throw new Error(`合成案例 ${selectedCase.id} 文件哈希与冻结登记不一致，已停止载入。`);
+      }
+      const candidate: BatchCandidate = {
+        id: 1,
+        file: candidateFile,
+        src: URL.createObjectURL(candidateFile),
+        sha256,
+        traceId: candidateTraceId(sha256),
+        fixtureCaseId: selectedCase.id,
+        status: "ready",
+        selected: true,
+      };
+      setReferenceFiles([truthFile]);
+      setCustomerProfile((current) => ({
+        ...current,
+        styles: ["简约通勤"],
+        priceMin: "199",
+        priceMax: "399",
+        audiences: ["都市白领", "通勤女性"],
+        skuFacts: [
+          "暖浅灰细罗纹圆领长袖短款开衫",
+          "前襟恰好四颗哑光深灰纽扣",
+          "正确刺绣恰好一枚，位于穿着者左胸（画面右侧）",
+          "穿着者右胸（画面左侧）无刺绣或装饰",
+          "无口袋、无拉链、无品牌文字",
+        ],
+      }));
+      setBatchCandidates([candidate]);
+      candidateFileRef.current = candidateFile;
+      setLocalCandidate({
+        name: candidateFile.name,
+        size: candidateFile.size,
+        sha256,
+        traceId: candidate.traceId,
+        fixtureCaseId: selectedCase.id,
+        submissionContext,
+        reviewStartedAt: new Date().toISOString(),
+      });
+      setApiAsset(null);
+      setSelectedId(candidate.id);
+      setView("grid");
+      setLiveConsent(false);
+      setRepairOutputFile(null);
+      setRepairSourceAssetId(null);
+      setRepairProviderJob(null);
+      setRepairChecks([]);
+      setUpscaleOutputFile(null);
+      setUpscaleReceipt(null);
+      setDataState({
+        kind: "synthetic-library",
+        candidateName: candidateFile.name,
+        caseId: selectedCase.id,
+      });
+      setArea("review");
+      setIntakeState({ kind: "ready" });
+      setToast(`已载入 ${selectedCase.label}；可让 AI 识别，也可直接描述问题。预期路由：${selectedCase.strategyLabel}。`);
+      window.setTimeout(() => setToast(null), 5200);
+    } catch (error) {
+      setIntakeState({
+        kind: "error",
+        message: error instanceof Error ? error.message : "合成案例载入失败。",
+      });
+    }
+  };
+
   const syntheticGroundTruthEligible =
     isSyntheticTrousersGroundTruthEligible({
       candidateCount: batchCandidates.length,
@@ -1980,6 +2117,10 @@ export function Workspace() {
     setDataState({
       kind: "human-confirmed",
       candidateName: candidate.file.name,
+      evidenceMode: isSyntheticRepairLibraryCase(candidate.fixtureCaseId)
+        ? "SYNTHETIC_INTERNAL_TEST_ONLY"
+        : undefined,
+      fixtureCaseId: candidate.fixtureCaseId,
     });
     setToast("具体问题已记录，可以进入修正与前后复验。");
   };
@@ -2068,6 +2209,7 @@ export function Workspace() {
             modelSnapshot: live.provider.modelSnapshot,
             providerLatencyMs: live.provider.latencyMs,
             referenceCount: referenceFiles.length,
+            fixtureCaseId: item.fixtureCaseId,
           });
           lastResult = result;
           completed += 1;
@@ -2290,9 +2432,7 @@ export function Workspace() {
         ? selected.evaluationMode ?? LOCAL_EVALUATION_MODE
         : undefined,
       fixtureCaseId:
-        selected.evaluationMode === LOCAL_EVALUATION_MODE
-          ? localCandidate?.fixtureCaseId
-          : undefined,
+        localCandidate?.fixtureCaseId,
       reasonCode: input.reasonCode,
       evidenceNote: input.evidenceNote,
       overallScore: selected.score,
@@ -2347,7 +2487,7 @@ export function Workspace() {
   );
   const selectedDiagnosisReady = selectedBatchCandidate
     ? Boolean(selectedBatchCandidate.result?.diagnosisReady)
-    : dataState.kind !== "local" && dataState.kind !== "live-loading";
+    : dataState.kind !== "local" && dataState.kind !== "synthetic-library" && dataState.kind !== "live-loading";
   const projectTitle = projectRecord?.projectName ?? batchTitle;
   const sourceLabel =
     dataState.kind === "fixture"
@@ -2356,8 +2496,12 @@ export function Workspace() {
         ? "AI 诊断完成，等待人工确认"
         : dataState.kind === "synthetic-ground-truth"
           ? "合成样例真值，等待人工复验"
+        : dataState.kind === "synthetic-library"
+          ? `合成内部案例 ${dataState.caseId} · 非客户证据`
         : dataState.kind === "human-confirmed"
-          ? "用户已确认具体问题"
+          ? dataState.evidenceMode
+            ? `合成内部案例 ${dataState.fixtureCaseId ?? ""} · 用户已确认问题`
+            : "用户已确认具体问题"
         : dataState.kind === "local"
           ? "客户图片仅在本机等待"
           : dataState.kind === "live-loading"
@@ -2430,6 +2574,17 @@ export function Workspace() {
           <button type="button" onClick={() => void loadCardiganExperienceCase("complete")}>
             查看完整修正结果
           </button>
+          <details className="rail-case-library">
+            <summary>缺陷案例库 · 5</summary>
+            <div>
+              {SYNTHETIC_REPAIR_CASES.map((item) => (
+                <button key={item.id} type="button" onClick={() => void loadSyntheticRepairCase(item.id)}>
+                  <strong>{item.label}</strong>
+                  <span>{item.strategy}</span>
+                </button>
+              ))}
+            </div>
+          </details>
           <small>不调用模型 · 不产生费用</small>
         </div>
       </aside>

@@ -2,8 +2,16 @@
 
 > 用途：供产品负责人、开发者与后续 Codex 任务快速恢复项目上下文。
 > 当前事实入口：本文件负责“现在是什么、已经做到哪里、下一步做什么”；详细阶段证据继续查看 [`PROJECT_STATE.md`](./PROJECT_STATE.md)。
-> 最后整理：2026-08-27（Asia/Shanghai；问题导向工作台与 Qwen Image 3.0 Pro 首次受控修正已完成）
-> 当前代码基线：`codex/visionqa-phase3-qwen` / `48de5d6860ac8a609b268c7c5899109f0e32d677`
+> 最后整理：2026-08-28（Asia/Shanghai；第五阶段工程收口与新对话交接）
+> 当前分支：`codex/visionqa-phase3-qwen`；本轮开始前远端基线：`08a5c10`
+
+## 0. 当前状态与唯一目标
+
+- 第五阶段工程目标已收敛为：完成“合成缺陷案例 → 双入口确认 → 修图边界路由 → 局修/重生成 Gate → 人工复验”的可复现内部闭环，并完成独立 QA、测试、文档和 Git 收口。
+- 当前产品状态：`LOCAL_SYNTHETIC_VERTICAL_SLICE_COMPLETE / ENGINEERING_VERIFIED / REAL_CUSTOMER_VALIDATION_NOT_RUN / MARKET_HOLD / AUTO_PASS_DISABLED`。
+- 当前唯一业务目标：不再继续堆功能；让 3 名真实服饰电商美工或运营分别完成 2–3 个脱敏案例，记录 60 秒内有理由路由、改判、预估/实际 PS 收尾时间、候选采用和是否愿意提交一个获授权真实 SKU。
+- 在真实参与者结果出现前，不把合成案例、工程测试或内部 QA 写成客户采用、模型准确率、节省工时或付款证据。
+- 新对话的首要入口是 [`handoffs/PHASE_5_CLOSURE_HANDOFF_2026-08-28.md`](./handoffs/PHASE_5_CLOSURE_HANDOFF_2026-08-28.md)。
 
 ## 1. 一句话产品定位
 
@@ -297,3 +305,20 @@ Codex CLI 只作为未来可替换的 Agent Harness 候选。当前不要为“�
 - 当前存在未纳入本次文档整理的工作区内容：`web/aliyun-fc/src/dependency-loader.mjs`、`deploy/`、`web/artifacts/`；不得擅自覆盖、删除或混入无关提交。
 
 大型阶段完成后继续遵循：只暂存确认过的路径、运行对应测试、检查敏感信息、提交到功能分支并同步私有 GitHub 仓库。
+
+## 15. 2026-08-27 当前新增完成项
+
+- 产品交互正式采用双入口：客户可以授权 AI 先提出候选问题，也可以直接描述自己已经知道的问题；两条路径最终汇入同一个边界判断和人工确认 Gate。
+- 已建立首批 5 张 ImageGen 合成缺陷案例库，覆盖局部小错、人体接触中错和必须重生成的大错。案例与 SHA、真值和策略见 [`data/synthetic_repair_case_library_v0.1`](./data/synthetic_repair_case_library_v0.1)。
+- 新增智能修图边界契约 `web/lib/visionqa/repair-boundary.ts`。它决定允许修改范围、禁止变化范围、停止条件和 `LOCAL_REPAIR / REGENERATE / BLOCKED` 等策略；它不是自动交付决定。
+- 已验证：多一颗纽扣可建立局修任务；额外手臂会被路由到整体重生成并锁住局修任务；390px 移动端和桌面均无横向溢出。
+- 当前工程证据：`npm run lint` 通过；完整 `npm test` 为 15 项页面/Schema/production 检查与 114 项 TypeScript/runtime 测试全部通过。
+- 当前最便宜的下一实验：让 3 名真实美工或运营分别处理 2–3 个脱敏案例，记录其是否在 60 秒内理解边界、是否接受系统路由、预估 PS 收尾分钟数和是否愿意把真实授权 SKU 放入下一轮。付款和采用仍为 `NOT_RUN`。
+
+## 16. 2026-08-28 第五阶段收口
+
+- 修复独立 QA 的原 CRITICAL：`SC-003 / SC-005` 的冻结 L3 Gold Label 绑定案例 ID，自由文本同义改写不能降低为局修；修正页继续携带案例 ID，L3 始终无改图 Prompt、局修任务禁用。
+- 修复原 HIGH：`SC-001` 已替换为 v2 单问题候选，manifest 的文件名、SHA-256、锁定区和 README 已同步；载入时还会校验实际文件 SHA-256，失配立即停止。
+- 修复合成证据身份丢失：确认结果、本机 Project 恢复、修正页和任务 JSON 均保留 `SYNTHETIC_INTERNAL_TEST_ONLY / IMAGEGEN_SYNTHETIC_INTERNAL` 及三项“非真实证据”标记。
+- 运行时案例表集中到 `repair-boundary.ts`，自动化测试逐字段核对 manifest，避免页面、文件和 Gold Label 静默漂移。
+- 验证：ESLint 通过；生产构建通过；15/15 页面、Schema 与 production 检查通过；118/118 TypeScript/runtime 测试通过。桌面与 390×844 浏览器复验中，SC-003 同义描述仍强制重生成、无页面横向溢出、控制台 0 error/warning。

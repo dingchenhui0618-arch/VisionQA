@@ -1,10 +1,22 @@
 # VisionQA 项目状态
 
 > 这是本项目的首要状态入口。每次阶段交付、评审结论或方向变化后更新。  
-> 最后更新：2026-08-27（Asia/Shanghai；Qwen Image 3.0 Pro 首次受控修正与问题导向工作台）
+> 最后更新：2026-08-28（Asia/Shanghai；第五阶段工程收口与新对话交接）
 > 内部代号：`VisionQA`；外部产品名：待定  
 
 ## 2026-08-26 完整 SKU 真实修正闭环准备
+
+## 2026-08-28 第五阶段收口：合成案例边界闭环
+
+- 本阶段不是商业上线，而是对第四阶段末形成的 5 例合成修图案例库做工程与证据收口。产品学习状态为 `ACCEPT_FOR_LEARNING`，市场状态仍为 `HOLD`。
+- 独立 QA 首轮发现：L3 可被同义自由文本绕过、SC-001 存在双刺绣标签错配、合成证据身份在界面与导出链丢失。收口实现没有降低标准，而是逐项修复并补回归。
+- L3 案例策略现由冻结案例 ID 强制执行；SC-003/SC-005 不生成局修 Prompt，不能建立或执行局修任务。SC-001 使用 v2 单问题候选，文件 SHA-256 为 `b886ac06047dc7cede8d7a3439b16454fc34a3b9fbb961630175572fe808f20a`。
+- 合成案例从载入、人工确认、本机 Project 持久化、修正页到任务 JSON 持续携带 `SYNTHETIC_INTERNAL_TEST_ONLY / IMAGEGEN_SYNTHETIC_INTERNAL / not_real_customer_evidence / not_model_effectiveness_evidence / not_commercial_evidence`。
+- 运行时案例元数据与 manifest 由自动化逐字段核对；浏览器加载 public 图片时额外核验 SHA-256，任何漂移失败关闭。
+- 回归证据：ESLint、生产构建、15/15 页面/Schema/production 检查、118/118 TypeScript/runtime 测试通过；真实浏览器桌面与 390×844 复验 SC-003 同义文案，边界为 `REGENERATE`、任务禁用、合成证据标签可见、0 横向溢出、0 console error/warning。
+- 本轮未调用 Qwen/DeepSeek 或其他项目 Provider，未新增模型费用；没有客户图片进入案例库。真实客户采用、PS 时间节省、付款和再次提交均为 `NOT_RUN`。
+- 当前目标从“继续开发功能”切换为“真实参与者学习验证”：3 名美工或运营，每人 2–3 例；拟议通过线是至少 70% 在 60 秒内完成有理由路由且 L3 零误入局修。该阈值仍是实验建议，不是用户已经认可的商业门。
+- 新对话接手文件：[`handoffs/PHASE_5_CLOSURE_HANDOFF_2026-08-28.md`](./handoffs/PHASE_5_CLOSURE_HANDOFF_2026-08-28.md)。
 
 ### 2026-08-27 灰色针织开衫 ImageGen → 诊断 → 修正 → 交付
 
@@ -1282,3 +1294,15 @@ Photoshop 和 LOW 是后续可选支线，不属于当前用户行动清单，�
 - 视觉继续使用黑白灰单色基底，真实商品图是主要颜色来源；未引入渐变、玻璃拟态、装饰图表或新增同级卡片堆叠。
 - 本地验证：14/14 渲染、Schema 与 production smoke 测试通过；77/77 TypeScript 契约、规则、Agent、Provider、存储与持久化测试通过；ESLint 0 error/warning；桌面与 390×844 移动端无横向溢出，浏览器控制台 0 error/warn。
 - 本轮尚未发布到 `visionqa.dionysusding.cn`；公网仍对应上一里程碑 release，后续单独决定发布时间。
+
+## 2026-08-27 合成修图案例库与智能边界路由（本地原型）
+
+- 以内置 ImageGen 基于同一灰色开衫真值和同一虚构模特母版生成 5 张受控缺陷图：多一颗纽扣、手指与袖口融合、额外手臂、袖子罗纹断裂、领口/口袋/拉链多项结构冲突。
+- 案例库为 `SYNTHETIC_INTERNAL_TEST_ONLY`，目录：[`data/synthetic_repair_case_library_v0.1`](./data/synthetic_repair_case_library_v0.1)；已记录统一 SKU 事实、文件 SHA-256、主问题、允许修改区、禁止变化区与推荐策略。它不是客户、模型效果、采用或付款证据。
+- 工作台左侧新增可折叠“缺陷案例库 · 5”，每例可离线载入并让用户选择“AI 识别”或“直接描述问题”；载入本地案例不调用 Provider、不产生项目 API 费用。
+- 新增 `repair-boundary-v0.1`：根据问题类型与可观察描述输出 `LOCAL_REPAIR / DETERMINISTIC_COMPOSITE / LOCAL_REPAIR_OR_REGENERATE / REGENERATE / BLOCKED`，同时生成允许修改区、必须锁定区、停止条件与理由。边界只提供建议，仍需用户确认和人工终审。
+- 大错路由已实测：额外手臂会显示“整体重生成”，不生成局修 Prompt，“建立改图任务”保持禁用；多一颗纽扣会开放受控局修任务。
+- 浏览器验收发现并修复侧栏案例展开后不可达问题：桌面侧栏现可独立纵向滚动；1280×720 与 390×844 均无横向溢出、图片完整、控制台 0 error。
+- 自动放行继续关闭；Logo/字标仍优先授权资产确定性合成，缺真值时 `BLOCKED`，整体人体或多关键结构错误时 `REGENERATE`。
+- 本地验证：`npm run lint` 通过；`npm test` 通过 15 项页面/Schema/production 检查与 114 项 TypeScript/runtime 测试。
+- 策展契约：[`agents/repair_benchmark_curator_v0.2.md`](./agents/repair_benchmark_curator_v0.2.md)；模拟客户发现 Day 2：[`reports/SIMULATED_DAILY_DISCOVERY_REPAIR_WORKFLOW_DAY2.md`](./reports/SIMULATED_DAILY_DISCOVERY_REPAIR_WORKFLOW_DAY2.md)。

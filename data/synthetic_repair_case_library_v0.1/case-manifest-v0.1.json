@@ -1,0 +1,92 @@
+{
+  "schema_version": "visionqa-synthetic-repair-library-v0.1",
+  "created_at": "2026-08-27",
+  "evidence_mode": "SYNTHETIC_INTERNAL_TEST_ONLY",
+  "asset_origin": "IMAGEGEN_SYNTHETIC_INTERNAL",
+  "not_real_customer_evidence": true,
+  "not_model_effectiveness_evidence": true,
+  "not_commercial_evidence": true,
+  "auto_pass_enabled": false,
+  "human_final_review_required": true,
+  "truth_file": "product-truth-grid.png",
+  "truth_sha256": "9ac3720f4e209f763b54d21e624a4cc0ff8c00c3b4256df020536a980bb4e22b",
+  "truth_facts": [
+    "暖浅灰细罗纹圆领长袖短款开衫",
+    "前襟恰好四颗哑光深灰纽扣",
+    "正确刺绣恰好一枚，位于穿着者左胸（画面右侧）",
+    "穿着者右胸（画面左侧）无刺绣或装饰",
+    "无口袋、无拉链、无品牌文字"
+  ],
+  "cases": [
+    {
+      "id": "SC-001",
+      "file": "sc-001-extra-button-v2.png",
+      "sha256": "b886ac06047dc7cede8d7a3439b16454fc34a3b9fbb961630175572fe808f20a",
+      "label": "多出一颗纽扣",
+      "level": "L1",
+      "category": "商品结构",
+      "primary_issue": "前襟由商品真值规定的四颗纽扣变成五颗，多出的最下方纽扣需要移除。",
+      "allowed_region": "最下方多余纽扣及其周围最小罗纹融合区",
+      "locked_regions": ["人物身份与姿势", "领口与衣身版型", "其余四颗纽扣", "画面右侧唯一正确刺绣", "画面左侧保持无刺绣", "裤装、鞋、背景、镜头与画幅"],
+      "strategy": "LOCAL_REPAIR",
+      "regenerate_when": "纽扣之外的衣身、人物或构图发生变化",
+      "generation_prompt_summary": "在同一模特母版上只增加第五颗深灰纽扣；锁定人物、构图与非目标区域。"
+    },
+    {
+      "id": "SC-002",
+      "file": "sc-002-hand-cuff-fusion.png",
+      "sha256": "5312afdd8832782ac2e59be569c0ca98ea53efd74cb2cf2ac267eac4d29db546",
+      "label": "手指与袖口融合",
+      "level": "L2",
+      "category": "人物／穿着逻辑",
+      "primary_issue": "画面左侧手部与袖口局部融合，一根手指弯折异常。",
+      "allowed_region": "画面左侧手指、手腕与袖口接触边界",
+      "locked_regions": ["脸部与身份", "另一只手", "开衫主体结构", "纽扣与刺绣", "裤装、鞋、背景、镜头与画幅"],
+      "strategy": "LOCAL_REPAIR_OR_REGENERATE",
+      "regenerate_when": "手部局修导致身份、姿势、袖型或商品结构漂移",
+      "generation_prompt_summary": "仅制造可定位的手指弯折和袖口融合；禁止额外肢体或整体姿势变化。"
+    },
+    {
+      "id": "SC-003",
+      "file": "sc-003-extra-arm.png",
+      "sha256": "764a91e20acfbe0f3a134e1d2745ad0aa72ca7d261eabd1043e233102d4328a5",
+      "label": "额外手臂畸变",
+      "level": "L3",
+      "category": "人物／穿着逻辑",
+      "primary_issue": "人物画面右侧肘部后方出现额外前臂和畸形手，属于整体人体结构错误。",
+      "allowed_region": "不开放局部修图交付范围",
+      "locked_regions": ["商品真值", "人物身份要求", "原始构图与渠道规格"],
+      "strategy": "REGENERATE",
+      "regenerate_when": "立即重生成，不建立局部修图任务",
+      "generation_prompt_summary": "在同一母版上增加一条明显额外前臂，用于验证系统拒绝危险局修。"
+    },
+    {
+      "id": "SC-004",
+      "file": "sc-004-sleeve-texture.png",
+      "sha256": "b1db375959997cfe0706493e3cb6ac1c16e7a98c46dc790f6db605613efbf3d1",
+      "label": "袖子纹理断裂",
+      "level": "L1",
+      "category": "颜色／材质／纹理",
+      "primary_issue": "画面右侧下袖约 12–15 厘米罗纹被涂抹、融化并改变方向。",
+      "allowed_region": "画面右侧下袖纹理异常区及窄幅织物融合边缘",
+      "locked_regions": ["开衫颜色与版型", "袖子轮廓", "纽扣与刺绣", "人物身份、手部、背景、镜头与画幅"],
+      "strategy": "LOCAL_REPAIR",
+      "regenerate_when": "修复扩散到整只袖子、衣身主色或人物区域",
+      "generation_prompt_summary": "只破坏右侧下袖局部纵向罗纹，保持颜色和其他区域不变。"
+    },
+    {
+      "id": "SC-005",
+      "file": "sc-005-multi-structure.png",
+      "sha256": "7d9e325baeb6026dac33f2dced9db6f24f4710a231919071f1c7200adefbb38f",
+      "label": "多项商品结构冲突",
+      "level": "L3",
+      "category": "商品结构",
+      "primary_issue": "圆领被改成 V 领、正面新增口袋，前襟同时出现拉链与错误纽扣结构。",
+      "allowed_region": "不开放局部修图交付范围",
+      "locked_regions": ["商品真值的完整结构", "人物身份与姿势", "背景、镜头与画幅"],
+      "strategy": "REGENERATE",
+      "regenerate_when": "立即重生成；禁止逐项遮盖后宣称整件商品通过",
+      "generation_prompt_summary": "同时制造领口、口袋、拉链和纽扣冲突，用于验证整体重生成路由。"
+    }
+  ]
+}
