@@ -36,10 +36,12 @@ Point `current` to the previous release, then restart `visionqa-demo` and reload
 ## Live deployment record — 2026-08-28
 
 - Public URL: `https://visionqa.dionysusding.cn/` (307 to `/workspace`)
-- Active release: `4f7a035`; previous rollback releases retained: `c119de7`, `3fc8dc6`
+- Active release: `8c6512d`; previous rollback releases retained, including `4f7a035`, `c119de7`, `3fc8dc6`
 - Source branch: `codex/visionqa-phase3-qwen`
-- Package SHA-256: `20523E42E330BB36CC3E0682109AED137826742E034919BE8132FB81E659EA39`
-- Trial entry: no simulated account form; one `开始试用` action; local browser storage and mandatory human review are stated directly
+- Package SHA-256: `BF5B419768121AADD8710D603FCCAFD1EA95E47D25A873A39722D0A765E2273D`
+- Trial entry: two fixed invited accounts validated on the server; one phone/password login action; no SMS, registration, or password reset
+- Session boundary: 12-hour hardened cookie and per-account local IndexedDB scope; this is not formal authentication or tenant isolation
+- Release archive: `visionqa-demo-8c6512d.tar.gz`, SHA-256 `BF5B419768121AADD8710D603FCCAFD1EA95E47D25A873A39722D0A765E2273D`
 - Trial flow: image/case selection, issue and boundary confirmation, repair recommendation, human release; provider and audit details stay folded until requested
 - Acceptance: Nginx config valid; `visionqa-demo` active; root redirect, workspace, public URL after redirect, and main site all return expected status
 - Browser QA: desktop trial click succeeds; 390x844 mobile viewport has no horizontal overflow; public console has 0 errors/warnings
