@@ -32,3 +32,15 @@ Point `current` to the previous release, then restart `visionqa-demo` and reload
 - Acceptance: HTTP redirects to HTTPS; root/workspace/main site return 200; `visionqa-demo` and `dionysus-api` are active
 - Browser QA: landing-to-workspace click succeeds; desktop and 390x844 mobile viewport have no console errors or horizontal overflow
 - Runtime boundary: Qwen and paid calls disabled; internal preview login only; human final review and auto-pass-off remain mandatory
+
+## Live deployment record — 2026-08-28
+
+- Public URL: `https://visionqa.dionysusding.cn/` (307 to `/workspace`)
+- Active release: `4f7a035`; previous rollback releases retained: `c119de7`, `3fc8dc6`
+- Source branch: `codex/visionqa-phase3-qwen`
+- Package SHA-256: `20523E42E330BB36CC3E0682109AED137826742E034919BE8132FB81E659EA39`
+- Trial entry: no simulated account form; one `开始试用` action; local browser storage and mandatory human review are stated directly
+- Trial flow: image/case selection, issue and boundary confirmation, repair recommendation, human release; provider and audit details stay folded until requested
+- Acceptance: Nginx config valid; `visionqa-demo` active; root redirect, workspace, public URL after redirect, and main site all return expected status
+- Browser QA: desktop trial click succeeds; 390x844 mobile viewport has no horizontal overflow; public console has 0 errors/warnings
+- Evidence boundary: this release proves deployability and trial usability only, not model accuracy, customer adoption, payment, repurchase, or commercial success

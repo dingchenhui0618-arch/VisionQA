@@ -1306,3 +1306,14 @@ Photoshop 和 LOW 是后续可选支线，不属于当前用户行动清单，�
 - 自动放行继续关闭；Logo/字标仍优先授权资产确定性合成，缺真值时 `BLOCKED`，整体人体或多关键结构错误时 `REGENERATE`。
 - 本地验证：`npm run lint` 通过；`npm test` 通过 15 项页面/Schema/production 检查与 114 项 TypeScript/runtime 测试。
 - 策展契约：[`agents/repair_benchmark_curator_v0.2.md`](./agents/repair_benchmark_curator_v0.2.md)；模拟客户发现 Day 2：[`reports/SIMULATED_DAILY_DISCOVERY_REPAIR_WORKFLOW_DAY2.md`](./reports/SIMULATED_DAILY_DISCOVERY_REPAIR_WORKFLOW_DAY2.md)。
+
+## 2026-08-28 第五阶段公开试用收口与发布
+
+- 公开入口已移除模拟邮箱/密码登录，只保留单一“开始试用”动作；根域名直接 307 进入 `/workspace`，不再经过长篇营销页。
+- 工作台主流程收敛为选择案例或图片、确认问题与修改边界、查看处理建议、人工放行；商品真值与客户画像不再在问题页重复出现，AI Provider、内部证据和项目历史默认折叠。
+- 桌面保留稳定侧栏与判断 Inspector；手机端改为商品图优先，再展示判断与操作。公开试用仍明确本机保存、无需账户、人工终审、自动放行关闭。
+- 已发布 `https://visionqa.dionysusding.cn/`，服务器 active release 为 `4f7a035`；旧版本 `c119de7` 与 `3fc8dc6` 保留为回滚点。GitHub 分支 `codex/visionqa-phase3-qwen` 已同步。
+- 工程验证：完整 `npm test` 118/118 通过；根路由补丁的生产构建、production smoke 与渲染测试 12/12 通过；ESLint 通过。
+- 公网验收：根域名自动进入 `/workspace`；桌面“开始试用”可进入项目总览；390×844 无横向溢出；浏览器 console 0 error/warning；主站 `dionysusding.cn` 未受影响。
+- 当前 Gate：`PHASE5_TRIAL_LIVE / HUMAN_REVIEW_ON / AUTO_PASS_OFF / COMMERCIAL_EVIDENCE_NOT_RUN`。
+- 当前目标：以 3 名真实服饰美工或运营做小规模试用，每人处理 2–3 个脱敏案例，记录 60 秒内是否理解流程、边界建议接受率、完成/放弃节点、人工收尾分钟数，以及是否愿意提交一个有授权的真实 SKU。不得把合成案例、访问量或内部测试当作付款、采用和复购证据。

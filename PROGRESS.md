@@ -301,7 +301,7 @@ Codex CLI 只作为未来可替换的 Agent Harness 候选。当前不要为“�
 - 真实仓库：`D:\VisionQA`；
 - 真实 Web 应用：`D:\VisionQA\web`；
 - 当前分支：`codex/visionqa-phase3-qwen`；
-- 当前远端基线：`48de5d6860ac8a609b268c7c5899109f0e32d677`；
+- 当前远端基线：`4f7a035`；
 - 当前存在未纳入本次文档整理的工作区内容：`web/aliyun-fc/src/dependency-loader.mjs`、`deploy/`、`web/artifacts/`；不得擅自覆盖、删除或混入无关提交。
 
 大型阶段完成后继续遵循：只暂存确认过的路径、运行对应测试、检查敏感信息、提交到功能分支并同步私有 GitHub 仓库。
@@ -322,3 +322,12 @@ Codex CLI 只作为未来可替换的 Agent Harness 候选。当前不要为“�
 - 修复合成证据身份丢失：确认结果、本机 Project 恢复、修正页和任务 JSON 均保留 `SYNTHETIC_INTERNAL_TEST_ONLY / IMAGEGEN_SYNTHETIC_INTERNAL` 及三项“非真实证据”标记。
 - 运行时案例表集中到 `repair-boundary.ts`，自动化测试逐字段核对 manifest，避免页面、文件和 Gold Label 静默漂移。
 - 验证：ESLint 通过；生产构建通过；15/15 页面、Schema 与 production 检查通过；118/118 TypeScript/runtime 测试通过。桌面与 390×844 浏览器复验中，SC-003 同义描述仍强制重生成、无页面横向溢出、控制台 0 error/warning。
+
+## 17. 2026-08-28 公开试用已上线
+
+- 线上地址：`https://visionqa.dionysusding.cn/`，根域名直接进入 `/workspace`；active release `4f7a035`。
+- 首次入口不再模拟登录，只有“开始试用”；主流程只保留图片/案例、问题、修改边界、修正建议和人工放行，技术细节按需展开。
+- 手机端顺序为先看商品图，再看判断和动作；390×844 无横向溢出，公网 console 0 error/warning。
+- 完整工程测试 118/118 通过；根路由最终补丁的构建、production smoke、渲染测试 12/12 与 ESLint 均通过。
+- 当前状态：`PHASE5_TRIAL_LIVE`。工程可运行和公网可试用已确认；模型准确率、客户采用、付款、再次提交与商业成功仍无真实证据。
+- 当前唯一目标：完成第一轮 3 人小规模真实试用。每人使用 2–3 个脱敏案例，记录理解时间、边界接受率、完成节点、人工收尾时间和真实 SKU 提交意愿；只有收到授权真实 SKU 后，才进入真实素材改图闭环。
