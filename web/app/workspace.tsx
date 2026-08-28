@@ -53,6 +53,7 @@ import {
 } from "../lib/visionqa/synthetic-ground-truth";
 import {
   appendProjectRestoreEvent,
+  configureProjectStorageScope,
   createLocalProject,
   loadLatestLocalProject,
   saveLocalProject,
@@ -62,6 +63,7 @@ import {
   type VisionQaProjectMaterialCounts,
   type VisionQaProjectRecord,
 } from "../lib/visionqa/project-store";
+import type { TrialAccountSession } from "../lib/visionqa/trial-auth";
 
 type Decision = "PASS" | "REVIEW" | "REJECT";
 type View = "grid" | "evidence";
@@ -1301,8 +1303,37 @@ function SafeImage({
   return <img src={src} alt={alt} onError={() => setFailed(true)} />;
 }
 
-export function Workspace() {
-  const [previewOpen, setPreviewOpen] = useState(false);
+type WorkspaceProps = {
+  initialAccount: TrialAccountSession | null;
+};
+
+export function Workspace({ initialAccount }: WorkspaceProps) {
+  const [account, setAccount] = useState(initialAccount);
+
+  if (!account) {
+    return <WorkspaceLogin onAuthenticated={setAccount} />;
+  }
+
+  return (
+    <WorkspaceWorkbench
+      account={account}
+      onLogout={async () => {
+        const response = await fetch("/api/trial-auth/logout", { method: "POST" });
+        if (response.ok) setAccount(null);
+      }}
+    />
+  );
+}
+
+function WorkspaceWorkbench({
+  account,
+  onLogout,
+}: {
+  account: TrialAccountSession;
+  onLogout: () => void;
+}) {
+  configureProjectStorageScope(account.storageScope);
+  const previewOpen = true;
   const [area, setArea] = useState<WorkspaceArea>("overview");
   const [view, setView] = useState<View>("grid");
   const [commercialTemplateId, setCommercialTemplateId] =
@@ -2494,10 +2525,6 @@ export function Workspace() {
     "repair",
   ];
 
-  if (!previewOpen) {
-    return <WorkspaceLogin onEnterPreview={() => setPreviewOpen(true)} />;
-  }
-
   return (
     <main className="vision-workbench-shell">
       <aside className="workspace-rail-nav">
@@ -2558,12 +2585,13 @@ export function Workspace() {
             <strong>{projectTitle}</strong>
           </div>
           <div className="topbar-actions">
+            <span className="trial-account-label">{account.label}</span>
             <ProjectSaveStatus state={projectPersistence} />
             <button
               className="icon-button"
               type="button"
-              aria-label="退出内部预览"
-              onClick={() => setPreviewOpen(false)}
+              aria-label="退出试用账号"
+              onClick={onLogout}
             >
               退出
             </button>

@@ -19,7 +19,8 @@ The fixed repair track is the product signature: product truth, AI model draft, 
 
 ## Reusable patterns
 
-- Login split: black product promise panel and white account panel; preview access is explicit and separate from real authentication.
+- Login split: black product promise panel and white account panel; the trial uses two server-validated fixed accounts, one dominant login action, inline error feedback, and no registration/SMS/password-recovery distractions.
+- Trial identity: only masked account identity reaches the client; each trial account receives a separate local IndexedDB scope. This is controlled trial access, not formal customer authentication or tenant isolation.
 - Workbench shell: persistent overview plus four-step repair rail above 1024px, sticky horizontal stage navigation at and below 1024px.
 - Project overview: one next-action focal surface, one truthful project visual, four factual counters, and a linear stage ledger. On mobile, the action appears before the image.
 - Project persistence: compact text-and-dot save state in the top bar; project ID, revision, storage scope, and the four latest audit events live at the bottom of Project overview instead of becoming a new navigation module.

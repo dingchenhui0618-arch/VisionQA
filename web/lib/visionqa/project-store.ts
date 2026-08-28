@@ -11,6 +11,14 @@ const PROJECT_DATABASE_VERSION = 1;
 const PROJECTS_STORE = "projects";
 const ASSETS_STORE = "assets";
 const EVENTS_STORE = "events";
+let projectStorageScope = "local-preview";
+
+export function configureProjectStorageScope(scope: string): void {
+  if (!/^[a-z0-9-]{1,32}$/.test(scope)) {
+    throw new Error("Project storage scope is invalid.");
+  }
+  projectStorageScope = scope;
+}
 
 export type VisionQaProjectStage =
   | "overview"
@@ -415,7 +423,8 @@ function materializeAssets(
 
 function openProjectDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(PROJECT_DATABASE_NAME, PROJECT_DATABASE_VERSION);
+    const databaseName = `${PROJECT_DATABASE_NAME}-${projectStorageScope}`;
+    const request = indexedDB.open(databaseName, PROJECT_DATABASE_VERSION);
     request.onerror = () => reject(request.error ?? new Error("IndexedDB open failed."));
     request.onupgradeneeded = () => {
       const database = request.result;

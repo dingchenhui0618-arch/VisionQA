@@ -31,10 +31,12 @@ test("server-renders the truthful VisionQA login entry", async () => {
   assert.match(html, /选择商品真值和待修图片/);
   assert.match(html, /确认问题与修改边界/);
   assert.match(html, /对比结果并人工放行/);
-  assert.match(html, /先用一个案例试试/);
-  assert.match(html, /无需注册/);
-  assert.match(html, /开始试用/);
-  assert.doesNotMatch(html, /工作邮箱|请输入密码|忘记密码/);
+  assert.match(html, /登录 VisionQA/);
+  assert.match(html, /受邀试用/);
+  assert.match(html, /请输入试用手机号/);
+  assert.match(html, /登录并开始试用/);
+  assert.match(html, /当前不开放注册和手机号验证/);
+  assert.doesNotMatch(html, /\b1\d{10}\b|工作邮箱|忘记密码/);
   assert.doesNotMatch(html, /真实客户已采用|已付款|自动放行已开启|认证成功/);
 });
 
