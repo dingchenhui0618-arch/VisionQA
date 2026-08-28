@@ -35,14 +35,16 @@ Point `current` to the previous release, then restart `visionqa-demo` and reload
 
 ## Live deployment record — 2026-08-28
 
-- Public URL: `https://visionqa.dionysusding.cn/` (307 to `/workspace`)
-- Active release: `8c6512d`; previous rollback releases retained, including `4f7a035`, `c119de7`, `3fc8dc6`
+- Public URL: `https://visionqa.dionysusding.cn/` (product home, HTTP 200)
+- Active release: `6f1ab23`; previous rollback releases retained, including `8c6512d`, `4f7a035`, `c119de7`, `3fc8dc6`
 - Source branch: `codex/visionqa-phase3-qwen`
-- Package SHA-256: `BF5B419768121AADD8710D603FCCAFD1EA95E47D25A873A39722D0A765E2273D`
+- Package SHA-256: `A57227604BD966BB45354715C9C5F35626C2172E57575168A7F03423D51DA7E7`
 - Trial entry: two fixed invited accounts validated on the server; one phone/password login action; no SMS, registration, or password reset
 - Session boundary: 12-hour hardened cookie and per-account local IndexedDB scope; this is not formal authentication or tenant isolation
-- Release archive: `visionqa-demo-8c6512d.tar.gz`, SHA-256 `BF5B419768121AADD8710D603FCCAFD1EA95E47D25A873A39722D0A765E2273D`
+- Public route: `/` product home → `/login` invited-account entry → `/workspace` authenticated workbench
+- Workbench home navigation: desktop rail brand and compact top-bar VQ mark both return to `/`
+- Release archive: `visionqa-demo-6f1ab23.tar.gz`, SHA-256 `A57227604BD966BB45354715C9C5F35626C2172E57575168A7F03423D51DA7E7`
 - Trial flow: image/case selection, issue and boundary confirmation, repair recommendation, human release; provider and audit details stay folded until requested
-- Acceptance: Nginx config valid; `visionqa-demo` active; root redirect, workspace, public URL after redirect, and main site all return expected status
-- Browser QA: desktop trial click succeeds; 390x844 mobile viewport has no horizontal overflow; public console has 0 errors/warnings
+- Acceptance: Nginx config valid; `visionqa-demo` active; home and login return 200; unauthenticated workspace redirects to `/login`; authenticated workspace returns 200
+- Browser QA: home-to-login click succeeds; desktop and 390x844 mobile viewports have no horizontal overflow; public console has 0 errors/warnings
 - Evidence boundary: this release proves deployability and trial usability only, not model accuracy, customer adoption, payment, repurchase, or commercial success
