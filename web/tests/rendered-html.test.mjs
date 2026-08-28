@@ -14,19 +14,28 @@ async function render(pathname = "/workspace") {
   );
 }
 
-test("routes the public home page directly into the trial workspace", async () => {
+test("server-renders the public VisionQA home page before login", async () => {
   const response = await render("/");
-  assert.match([307, 308].includes(response.status) ? String(response.status) : "", /307|308/);
-  assert.equal(response.headers.get("location"), "/workspace");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /服饰电商 AI 模特图修正与交付/);
+  assert.match(html, /进入 VisionQA/);
+  assert.match(html, /href="\/login"/);
 });
 
-test("server-renders the truthful VisionQA login entry", async () => {
-  const response = await render();
+test("routes an unauthenticated workspace request to the login page", async () => {
+  const response = await render("/workspace");
+  assert.match([307, 308].includes(response.status) ? String(response.status) : "", /307|308/);
+  assert.equal(response.headers.get("location"), "/login");
+});
+
+test("server-renders the truthful VisionQA login page", async () => {
+  const response = await render("/login");
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /<html lang="zh-CN">/i);
-  assert.match(html, /<title>VisionQA · AI 模特图修正与交付工作台<\/title>/i);
+  assert.match(html, /<title>登录 VisionQA · 受邀试用<\/title>/i);
   assert.match(html, /看清问题，修好再交付。/);
   assert.match(html, /选择商品真值和待修图片/);
   assert.match(html, /确认问题与修改边界/);
@@ -38,6 +47,12 @@ test("server-renders the truthful VisionQA login entry", async () => {
   assert.match(html, /当前不开放注册和手机号验证/);
   assert.doesNotMatch(html, /\b1\d{10}\b|工作邮箱|忘记密码/);
   assert.doesNotMatch(html, /真实客户已采用|已付款|自动放行已开启|认证成功/);
+});
+
+test("keeps a home link in both desktop and mobile workbench navigation", async () => {
+  const workspaceSource = await readFile(new URL("../app/workspace.tsx", import.meta.url), "utf8");
+  assert.match(workspaceSource, /className="workspace-brand" href="\/"/);
+  assert.match(workspaceSource, /className="workspace-mobile-home" href="\/"/);
 });
 
 test("keeps the focused product and model-image repair workflow in the implementation", async () => {

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { Workspace } from "../workspace";
 import {
   getTrialAccountFromSessionToken,
@@ -10,5 +11,6 @@ export default async function WorkspacePage() {
   const initialAccount = getTrialAccountFromSessionToken(
     cookieStore.get(TRIAL_SESSION_COOKIE_NAME)?.value,
   );
+  if (!initialAccount) redirect("/login");
   return <Workspace initialAccount={initialAccount} />;
 }

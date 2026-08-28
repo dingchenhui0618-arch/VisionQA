@@ -44,10 +44,12 @@ export function WorkspaceLogin({ onAuthenticated }: WorkspaceLoginProps) {
   return (
     <main className="workspace-login-shell">
       <section className="login-brand-panel" aria-labelledby="login-title">
-        <div className="login-brand-mark" aria-label="VisionQA">
+        {/* Native navigation is kept for the verified production runtime. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a className="login-brand-mark" href="/" aria-label="返回 VisionQA 首页">
           <span>VQ</span>
           <strong>VisionQA</strong>
-        </div>
+        </a>
         <div className="login-statement">
           <p>服饰电商 AI 商品图修正</p>
           <h1 id="login-title">看清问题，修好再交付。</h1>

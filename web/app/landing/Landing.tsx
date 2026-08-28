@@ -99,10 +99,12 @@ export default function Landing() {
   return (
     <main className="landing">
       <nav className="landing-nav" aria-label="Primary">
-        <a href="/workspace" className="landing-nav-left">
+        {/* Native navigation is kept for the verified production runtime. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a href="/" className="landing-nav-left" aria-label="VisionQA 首页">
           <span className="landing-brand">VisionQA</span>
         </a>
-        <a href="/workspace" className="landing-nav-right">
+        <a href="/login" className="landing-nav-right">
           <span>进入 VisionQA</span>
           <span aria-hidden>→</span>
         </a>
@@ -120,7 +122,7 @@ export default function Landing() {
           </p>
           <div className="landing-hero-spacer" aria-hidden />
           <div className="landing-cta-row">
-            <a href="/workspace" className="landing-cta">
+            <a href="/login" className="landing-cta">
               <span>进入 VisionQA</span>
               <span aria-hidden>→</span>
             </a>
@@ -208,7 +210,7 @@ export default function Landing() {
             </div>
             <h2 className="landing-h2">进入工作台</h2>
           </div>
-          <a href="/workspace" className="landing-cta landing-cta-lg">
+          <a href="/login" className="landing-cta landing-cta-lg">
             <span>打开 VisionQA</span>
             <span aria-hidden>→</span>
           </a>

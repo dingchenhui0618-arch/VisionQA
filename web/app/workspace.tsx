@@ -35,7 +35,6 @@ import {
 } from "../lib/visionqa/batch-download";
 import { MarketingDeliveryPack } from "./workspace-growth";
 import { AssetIntakeWorkspace } from "./workspace-intake";
-import { WorkspaceLogin } from "./workspace-login";
 import { WorkspaceBaseline } from "./workspace-overview";
 import { RepairWorkspace } from "./workspace-repair";
 import { projectLegacyCommercialMetrics } from "../lib/visionqa/product-expression";
@@ -1304,22 +1303,16 @@ function SafeImage({
 }
 
 type WorkspaceProps = {
-  initialAccount: TrialAccountSession | null;
+  initialAccount: TrialAccountSession;
 };
 
 export function Workspace({ initialAccount }: WorkspaceProps) {
-  const [account, setAccount] = useState(initialAccount);
-
-  if (!account) {
-    return <WorkspaceLogin onAuthenticated={setAccount} />;
-  }
-
   return (
     <WorkspaceWorkbench
-      account={account}
+      account={initialAccount}
       onLogout={async () => {
         const response = await fetch("/api/trial-auth/logout", { method: "POST" });
-        if (response.ok) setAccount(null);
+        if (response.ok) window.location.assign("/login");
       }}
     />
   );
@@ -2584,6 +2577,11 @@ function WorkspaceWorkbench({
             <span>{areaLabel[area]}</span>
             <strong>{projectTitle}</strong>
           </div>
+          {/* Native navigation avoids route-prefetch instability in the production runtime. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a className="workspace-mobile-home" href="/" aria-label="返回 VisionQA 首页">
+            VQ
+          </a>
           <div className="topbar-actions">
             <span className="trial-account-label">{account.label}</span>
             <ProjectSaveStatus state={projectPersistence} />

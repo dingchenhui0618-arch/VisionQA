@@ -8,6 +8,8 @@ Monochrome studio review desk for apparel ecommerce. The interface recedes into 
 
 The fixed repair track is the product signature: product truth, AI model draft, issue diagnosis, repair and delivery. A zero-level project overview sits before the track and shows only current state, the single next action, and truthful completion facts. Marketing generation is a deferred extension rather than a primary navigation stage.
 
+Public navigation is intentionally three-step: `/` is the product home, its single entry action opens `/login`, and a valid invited account proceeds to `/workspace`. The VQ brand mark in both desktop rail and compact top bar always returns to `/`.
+
 ## Tokens
 
 - Canvas `#f4f4f4`; surface `#fbfbfb`; raised `#ffffff`.
