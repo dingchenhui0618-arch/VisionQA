@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Landing from "./landing/Landing";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "VisionQA · AI 模特图修正与交付",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <Landing />;
+  redirect("/workspace");
 }

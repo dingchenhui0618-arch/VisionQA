@@ -14,18 +14,10 @@ async function render(pathname = "/workspace") {
   );
 }
 
-test("server-renders the focused AI model-image repair home page", async () => {
+test("routes the public home page directly into the trial workspace", async () => {
   const response = await render("/");
-  assert.equal(response.status, 200);
-  const html = await response.text();
-  assert.match(html, /VisionQA · AI 模特图修正与交付/);
-  assert.match(html, /定位并修正 AI 模特图中的商品漂移/);
-  assert.match(html, /VISION ENGINE · [\s\S]*?CHECKING/);
-  assert.match(html, /REPAIR COPILOT/);
-  assert.match(html, /HUMAN REVIEW/);
-  assert.match(html, /PROJECT/);
-  assert.match(html, /LOCAL/);
-  assert.doesNotMatch(html, /SCAN 0\.42s|PASS 74%|CONF 0\.84|客观评分/);
+  assert.match([307, 308].includes(response.status) ? String(response.status) : "", /307|308/);
+  assert.equal(response.headers.get("location"), "/workspace");
 });
 
 test("server-renders the truthful VisionQA login entry", async () => {
