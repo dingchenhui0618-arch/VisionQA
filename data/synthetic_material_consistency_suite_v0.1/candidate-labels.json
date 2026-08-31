@@ -1,0 +1,77 @@
+{
+  "schema_version": "visionqa-synthetic-material-suite-v0.1",
+  "evidence_boundary": [
+    "SYNTHETIC_INTERNAL_TEST_ONLY",
+    "NOT_REAL_CUSTOMER_EVIDENCE",
+    "NOT_MODEL_EFFECTIVENESS_EVIDENCE",
+    "NOT_COMMERCIAL_EVIDENCE",
+    "HUMAN_REVIEW_REQUIRED",
+    "AUTO_PASS_DISABLED"
+  ],
+  "panel_order": "top_left, top_right, bottom_left, bottom_right",
+  "skus": [
+    {
+      "sku_id": "SKU-KNIT-001",
+      "truth_board": "SKU-KNIT-001_truth-board.png",
+      "locked_facts": [
+        "warm light-gray fine vertical rib knit",
+        "V-neck cardigan",
+        "exactly four dark brown front buttons",
+        "exactly one small black five-petal embroidery on wearer left chest"
+      ],
+      "candidates": [
+        {"candidate_id":"SKU-KNIT-001-C01","file":"candidates/SKU-KNIT-001-C01.png","source_sheet":"SKU-KNIT-001_contact-sheet-a.png","panel":"top_left","observed_label":"BUTTON_COUNT_DRIFT","expected_route":"REWORK","notes":"Prompt requested a control, but the rendered cardigan visibly has five front buttons; it is not a valid control."},
+        {"candidate_id":"SKU-KNIT-001-C02","file":"candidates/SKU-KNIT-001-C02.png","source_sheet":"SKU-KNIT-001_contact-sheet-a.png","panel":"top_right","observed_label":"MATERIAL_DRIFT_AND_BUTTON_COUNT_DRIFT","expected_route":"REGENERATE","notes":"Fuzzy brushed material replaces fine rib knit; five buttons are also visible."},
+        {"candidate_id":"SKU-KNIT-001-C03","file":"candidates/SKU-KNIT-001-C03.png","source_sheet":"SKU-KNIT-001_contact-sheet-a.png","panel":"bottom_left","observed_label":"COLOR_DRIFT_AND_BUTTON_COUNT_DRIFT","expected_route":"REGENERATE","notes":"Camel color and five-button structure differ from truth."},
+        {"candidate_id":"SKU-KNIT-001-C04","file":"candidates/SKU-KNIT-001-C04.png","source_sheet":"SKU-KNIT-001_contact-sheet-a.png","panel":"bottom_right","observed_label":"EMBROIDERY_DUPLICATION_AND_BUTTON_COUNT_DRIFT","expected_route":"REWORK","notes":"Two chest embroideries and five buttons are visible."},
+        {"candidate_id":"SKU-KNIT-001-C05","file":"candidates/SKU-KNIT-001-C05.png","source_sheet":"SKU-KNIT-001_contact-sheet-b.png","panel":"top_left","observed_label":"CONTROL","expected_route":"PASS","notes":"Matches the four-button, single-embroidery fine-rib truth within the visible front scope."},
+        {"candidate_id":"SKU-KNIT-001-C06","file":"candidates/SKU-KNIT-001-C06.png","source_sheet":"SKU-KNIT-001_contact-sheet-b.png","panel":"top_right","observed_label":"EMBLEM_HALLUCINATION","expected_route":"REWORK","notes":"Flower embroidery is replaced by an invented shield emblem."},
+        {"candidate_id":"SKU-KNIT-001-C07","file":"candidates/SKU-KNIT-001-C07.png","source_sheet":"SKU-KNIT-001_contact-sheet-b.png","panel":"bottom_left","observed_label":"OCCLUSION","expected_route":"CONDITIONAL_PASS","notes":"Tote and crossed arms obscure the placket and chest evidence; identity cannot be fully verified."},
+        {"candidate_id":"SKU-KNIT-001-C08","file":"candidates/SKU-KNIT-001-C08.png","source_sheet":"SKU-KNIT-001_contact-sheet-b.png","panel":"bottom_right","observed_label":"IDENTITY_DRIFT","expected_route":"REGENERATE","notes":"Different cable-knit round-neck pullover with no buttons or embroidery."}
+      ]
+    },
+    {
+      "sku_id": "SKU-SATIN-001",
+      "truth_board": "SKU-SATIN-001_truth-board.png",
+      "locked_facts": [
+        "navy silk-satin sheen",
+        "bias-cut midi slip dress",
+        "cowl neckline",
+        "two thin spaghetti straps",
+        "no slit and no decoration"
+      ],
+      "candidates": [
+        {"candidate_id":"SKU-SATIN-001-C01","file":"candidates/SKU-SATIN-001-C01.png","source_sheet":"SKU-SATIN-001_contact-sheet-a.png","panel":"top_left","observed_label":"CONTROL","expected_route":"PASS","notes":"Visible front features match the navy satin slip-dress truth."},
+        {"candidate_id":"SKU-SATIN-001-C02","file":"candidates/SKU-SATIN-001-C02.png","source_sheet":"SKU-SATIN-001_contact-sheet-a.png","panel":"top_right","observed_label":"MATERIAL_DRIFT","expected_route":"REGENERATE","notes":"Rendered fabric is visibly matte rather than silk-satin."},
+        {"candidate_id":"SKU-SATIN-001-C03","file":"candidates/SKU-SATIN-001-C03.png","source_sheet":"SKU-SATIN-001_contact-sheet-a.png","panel":"bottom_left","observed_label":"COLOR_DRIFT","expected_route":"REGENERATE","notes":"Bright emerald replaces locked navy."},
+        {"candidate_id":"SKU-SATIN-001-C04","file":"candidates/SKU-SATIN-001-C04.png","source_sheet":"SKU-SATIN-001_contact-sheet-a.png","panel":"bottom_right","observed_label":"STRUCTURE_DRIFT","expected_route":"REGENERATE","notes":"Long sleeves and high side slit replace the sleeveless no-slit structure."},
+        {"candidate_id":"SKU-SATIN-001-C05","file":"candidates/SKU-SATIN-001-C05.png","source_sheet":"SKU-SATIN-001_contact-sheet-b.png","panel":"top_left","observed_label":"CONTROL","expected_route":"PASS","notes":"Second valid front-scope control."},
+        {"candidate_id":"SKU-SATIN-001-C06","file":"candidates/SKU-SATIN-001-C06.png","source_sheet":"SKU-SATIN-001_contact-sheet-b.png","panel":"top_right","observed_label":"CONTROL_VARIATION","expected_route":"PASS","notes":"Requested missing-strap defect did not render; both straps and the main structure remain present, so this is frozen as a second control variation."},
+        {"candidate_id":"SKU-SATIN-001-C07","file":"candidates/SKU-SATIN-001-C07.png","source_sheet":"SKU-SATIN-001_contact-sheet-b.png","panel":"bottom_left","observed_label":"OCCLUSION_AND_CROP","expected_route":"CONDITIONAL_PASS","notes":"Blazer obscures torso and the dress hem is cropped, preventing full verification."},
+        {"candidate_id":"SKU-SATIN-001-C08","file":"candidates/SKU-SATIN-001-C08.png","source_sheet":"SKU-SATIN-001_contact-sheet-b.png","panel":"bottom_right","observed_label":"IDENTITY_DRIFT","expected_route":"REGENERATE","notes":"Different strapless navy velvet mini dress."}
+      ]
+    },
+    {
+      "sku_id": "SKU-DENIM-001",
+      "truth_board": "SKU-DENIM-001_truth-board.png",
+      "locked_facts": [
+        "rigid dark indigo raw denim",
+        "orange contrast stitching",
+        "pointed collar",
+        "two symmetrical flap chest pockets",
+        "copper buttons",
+        "no hood and no logo"
+      ],
+      "candidates": [
+        {"candidate_id":"SKU-DENIM-001-C01","file":"candidates/SKU-DENIM-001-C01.png","source_sheet":"SKU-DENIM-001_contact-sheet-a.png","panel":"top_left","observed_label":"CONTROL","expected_route":"PASS","notes":"Front-scope structure and material match the truth board."},
+        {"candidate_id":"SKU-DENIM-001-C02","file":"candidates/SKU-DENIM-001-C02.png","source_sheet":"SKU-DENIM-001_contact-sheet-a.png","panel":"top_right","observed_label":"MATERIAL_DRIFT","expected_route":"REGENERATE","notes":"Navy corduroy vertical wales replace raw denim."},
+        {"candidate_id":"SKU-DENIM-001-C03","file":"candidates/SKU-DENIM-001-C03.png","source_sheet":"SKU-DENIM-001_contact-sheet-a.png","panel":"bottom_left","observed_label":"COLOR_FINISH_DRIFT","expected_route":"REGENERATE","notes":"Very light acid-wash finish replaces raw dark indigo."},
+        {"candidate_id":"SKU-DENIM-001-C04","file":"candidates/SKU-DENIM-001-C04.png","source_sheet":"SKU-DENIM-001_contact-sheet-a.png","panel":"bottom_right","observed_label":"STRUCTURE_DRIFT","expected_route":"REGENERATE","notes":"Hood is added and chest-pocket structure differs from truth."},
+        {"candidate_id":"SKU-DENIM-001-C05","file":"candidates/SKU-DENIM-001-C05.png","source_sheet":"SKU-DENIM-001_contact-sheet-b.png","panel":"top_left","observed_label":"CONTROL","expected_route":"PASS","notes":"Second valid front-scope control."},
+        {"candidate_id":"SKU-DENIM-001-C06","file":"candidates/SKU-DENIM-001-C06.png","source_sheet":"SKU-DENIM-001_contact-sheet-b.png","panel":"top_right","observed_label":"EMBLEM_HALLUCINATION","expected_route":"REWORK","notes":"Large invented circular chest emblem appears on a no-logo SKU."},
+        {"candidate_id":"SKU-DENIM-001-C07","file":"candidates/SKU-DENIM-001-C07.png","source_sheet":"SKU-DENIM-001_contact-sheet-b.png","panel":"bottom_left","observed_label":"OCCLUSION_AND_CROP","expected_route":"CONDITIONAL_PASS","notes":"Parcel hides both pockets and central buttons; lower hem evidence is limited."},
+        {"candidate_id":"SKU-DENIM-001-C08","file":"candidates/SKU-DENIM-001-C08.png","source_sheet":"SKU-DENIM-001_contact-sheet-b.png","panel":"bottom_right","observed_label":"IDENTITY_DRIFT","expected_route":"REGENERATE","notes":"Different black leather biker jacket."}
+      ]
+    }
+  ]
+}
