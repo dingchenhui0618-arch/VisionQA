@@ -83,6 +83,13 @@ type RepairRound = {
   createdAt: string;
 };
 
+type ProviderCapabilityState =
+  | { kind: "loading" }
+  | { kind: "ready"; value: RepairProviderCapability }
+  | { kind: "error"; message: string };
+
+const qwenRoutes = ["qwen-image-3", "qwen-image-edit-max"] as const satisfies readonly RepairProviderRoute[];
+
 const providers = [
   { id: "qwen-image-3", route: "qwen-image-3", name: "Qwen Image 3.0 Pro", fit: "实验主通道 · 单图局部修正", state: "受控适配已完成" },
   { id: "qwen-image", route: "qwen-image-edit-max", name: "千问 Image Edit Max", fit: "稳定回退 · 同一修正链路", state: "受控适配已完成" },
@@ -118,11 +125,12 @@ export function RepairWorkspace({
 }: RepairWorkspaceProps) {
   const [provider, setProvider] = useState<(typeof providers)[number]["id"]>("qwen-image-3");
   const [copied, setCopied] = useState(false);
-  const [providerCapability, setProviderCapability] = useState<
-    | { kind: "loading" }
-    | { kind: "ready"; value: RepairProviderCapability }
-    | { kind: "error"; message: string }
-  >({ kind: "loading" });
+  const [providerCapabilities, setProviderCapabilities] = useState<
+    Record<RepairProviderRoute, ProviderCapabilityState>
+  >({
+    "qwen-image-3": { kind: "loading" },
+    "qwen-image-edit-max": { kind: "loading" },
+  });
   const [capabilityRefreshKey, setCapabilityRefreshKey] = useState(0);
   const [selectedReferenceKeys, setSelectedReferenceKeys] = useState<string[]>([]);
   const [referenceSelectionTouched, setReferenceSelectionTouched] = useState(false);
@@ -187,6 +195,9 @@ export function RepairWorkspace({
   const selectedQwenRoute = "route" in selectedProvider
     ? selectedProvider.route as RepairProviderRoute
     : null;
+  const selectedProviderCapability = selectedQwenRoute
+    ? providerCapabilities[selectedQwenRoute]
+    : null;
   const referenceOptions = useMemo(
     () =>
       referenceFiles.map((file) => ({
@@ -196,8 +207,8 @@ export function RepairWorkspace({
     [referenceFiles],
   );
   const maxProviderReferences =
-    providerCapability.kind === "ready"
-      ? providerCapability.value.maxReferenceImages
+    selectedProviderCapability?.kind === "ready"
+      ? selectedProviderCapability.value.maxReferenceImages
       : 2;
   const availableReferenceKeys = new Set(referenceOptions.map((item) => item.key));
   const retainedReferenceKeys = selectedReferenceKeys
@@ -256,33 +267,49 @@ export function RepairWorkspace({
   });
 
   useEffect(() => {
-    const controller = new AbortController();
-    if (!selectedQwenRoute) {
-      return () => controller.abort();
-    }
-    getRepairProviderCapability(selectedQwenRoute, controller.signal)
-      .then((value) => setProviderCapability({ kind: "ready", value }))
-      .catch((error: unknown) => {
+    const checks = qwenRoutes.map((route) => {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => {
         if (controller.signal.aborted) return;
-        setProviderCapability({
-          kind: "error",
-          message:
-            error instanceof Error
-              ? error.message
-              : "无法读取千问改图能力状态。",
-        });
-      });
-    return () => controller.abort();
-  }, [capabilityRefreshKey, selectedQwenRoute]);
+        setProviderCapabilities((current) => ({
+          ...current,
+          [route]: { kind: "error", message: "连接检查超时，请重试。" },
+        }));
+        controller.abort();
+      }, 8000);
 
-  useEffect(() => {
-    setRoundPrompt(asset.repairPrompt);
-    setIterationSourceFile(null);
-    setIterationSourceSha256("");
-    setRepairRounds([]);
-    setBlockedOutput(null);
-    setProviderRunError(null);
-  }, [asset.id, asset.repairPrompt]);
+      getRepairProviderCapability(route, controller.signal)
+        .then((value) => {
+          window.clearTimeout(timeoutId);
+          if (controller.signal.aborted) return;
+          setProviderCapabilities((current) => ({
+            ...current,
+            [route]: { kind: "ready", value },
+          }));
+        })
+        .catch((error: unknown) => {
+          window.clearTimeout(timeoutId);
+          if (controller.signal.aborted) return;
+          setProviderCapabilities((current) => ({
+            ...current,
+            [route]: {
+              kind: "error",
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "无法读取千问改图服务状态。",
+            },
+          }));
+        });
+
+      return { controller, timeoutId };
+    });
+
+    return () => checks.forEach(({ controller, timeoutId }) => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    });
+  }, [capabilityRefreshKey]);
 
   useEffect(() => {
     let active = true;
@@ -359,7 +386,9 @@ export function RepairWorkspace({
       (selectedQwenRoute && selectedReferenceFiles.length === 0)
     ) return null;
     const capability =
-      providerCapability.kind === "ready" ? providerCapability.value : null;
+      selectedProviderCapability?.kind === "ready"
+        ? selectedProviderCapability.value
+        : null;
     const qwenSelected = Boolean(selectedQwenRoute);
     const providerId = selectedQwenRoute === "qwen-image-3"
       ? QWEN_IMAGE_3_PROVIDER_ID
@@ -405,9 +434,9 @@ export function RepairWorkspace({
       !repairPlanReady ||
       !activeJob ||
       !selectedQwenRoute ||
-      providerCapability.kind !== "ready" ||
-      activeJob.providerId !== providerCapability.value.providerId ||
-      !providerCapability.value.liveReady ||
+      selectedProviderCapability?.kind !== "ready" ||
+      activeJob.providerId !== selectedProviderCapability.value.providerId ||
+      !selectedProviderCapability.value.liveReady ||
       !repairSourceDimensions ||
       repairSourceDimensions.sourceKey !== sourceKey
     ) {
@@ -592,20 +621,20 @@ export function RepairWorkspace({
     );
   };
 
-  const qwenCapabilityLabel =
-    providerCapability.kind === "loading"
-      ? "正在检查授权状态"
-      : providerCapability.kind === "error"
-        ? "能力状态读取失败"
-        : providerCapability.value.liveReady
-          ? "接口就绪 · 支持连续改图"
-          : `暂不可用 · ${providerCapability.value.blockers.length} 项配置`;
+  const capabilityLabel = (state: ProviderCapabilityState) =>
+    state.kind === "loading"
+      ? "正在连接模型服务…"
+      : state.kind === "error"
+        ? "连接失败 · 可重试"
+        : state.value.liveReady
+          ? "已连接 · 支持连续改图"
+          : `暂不可用 · ${state.value.blockers.length} 项配置`;
   const qwenCanRun =
     Boolean(selectedQwenRoute) &&
-    providerCapability.kind === "ready" &&
-    providerCapability.value.liveReady &&
+    selectedProviderCapability?.kind === "ready" &&
+    selectedProviderCapability.value.liveReady &&
     selectedReferenceFiles.length > 0 &&
-    selectedReferenceFiles.length <= providerCapability.value.maxReferenceImages &&
+    selectedReferenceFiles.length <= selectedProviderCapability.value.maxReferenceImages &&
     Boolean(currentSourceFile) &&
     Boolean(currentSourceSha256) &&
     repairPlanReady &&
@@ -711,8 +740,8 @@ export function RepairWorkspace({
         </div>
         <div className="provider-choice-grid" role="radiogroup" aria-label="改图模型方案">
           {providers.map((item) => (
-            <button key={item.id} type="button" role="radio" aria-checked={provider === item.id} disabled={!("route" in item)} onClick={() => { if (!("route" in item)) return; setProvider(item.id); setProviderCapability({ kind: "loading" }); onProviderJobChange(null); setProviderRunError(null); }}>
-              <span>{item.name}</span><p>{item.fit}</p><small>{"route" in item ? qwenCapabilityLabel : item.state}</small>
+            <button key={item.id} type="button" role="radio" aria-checked={provider === item.id} disabled={!("route" in item)} onClick={() => { if (!("route" in item)) return; setProvider(item.id); onProviderJobChange(null); setProviderRunError(null); }}>
+              <span>{item.name}</span><p>{item.fit}</p><small>{"route" in item ? capabilityLabel(providerCapabilities[item.route]) : item.state}</small>
             </button>
           ))}
         </div>
@@ -777,11 +806,17 @@ export function RepairWorkspace({
             <button className="quiet-button" type="button" disabled={!providerJob} onClick={exportJob}>导出本轮记录</button>
           </div>
         </div>
-        {providerCapability.kind === "ready" && !providerCapability.value.liveReady && (
+        {selectedProviderCapability?.kind === "ready" && !selectedProviderCapability.value.liveReady && (
           <div className="repair-capability-blockers" role="status">
             <div><strong>改图服务尚未就绪</strong><span>以下配置只需处理一次：</span></div>
-            <ul>{providerCapability.value.blockers.map((blocker) => <li key={blocker}>{blockerLabels[blocker] ?? blocker}</li>)}</ul>
-            <button className="quiet-button" type="button" onClick={() => { setProviderCapability({ kind: "loading" }); setCapabilityRefreshKey((value) => value + 1); }}>重新检查连接</button>
+            <ul>{selectedProviderCapability.value.blockers.map((blocker) => <li key={blocker}>{blockerLabels[blocker] ?? blocker}</li>)}</ul>
+            <button className="quiet-button" type="button" onClick={() => { if (!selectedQwenRoute) return; setProviderCapabilities((current) => ({ ...current, [selectedQwenRoute]: { kind: "loading" } })); setCapabilityRefreshKey((value) => value + 1); }}>重新检查连接</button>
+          </div>
+        )}
+        {selectedProviderCapability?.kind === "error" && (
+          <div className="repair-capability-blockers" role="alert">
+            <div><strong>模型服务连接失败</strong><span>{selectedProviderCapability.message}</span></div>
+            <button className="quiet-button" type="button" onClick={() => { if (!selectedQwenRoute) return; setProviderCapabilities((current) => ({ ...current, [selectedQwenRoute]: { kind: "loading" } })); setCapabilityRefreshKey((value) => value + 1); }}>重新连接</button>
           </div>
         )}
         {providerJob?.status === "RUNNING" && <p className="repair-provider-note" role="status">千问正在生成候选图，请勿重复提交付费任务。</p>}

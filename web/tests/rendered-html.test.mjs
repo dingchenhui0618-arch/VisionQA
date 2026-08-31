@@ -92,6 +92,10 @@ test("keeps the focused product and model-image repair workflow in the implement
   assert.match(repairSource, /继续优化当前结果/);
   assert.match(repairSource, /连续改图记录/);
   assert.match(repairSource, /生成下一轮候选/);
+  assert.match(repairSource, /Record<RepairProviderRoute, ProviderCapabilityState>/);
+  assert.match(repairSource, /正在连接模型服务/);
+  assert.match(repairSource, /已连接 · 支持连续改图/);
+  assert.doesNotMatch(repairSource, /正在检查授权状态/);
   assert.doesNotMatch(repairSource, /repairConsent/);
   assert.match(repairSource, /生成 4K 尺寸文件/);
   assert.match(upscaleSource, /AI 细节重建超分/);

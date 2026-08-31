@@ -2705,6 +2705,7 @@ function WorkspaceWorkbench({
 
           {area === "repair" && (
             <RepairWorkspace
+              key={`${selected.id}-${selected.repairPrompt}`}
               asset={selected}
               sourceFile={selectedBatchCandidate?.file ?? null}
               sourceSha256={selectedBatchCandidate?.sha256 ?? ""}
