@@ -1204,14 +1204,14 @@ function DataStateNotice({ state }: { state: DataState }) {
           <strong>模型响应超时，未形成商品结论。</strong>{" "}
           系统已等待 3 分钟并保留当前图片；这属于技术失败，不代表商品图不合格。
           {state.requestId ? ` 请求记录 ${state.requestId.slice(0, 8)}。` : ""}
-          如需重试，请重新确认本次发送授权。
+          如需重试，可直接重新发起本次诊断。
         </div>
       );
     }
     return (
       <div className="data-state-notice error" role="alert">
         {state.candidateName} 未形成有效诊断：{state.message}。未完成图片仍保留在当前任务中；
-        再次外发前需要重新确认授权、剩余次数与预算。
+        再次运行前请检查失败原因与剩余次数。
       </div>
     );
   }
@@ -1219,7 +1219,7 @@ function DataStateNotice({ state }: { state: DataState }) {
     return (
       <div className="data-state-notice local" role="status">
         已载入 {state.candidateName}。AI 模特草图正在本机等待，尚未发送到模型，也没有生成诊断结论。
-        确认商品真值和发送授权后即可开始分析。
+        商品真值准备好后即可开始真实模型分析。
       </div>
     );
   }
@@ -1351,7 +1351,6 @@ function WorkspaceWorkbench({
   const [promptCopyCount, setPromptCopyCount] = useState(0);
   const [liveCapability, setLiveCapability] =
     useState<LiveModelCapability | null>(null);
-  const [liveConsent, setLiveConsent] = useState(false);
   const [liveRunning, setLiveRunning] = useState(false);
   const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
   const [customerProfile, setCustomerProfile] =
@@ -1657,7 +1656,6 @@ function WorkspaceWorkbench({
           );
           setUpscaleReceipt(restoredRepair?.upscaleReceipt ?? null);
           setRepairProviderJob(restoredRepair?.providerJob ?? null);
-          setLiveConsent(false);
           setLiveRunning(false);
           candidateFileRef.current = restoredCandidates[0]?.file ?? null;
           projectRecordRef.current = loaded.project;
@@ -1837,7 +1835,6 @@ function WorkspaceWorkbench({
       });
       setSelectedId(1);
       setView("grid");
-      setLiveConsent(false);
       setDataState({
         kind: "local",
         candidateName: `批次 ${prepared.length} 张图片`,
@@ -1869,7 +1866,6 @@ function WorkspaceWorkbench({
     setRepairProviderJob(null);
     setLocalCandidate(null);
     candidateFileRef.current = null;
-    setLiveConsent(false);
     setSelectedId(1);
     setDataState({ kind: "fixture" });
     setIntakeState({ kind: "idle" });
@@ -1937,7 +1933,6 @@ function WorkspaceWorkbench({
       setApiAsset(result ?? null);
       setSelectedId(candidate.id);
       setView("grid");
-      setLiveConsent(false);
       setRepairProviderJob(null);
       setRepairChecks([]);
       setUpscaleOutputFile(null);
@@ -1958,7 +1953,7 @@ function WorkspaceWorkbench({
         setRepairOutputFile(null);
         setRepairSourceAssetId(null);
         setArea("review");
-        setToast("已载入开衫案例；可以直接确认问题，或勾选授权运行 AI 诊断。");
+        setToast("已载入开衫案例；可以直接确认问题，或运行真实模型诊断。");
       }
       setIntakeState({ kind: "ready" });
       window.setTimeout(() => setToast(null), 4200);
@@ -2025,7 +2020,6 @@ function WorkspaceWorkbench({
       setApiAsset(null);
       setSelectedId(candidate.id);
       setView("grid");
-      setLiveConsent(false);
       setRepairOutputFile(null);
       setRepairSourceAssetId(null);
       setRepairProviderJob(null);
@@ -2122,10 +2116,6 @@ function WorkspaceWorkbench({
     const file = candidateFileRef.current;
     if (!file || !localCandidate) {
       setToast("请先选择一批候选图。");
-      return;
-    }
-    if (!liveConsent) {
-      setToast("请先确认当前图片可以发送至阿里云百炼。");
       return;
     }
     if (!liveCapability?.configured) {
@@ -2298,7 +2288,6 @@ function WorkspaceWorkbench({
       setToast(message);
     } finally {
       setLiveRunning(false);
-      setLiveConsent(false);
       getLiveModelCapability()
         .then(setLiveCapability)
         .catch(() => setLiveCapability(null));
@@ -2669,8 +2658,6 @@ function WorkspaceWorkbench({
                 onSelect={loadBatchCandidates}
                 onRestore={restoreFixtureBatch}
                 liveCapability={liveCapability}
-                liveConsent={liveConsent}
-                setLiveConsent={setLiveConsent}
                 liveRunning={liveRunning}
                 onRunLive={runLiveEvaluation}
                 syntheticGroundTruthEligible={syntheticGroundTruthEligible}
@@ -2966,8 +2953,8 @@ function BatchWaitingState({
         {running
           ? `系统正在按顺序分析 ${count} 张 AI 模特草图，首张结果完成后会在这里显示。`
           : errorCount > 0
-            ? "请查看上方队列中的失败原因；再次外发前需要重新确认授权、剩余次数与预算。"
-            : `已载入 ${count} 张 AI 模特草图。确认商品真值和授权后，点击“开始 AI 问题诊断”。`}
+            ? "请查看上方队列中的失败原因；修正后可以直接重新运行。"
+            : `已载入 ${count} 张 AI 模特草图。商品真值准备好后，点击“开始真实模型诊断”。`}
       </p>
       <small>在真实诊断完成前，本区域不会显示示例分数或模拟结论。</small>
     </section>
@@ -2982,8 +2969,6 @@ function CustomerWorkflow({
   onSelect,
   onRestore,
   liveCapability,
-  liveConsent,
-  setLiveConsent,
   liveRunning,
   onRunLive,
   syntheticGroundTruthEligible,
@@ -3000,8 +2985,6 @@ function CustomerWorkflow({
   onSelect: (files: File[]) => Promise<void>;
   onRestore: () => void;
   liveCapability: LiveModelCapability | null;
-  liveConsent: boolean;
-  setLiveConsent: (value: boolean) => void;
   liveRunning: boolean;
   onRunLive: () => Promise<void>;
   syntheticGroundTruthEligible: boolean;
@@ -3028,16 +3011,50 @@ function CustomerWorkflow({
     "人物／穿着逻辑",
     "背景／构图",
   ];
+  const selectedCount = batchCandidates.filter((item) => item.selected).length;
+  const modelReady = Boolean(
+    liveCapability?.configured && liveCapability.remainingRequests > 0,
+  );
+  const assistantState = liveRunning
+    ? {
+        eyebrow: "正在执行",
+        title: `真实模型正在分析 ${Math.min(completed + 1, batchCandidates.length)} / ${batchCandidates.length}`,
+        detail: "分析会按队列顺序完成，结果出现后逐张人工确认。",
+      }
+    : batchCandidates.length === 0
+      ? {
+          eyebrow: "下一步",
+          title: "先加入待检查图片",
+          detail: "返回待修素材页，选择 1–3 张同一 SKU 图片。",
+        }
+      : completed === batchCandidates.length
+        ? {
+            eyebrow: "下一步",
+            title: "查看诊断并确认处理建议",
+            detail: "模型判断已经完成；请逐张核对问题证据，再决定修正或重新生成。",
+          }
+        : !modelReady
+          ? {
+              eyebrow: "连接状态",
+              title: "真实模型当前不可用",
+              detail: "请检查服务配置或剩余调用次数，也可以先直接描述问题。",
+            }
+          : {
+              eyebrow: "下一步",
+              title: `运行 ${selectedCount || batchCandidates.length} 张图片的真实模型诊断`,
+              detail: `将当前图片与 ${referenceFiles.length} 张商品真值图发送至阿里云百炼，返回结果仍由人工终审。`,
+            };
 
   return (
-    <details className="customer-workflow" open={batchCandidates.length > 0 && completed === 0}>
-      <summary className="workflow-header">
+    <section className="customer-workflow diagnosis-control-panel" aria-labelledby="customer-workflow-title">
+      <header className="workflow-header">
         <div>
-          <h2 id="customer-workflow-title">{completed > 0 ? "图片准备已完成" : "准备问题判断"}</h2>
-          <p>{completed > 0 ? "需要时可重新上传或修改问题。" : "上传图片后，直接描述问题或使用 AI 判断。"}</p>
+          <span>问题诊断</span>
+          <h2 id="customer-workflow-title">{completed > 0 ? "诊断任务与人工确认" : "选择真实模型或直接描述问题"}</h2>
+          <p>{completed > 0 ? "需要时可重新运行或补充人工问题。" : "真实模型入口已开放，不再需要额外勾选授权。"}</p>
         </div>
-        <strong>{batchCandidates.length > 0 ? `${batchCandidates.length} 张图片` : "展开"}</strong>
-      </summary>
+        <strong>{batchCandidates.length > 0 ? `${completed} / ${batchCandidates.length} 已完成` : "等待图片"}</strong>
+      </header>
 
       <div className="workflow-sections">
         <section className="workflow-block workflow-block-wide">
@@ -3122,30 +3139,36 @@ function CustomerWorkflow({
               </div>
             </details>
           )}
-          {batchCandidates.length > 0 && (
-            <details className="ai-diagnosis-option">
-              <summary>让 AI 先找问题</summary>
-              <div>
-                <details className="submission-context-details">
-                  <summary>图片用途</summary>
-                  <div className="submission-context compact-context">
-                    <label>渠道<input value={submissionContext.channel} onChange={(event) => setSubmissionContext((current) => ({ ...current, channel: event.target.value }))} disabled={processing} /></label>
-                    <label>图位<input value={submissionContext.placement} onChange={(event) => setSubmissionContext((current) => ({ ...current, placement: event.target.value }))} disabled={processing} /></label>
-                    <label>素材来源<select value={submissionContext.provenanceStatus} onChange={(event) => setSubmissionContext((current) => ({ ...current, provenanceStatus: event.target.value as SubmissionContext["provenanceStatus"] }))} disabled={processing}><option value="confirmed_ai">AI 生成</option><option value="confirmed_real">真人实拍</option><option value="unknown">暂不确定</option></select></label>
-                  </div>
-                </details>
-                <label className="live-consent"><input type="checkbox" checked={liveConsent} disabled={liveRunning || !liveCapability?.configured || liveCapability.remainingRequests < 1} onChange={(event) => setLiveConsent(event.target.checked)} /><span>同意将当前图片与 {referenceFiles.length} 张商品真值图发送至阿里云百炼。</span></label>
-                <button className="primary-button" type="button" disabled={processing || !candidate || !liveConsent || !liveCapability?.configured || liveCapability.remainingRequests < 1} onClick={() => void onRunLive()}>
-                  {liveRunning ? `正在分析 ${completed + 1}/${batchCandidates.length}` : "开始 AI 判断"}
-                </button>
-                <small>服务端不留存原图，结果仍需人工确认。</small>
-              </div>
-            </details>
-          )}
         </section>
-
+        <aside className="workflow-assistant" aria-live="polite">
+          <div className="workflow-assistant-mark" aria-hidden="true">VQ</div>
+          <div className="workflow-assistant-copy">
+            <span>{assistantState.eyebrow}</span>
+            <h3>{assistantState.title}</h3>
+            <p>{assistantState.detail}</p>
+          </div>
+          <ol className="workflow-assistant-steps" aria-label="当前诊断进度">
+            <li data-state={batchCandidates.length > 0 ? "done" : "current"}><span>1</span><strong>图片就绪</strong></li>
+            <li data-state={liveRunning ? "current" : completed > 0 ? "done" : "next"}><span>2</span><strong>模型诊断</strong></li>
+            <li data-state={completed > 0 ? "current" : "next"}><span>3</span><strong>人工确认</strong></li>
+          </ol>
+          {batchCandidates.length > 0 && completed < batchCandidates.length && (
+            <button className="primary-button assistant-primary-action" type="button" disabled={processing || !candidate || !modelReady} onClick={() => void onRunLive()}>
+              {liveRunning ? `正在分析 ${Math.min(completed + 1, batchCandidates.length)} / ${batchCandidates.length}` : "开始真实模型诊断"}
+            </button>
+          )}
+          <details className="submission-context-details">
+            <summary>查看本次发送内容</summary>
+            <div className="submission-context compact-context">
+              <label>渠道<input value={submissionContext.channel} onChange={(event) => setSubmissionContext((current) => ({ ...current, channel: event.target.value }))} disabled={processing} /></label>
+              <label>图位<input value={submissionContext.placement} onChange={(event) => setSubmissionContext((current) => ({ ...current, placement: event.target.value }))} disabled={processing} /></label>
+              <label>素材来源<select value={submissionContext.provenanceStatus} onChange={(event) => setSubmissionContext((current) => ({ ...current, provenanceStatus: event.target.value as SubmissionContext["provenanceStatus"] }))} disabled={processing}><option value="confirmed_ai">AI 生成</option><option value="confirmed_real">真人实拍</option><option value="unknown">暂不确定</option></select></label>
+            </div>
+          </details>
+          <small>单击按钮即发起本次真实模型请求；服务端不留存原图，自动放行保持关闭。</small>
+        </aside>
       </div>
-    </details>
+    </section>
   );
 }
 

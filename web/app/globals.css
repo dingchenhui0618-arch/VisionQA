@@ -3139,7 +3139,7 @@ button:active {
 
 .provider-choice-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   margin-top: 1.25rem;
 }
@@ -3147,13 +3147,14 @@ button:active {
 .provider-choice-grid button {
   display: grid;
   gap: 0.5rem;
-  min-height: 8.5rem;
+  min-height: 6.5rem;
   padding: 1rem;
   text-align: left;
 }
 
 .provider-choice-grid button > span { font-size: 1rem; font-weight: 700; }
 .provider-choice-grid button p { margin: 0; line-height: 1.5; }
+.provider-choice-grid button:disabled { cursor: not-allowed; opacity: 0.52; }
 
 .repair-brief {
   display: grid;
@@ -3166,7 +3167,23 @@ button:active {
 .repair-brief > div:nth-child(2) { padding-left: 1rem; border-left: 1px solid var(--line); }
 .repair-brief strong { display: block; margin-top: 0.35rem; font-size: 0.9rem; line-height: 1.5; }
 .repair-prompt-row { grid-column: 1 / -1; display: grid; grid-template-columns: 7rem minmax(0, 1fr) auto; gap: 1rem; border-top: 1px solid var(--line); }
-.repair-prompt-row p { margin: 0; color: var(--muted); font-size: 0.84rem; line-height: 1.65; }
+.repair-prompt-row textarea {
+  min-height: 6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #f4f4f4;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.repair-prompt-row textarea:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
 
 .repair-reference-selector {
   display: grid;
@@ -3231,6 +3248,141 @@ button:active {
 }
 
 .repair-task-actions > span { margin-left: auto; color: var(--muted); font-size: 0.78rem; }
+
+.repair-next-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.repair-next-action > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.repair-next-action > div:first-child > span {
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.repair-next-action > div:first-child > strong {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.repair-next-action > div:first-child > p {
+  max-width: 44rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.repair-next-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.625rem;
+}
+
+.repair-capability-blockers {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.65fr) minmax(18rem, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: #f3f3f3;
+}
+
+.repair-capability-blockers > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.repair-capability-blockers strong {
+  font-size: 0.8125rem;
+}
+
+.repair-capability-blockers span,
+.repair-capability-blockers li {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.repair-capability-blockers ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repair-capability-blockers li {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: var(--surface-raised);
+}
+
+.repair-round-history {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.repair-round-history > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.repair-round-history > div span,
+.repair-round-history li span,
+.repair-round-history li small {
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.repair-round-history > div strong {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.repair-round-history ol {
+  display: grid;
+  gap: 0;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.repair-round-history li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.repair-round-history li strong {
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .repair-provider-consent {
   display: flex;
@@ -3523,6 +3675,7 @@ button:active {
   .comparison-empty > div { height: auto; min-height: 22rem; }
   .repair-task-actions,
   .repair-provider-consent,
+  .repair-next-action,
   .repair-output-upload,
   .repair-handoff,
   .upscale-delivery > header,
@@ -3537,6 +3690,10 @@ button:active {
   .agent-runtime-trace li { grid-template-columns: 2rem 3.5rem minmax(0, 1fr); }
   .agent-runtime-trace li p { grid-column: 2 / -1; }
   .repair-task-actions > span { margin-left: 0; }
+  .repair-next-actions { width: 100%; justify-content: flex-start; }
+  .repair-capability-blockers { grid-template-columns: 1fr; }
+  .repair-round-history li { grid-template-columns: 4rem minmax(0, 1fr); }
+  .repair-round-history li small { grid-column: 2; }
   .repair-agent-ledger > summary { align-items: stretch; flex-direction: column; }
   .repair-agent-ledger ol { grid-template-columns: 1fr; }
   .repair-agent-ledger li,
@@ -6057,4 +6214,478 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .trial-start-button { transition: background-color 120ms linear; }
   .trial-start-button:active { transform: none; }
+}
+
+/* VisionQA v0.7: compact truth/intake workbench and contextual diagnosis assistant */
+
+.baseline-page,
+.intake-page {
+  padding-top: 2rem;
+}
+
+.baseline-page .page-heading,
+.intake-page .page-heading {
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.baseline-page .page-heading h1,
+.intake-page .page-heading h1 {
+  max-width: 22ch;
+  font-size: clamp(1.75rem, 2.4vw, 2.4rem);
+}
+
+.baseline-stage-layout {
+  grid-template-columns: minmax(0, 1fr) 21rem;
+  gap: 1.5rem;
+}
+
+.baseline-input-layout {
+  grid-template-columns: minmax(24rem, 1.2fr) minmax(20rem, 0.8fr);
+  gap: 1rem;
+  margin-top: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+.baseline-image-sheet {
+  order: -1;
+}
+
+.baseline-link-sheet,
+.baseline-image-sheet {
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.025);
+}
+
+.baseline-image-sheet {
+  display: grid;
+  grid-template-rows: auto auto minmax(15rem, 1fr);
+}
+
+.baseline-dropzone {
+  min-height: 7.5rem;
+  margin-top: 1.25rem;
+  border-color: var(--line-strong);
+  background: var(--surface);
+}
+
+.baseline-preview-strip {
+  align-content: start;
+  min-height: 15rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.baseline-empty-preview {
+  min-height: 13rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: #f7f7f7;
+}
+
+.baseline-link-sheet .field-stack {
+  margin-top: 1.125rem;
+}
+
+.baseline-link-sheet textarea {
+  min-height: 7rem;
+}
+
+.baseline-boundary {
+  grid-template-columns: 11rem minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.875rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom-color: var(--line);
+}
+
+.profile-sidebar {
+  top: 5rem;
+  gap: 0.875rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+}
+
+.intake-heading-status {
+  min-width: 9rem;
+  display: grid;
+  gap: 0.25rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--line-strong);
+}
+
+.intake-heading-status span {
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.intake-heading-status strong {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.intake-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 25rem;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.intake-main-column {
+  min-width: 0;
+}
+
+.intake-dropzone {
+  min-height: 13rem;
+  margin-top: 0;
+  border-color: var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.intake-dropzone:hover {
+  border-color: var(--ink);
+  background: #f7f7f7;
+}
+
+.intake-queue {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.intake-asset-grid {
+  grid-template-columns: repeat(3, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.intake-empty-state {
+  min-height: 10rem;
+  border-color: var(--line);
+}
+
+.intake-inspector {
+  position: sticky;
+  top: 5rem;
+  max-height: calc(100dvh - 6rem);
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  overflow-y: auto;
+}
+
+.intake-command-copy {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.intake-command-copy h2 {
+  margin-top: 0.25rem;
+  font-size: 1.25rem;
+  letter-spacing: -0.025em;
+}
+
+.intake-command-copy p {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.intake-context-choice-fields {
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+.intake-choice-field legend {
+  margin-bottom: 0.625rem;
+  font-size: 0.75rem;
+}
+
+.intake-inspector .provenance-choice-list {
+  grid-template-columns: 1fr;
+}
+
+.intake-inspector .provenance-choice-list button {
+  min-height: 0;
+  padding: 0.625rem 0.75rem;
+}
+
+.intake-inspector .channel-choice-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.intake-inspector .channel-choice-grid button {
+  min-height: 2.4rem;
+  padding-inline: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.intake-scope-ledger {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.intake-handoff {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+}
+
+.intake-handoff .primary-button {
+  width: 100%;
+}
+
+.review-page .diagnosis-control-panel {
+  display: block;
+  margin: 1rem 1.5rem 1.5rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.review-page .diagnosis-control-panel .workflow-header {
+  min-height: 0;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.review-page .diagnosis-control-panel .workflow-header > div > span {
+  color: var(--faint);
+}
+
+.review-page .diagnosis-control-panel .workflow-sections {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: 0;
+  border-radius: 0;
+  background: var(--surface-raised);
+}
+
+.review-page .diagnosis-control-panel .workflow-block-wide {
+  display: block;
+  padding: 1.25rem;
+}
+
+.review-page .diagnosis-control-panel .workflow-sections > .workflow-block:first-child {
+  display: block;
+}
+
+.workflow-assistant {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-left: 1px solid var(--line);
+  background: #f6f6f6;
+}
+
+.workflow-assistant-mark {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 0.625rem;
+  font-weight: 760;
+  letter-spacing: -0.02em;
+}
+
+.workflow-assistant-copy {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.workflow-assistant-copy > span {
+  color: var(--faint);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+
+.workflow-assistant-copy h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.workflow-assistant-copy p,
+.workflow-assistant > small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.workflow-assistant-steps {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.workflow-assistant-steps li {
+  min-height: 2.75rem;
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  gap: 0.625rem;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+}
+
+.workflow-assistant-steps li > span {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.workflow-assistant-steps li > strong {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.workflow-assistant-steps li[data-state="done"],
+.workflow-assistant-steps li[data-state="current"] {
+  color: var(--ink);
+}
+
+.workflow-assistant-steps li[data-state="done"] > span {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.workflow-assistant-steps li[data-state="current"] > span {
+  border-color: var(--ink);
+}
+
+.assistant-primary-action {
+  width: 100%;
+}
+
+.workflow-assistant .submission-context-details {
+  border-bottom: 1px solid var(--line);
+}
+
+.workflow-assistant .submission-context-details > summary {
+  min-height: 2.75rem;
+}
+
+.workflow-assistant .compact-context {
+  grid-template-columns: 1fr;
+  padding-bottom: 1rem;
+}
+
+.toast {
+  right: 1.5rem;
+  bottom: 1.5rem;
+  max-width: min(24rem, calc(100vw - 3rem));
+}
+
+@media (max-width: 78rem) {
+  .baseline-stage-layout,
+  .intake-workbench {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+
+  .baseline-input-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .baseline-image-sheet {
+    order: 0;
+  }
+}
+
+@media (max-width: 64rem) {
+  .baseline-stage-layout,
+  .intake-workbench,
+  .review-page .diagnosis-control-panel .workflow-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-sidebar,
+  .intake-inspector {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .workflow-assistant {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 48rem) {
+  .baseline-page,
+  .intake-page {
+    padding-top: 1.25rem;
+  }
+
+  .baseline-page .page-heading,
+  .intake-page .page-heading {
+    align-items: flex-start;
+  }
+
+  .intake-heading-status {
+    min-width: 0;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .baseline-input-layout,
+  .intake-asset-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .baseline-preview-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .baseline-boundary {
+    grid-template-columns: 1fr;
+  }
+
+  .review-page .diagnosis-control-panel {
+    margin: 0.75rem;
+  }
+
+  .review-page .diagnosis-control-panel .workflow-header,
+  .review-page .diagnosis-control-panel .workflow-block-wide,
+  .workflow-assistant {
+    padding: 1rem;
+  }
 }

@@ -77,10 +77,10 @@ test("keeps the focused product and model-image repair workflow in the implement
   assert.match(baselineSource, /上传商品白底图或官方确认稿/);
   assert.match(baselineSource, /profile-sidebar/);
   assert.match(baselineSource, /编辑商品策略与人群画像/);
-  assert.match(intakeSource, /商品图与模特图修正/);
+  assert.match(intakeSource, /本批图片上下文/);
   assert.match(intakeSource, /AI 商品图/);
   assert.match(intakeSource, /真人实拍图/);
-  assert.match(intakeSource, /具体问题、修正候选与前后对比/);
+  assert.match(intakeSource, /真实模型 \+ 人工终审/);
   assert.doesNotMatch(intakeSource, /可放在同一批次/);
   assert.match(intakeSource, /抖音商城/);
   assert.match(intakeSource, /确认是 AI 生成图/);
@@ -89,6 +89,10 @@ test("keeps the focused product and model-image repair workflow in the implement
   assert.match(repairSource, /千问 Image Edit Max/);
   assert.match(repairSource, /GPT Image/);
   assert.match(repairSource, /修改前后对比/);
+  assert.match(repairSource, /继续优化当前结果/);
+  assert.match(repairSource, /连续改图记录/);
+  assert.match(repairSource, /生成下一轮候选/);
+  assert.doesNotMatch(repairSource, /repairConsent/);
   assert.match(repairSource, /生成 4K 尺寸文件/);
   assert.match(upscaleSource, /AI 细节重建超分/);
   assert.match(repairSource, /未进行 AI 细节重建/);
@@ -149,17 +153,18 @@ test("keeps the batch and evidence workflow behind quality review", async () => 
   assert.doesNotMatch(workspaceSource, /Your site is taking shape|react-loading-skeleton/);
 });
 
-test("keeps the consent gate and focused model-image diagnosis launch", async () => {
+test("keeps a direct real-model launch with a contextual next-step assistant", async () => {
   const workspaceSource = await readFile(
     new URL("../app/workspace.tsx", import.meta.url),
     "utf8",
   );
   assert.match(workspaceSource, /选择待修图片/);
   assert.match(workspaceSource, /直接描述问题/);
-  assert.match(workspaceSource, /让 AI 先找问题/);
+  assert.match(workspaceSource, /开始真实模型诊断/);
   assert.match(workspaceSource, /type="file"/);
-  assert.match(workspaceSource, /同意将当前图片与.*商品真值图发送至阿里云百炼/);
-  assert.match(workspaceSource, /开始 AI 判断/);
+  assert.doesNotMatch(workspaceSource, /type="checkbox".*发送至阿里云百炼/);
+  assert.match(workspaceSource, /workflow-assistant/);
+  assert.match(workspaceSource, /运行.*张图片的真实模型诊断/);
   assert.match(workspaceSource, /服务端不留存原图/);
   assert.match(workspaceSource, /建议一次处理一张/);
   assert.match(workspaceSource, /AI 生成/);
@@ -172,7 +177,7 @@ test("keeps the consent gate and focused model-image diagnosis launch", async ()
   assert.match(workspaceSource, /LOCAL_EVALUATION_MODE/);
   assert.match(workspaceSource, /LOCAL_FEEDBACK_STORAGE_KEY/);
   assert.match(workspaceSource, /evaluateLiveCandidate/);
-  assert.match(workspaceSource, /liveConsent/);
+  assert.doesNotMatch(workspaceSource, /liveConsent/);
   assert.match(workspaceSource, /referenceFiles/);
   assert.match(workspaceSource, /customerProfile/);
   assert.match(workspaceSource, /batchCandidates/);
