@@ -1,4 +1,4 @@
-# Python
+deploy/`nweb/artifacts/dev-*.log`ndeploy/`n# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -52,3 +52,4 @@ Thumbs.db
 *.zip
 *.7z
 *.rar
+deploy/

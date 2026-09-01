@@ -140,3 +140,21 @@ test("the invitation login keeps its complete responsive layout", async () => {
   assert.match(source, /@media \(max-width: 1024px\)[\s\S]*\.invite-entry__panel[\s\S]*grid-template-columns: 1fr/);
   assert.match(source, /@media \(max-width: 720px\)[\s\S]*\.invite-entry[\s\S]*padding: 0 16px/);
 });
+
+test("a delivered image can enter another repair round by customer click", async () => {
+  const source = await read(project);
+  assert.match(source, /retrySame=\{\(\) => \{/);
+  assert.match(source, /setDelivery\(null\);[\s\S]*setIdempotencyKey\(crypto\.randomUUID\(\)\)/);
+  assert.match(source, /onClick=\{retrySame\}>再次修正这张/);
+  assert.match(source, /onClick=\{chooseAnother\}>处理其他图片/);
+});
+
+test("a failed repair click receives a fresh idempotency key before retry", async () => {
+  const source = await read(project);
+  assert.match(source, /const requestIdempotencyKey = error \? crypto\.randomUUID\(\) : idempotencyKey/);
+  assert.match(source, /idempotency_key: requestIdempotencyKey/);
+  assert.match(
+    source,
+    /catch \(cause\) \{[\s\S]*setError\(asCustomerError\(cause\)\);[\s\S]*setIdempotencyKey\(crypto\.randomUUID\(\)\);[\s\S]*fetch\("\/api\/credits"/,
+  );
+});

@@ -207,6 +207,8 @@ export function CustomerProject({
 
   async function submitRepair() {
     if (!selectedItem || !issue.trim() || busy) return;
+    const requestIdempotencyKey = error ? crypto.randomUUID() : idempotencyKey;
+    if (error) setIdempotencyKey(requestIdempotencyKey);
     setBusy("repair");
     setError(null);
     try {
@@ -219,7 +221,7 @@ export function CustomerProject({
           issue: issue.trim(),
           issue_region: region,
           locked_regions: perimeterLocks(region),
-          idempotency_key: idempotencyKey,
+          idempotency_key: requestIdempotencyKey,
         }),
       });
       const payload = await readPayload<RepairDelivery>(response);
@@ -227,6 +229,10 @@ export function CustomerProject({
       setCredits(payload.credits);
     } catch (cause) {
       setError(asCustomerError(cause));
+      // A failed attempt has already released its hold server-side. Reusing its
+      // idempotency key would replay that released attempt and make every later
+      // customer click fail without creating a new repair task.
+      setIdempotencyKey(crypto.randomUUID());
       const creditResponse = await fetch("/api/credits", { cache: "no-store" });
       if (creditResponse.ok) setCredits((await creditResponse.json()) as CreditBalance);
     } finally {
@@ -304,10 +310,20 @@ export function CustomerProject({
                 delivery={delivery}
                 confirmations={confirmations}
                 setConfirmations={setConfirmations}
-                nextRound={() => {
+                retrySame={() => {
+                  setDelivery(null);
+                  setConfirmations([false, false, false]);
+                  setIdempotencyKey(crypto.randomUUID());
+                  setError(null);
+                  setProgress("");
+                }}
+                chooseAnother={() => {
                   setDelivery(null);
                   setSelectedItem(null);
                   setConfirmations([false, false, false]);
+                  setIdempotencyKey(crypto.randomUUID());
+                  setError(null);
+                  setProgress("");
                 }}
               />
             ) : null}
@@ -577,8 +593,13 @@ function RegionSelector({ src, region, onChange, describedBy }: { src: string; r
   );
 }
 
-function DeliveryReview({ sourceUrl, delivery, confirmations, setConfirmations, nextRound }: {
-  sourceUrl: string; delivery: RepairDelivery; confirmations: boolean[]; setConfirmations: (value: boolean[]) => void; nextRound: () => void;
+function DeliveryReview({ sourceUrl, delivery, confirmations, setConfirmations, retrySame, chooseAnother }: {
+  sourceUrl: string;
+  delivery: RepairDelivery;
+  confirmations: boolean[];
+  setConfirmations: (value: boolean[]) => void;
+  retrySame: () => void;
+  chooseAnother: () => void;
 }) {
   const allConfirmed = confirmations.every(Boolean);
   const labels = ["商品款式、颜色和关键细节符合真值", "人物、手脚和穿着关系没有新增异常", "背景、构图和非目标区域没有明显变化"];
@@ -591,7 +612,8 @@ function DeliveryReview({ sourceUrl, delivery, confirmations, setConfirmations, 
       </div>
       <fieldset className="customer-confirmations"><legend>下载前请确认三项</legend>{labels.map((label, index) => <label key={label}><input type="checkbox" checked={confirmations[index]} onChange={(event) => setConfirmations(confirmations.map((value, itemIndex) => itemIndex === index ? event.target.checked : value))} /><span>{label}</span></label>)}</fieldset>
       <div className="customer-action-row">
-        <button className="customer-text-button" type="button" onClick={nextRound}>继续处理下一张</button>
+        <button className="customer-secondary" type="button" onClick={retrySame}>再次修正这张</button>
+        <button className="customer-text-button" type="button" onClick={chooseAnother}>处理其他图片</button>
         {allConfirmed ? (
           <a className="customer-primary" href={delivery.download_url}>下载修正版 <span aria-hidden>↓</span></a>
         ) : (
@@ -752,8 +774,8 @@ function nextStepCopy({ stage, batch, selected, delivery, confirmedCount, credit
 }): { title: string; body: string; actionLabel?: string } {
   if (delivery) {
     return confirmedCount >= 3
-      ? { title: "可以下载了", body: "三项确认已完成。下载后可以继续处理下一张候选图。" }
-      : { title: "先完成三项确认", body: `还剩 ${3 - confirmedCount} 项。确认商品、人物和非目标区域都没有新问题后才能下载。` };
+      ? { title: "可以下载，也可以继续修改", body: "三项确认已完成。下载当前版本，或点击“再次修正这张”进入下一轮。" }
+      : { title: "确认当前版本或继续修改", body: `还剩 ${3 - confirmedCount} 项确认；如果结果仍不理想，可直接点击“再次修正这张”。` };
   }
   if (stage === 3 && selected) {
     return credits.available < 1

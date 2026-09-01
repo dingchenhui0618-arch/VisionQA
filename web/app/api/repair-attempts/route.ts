@@ -7,6 +7,7 @@ import { getBetaService, type RepairStartInput } from "../../../lib/beta/service
 import {
   createQwenImage3Provider,
   getQwenImage3Readiness,
+  QwenImage3ProviderError,
   type QwenImage3EditResult,
 } from "../../../lib/visionqa/providers/qwen-image-3";
 import { planCustomerRepair } from "../../../lib/visionqa/agents/repair-planning-service";
@@ -170,6 +171,13 @@ export async function POST(request: Request) {
       }
     }
     if (error instanceof CustomerVisibleError) return customerErrorResponse(error);
+    if (error instanceof QwenImage3ProviderError) {
+      console.warn("[repair-attempt] provider request did not complete", {
+        attemptId,
+        category: error.code,
+      });
+      return customerErrorResponse(customerErrorForProviderFailure(error.code));
+    }
     return customerErrorResponse(
       new CustomerVisibleError(
         "MODEL_FAILED",
@@ -179,6 +187,31 @@ export async function POST(request: Request) {
       ),
     );
   }
+}
+
+function customerErrorForProviderFailure(code: QwenImage3ProviderError["code"]): CustomerVisibleError {
+  if (code === "AUTHENTICATION" || code === "QUOTA" || code === "CONFIGURATION") {
+    return new CustomerVisibleError(
+      "MODEL_UNAVAILABLE",
+      "当前修图服务暂时不可用，本次没有扣除内测额度。",
+      503,
+      "请联系内测管理员检查服务额度；你的问题描述和框选区域仍然保留。",
+    );
+  }
+  if (code === "INVALID_INPUT" || code === "INVALID_OUTPUT") {
+    return new CustomerVisibleError(
+      "MODEL_FAILED",
+      "本次没有形成可用修正版，也没有扣除内测额度。",
+      422,
+      "请缩小问题区域或简化修改要求后再次提交。",
+    );
+  }
+  return new CustomerVisibleError(
+    "MODEL_FAILED",
+    "本次修图服务连接没有完成，且没有扣除内测额度。",
+    503,
+    "请直接再次提交；系统会创建一笔新的修图任务。",
+  );
 }
 
 async function loadExampleRepair(requestUrl: string) {

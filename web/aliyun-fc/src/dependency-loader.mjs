@@ -9,9 +9,9 @@ export async function loadRuntimeDependencies(
   { importLiveBindings = defaultImportLiveBindings } = {},
 ) {
   if (config.mode === "fixture") return createFixtureDependencies();
-  let module;
+  let liveBindings;
   try {
-    module = await importLiveBindings();
+    liveBindings = await importLiveBindings();
   } catch (cause) {
     throw new RuntimeError(
       "LIVE_BINDINGS_NOT_DEPLOYED",
@@ -19,12 +19,12 @@ export async function loadRuntimeDependencies(
       { status: 503, cause },
     );
   }
-  if (typeof module?.createReviewedLiveDependencies !== "function") {
+  if (typeof liveBindings?.createReviewedLiveDependencies !== "function") {
     throw new RuntimeError(
       "LIVE_BINDINGS_NOT_DEPLOYED",
       "The deployed live binding artifact does not expose the reviewed composition entrypoint.",
       { status: 503 },
     );
   }
-  return module.createReviewedLiveDependencies({ env: process.env });
+  return liveBindings.createReviewedLiveDependencies({ env: process.env });
 }
