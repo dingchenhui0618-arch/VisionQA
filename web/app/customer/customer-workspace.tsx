@@ -74,7 +74,7 @@ export function CustomerWorkspace({
                 <a key={project.id} href={`/workspace/projects/${project.id}`} className="customer-project-row">
                   <div>
                     <strong>{project.name}</strong>
-                    <span>{project.isExample ? "示例 SKU · " : ""}{project.candidateCount || "尚未上传"} 张候选</span>
+                    <span>{project.isExample ? "示例 SKU · " : ""}{project.candidateCount ? `${project.candidateCount} 张候选` : "尚未上传候选图"}</span>
                   </div>
                   <div className="customer-project-row__state">
                     <span><i className={`is-${project.status.toLowerCase()}`} aria-hidden />{projectStatus(project.status)}</span>

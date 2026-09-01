@@ -15,3 +15,23 @@
 - 未经真实数据验证的内容统一标记为“待验证”；
 - 不把模拟 case 的结果报告为真实业务准确率；
 - 涉及客户素材、对外品牌和生产发布时再升级为强阻塞项。
+
+## 2026-09-01 客户前端本轮阻塞与解除记录
+
+1. **新增测试已挂载到 `npm test`（已解除）**
+   - Codex 已在 `web/package.json` 的 `test` script 中加入 `tests/customer-ux-guardrails.test.mjs`。
+   - 守卫已扩展至 10 项，进入完整回归；完整测试为页面/schema/UX/production 27/27、TypeScript/runtime 141/141。
+
+2. **浏览器与登录态阻塞（已解除）**
+   - WebBridge daemon 的实际故障是陈旧 pid 文件，清理后已恢复。
+   - 已在真实登录浏览器完成 1425×900 与 390×844 验收：横向溢出 0、小于 44px 的可交互控件 0、协作窗桌面/手机偏好隔离生效、当前 bundle 的 console error/warning 为 0。
+
+3. **`app/globals.css` 边界（本轮无实际冲突，仅记录）**
+   - `globals.css`（6691 行，全局引入）含 `.customer-workflow` 等规则，但那些类服务于 `/internal` 的旧 workspace，与本轮新增的 `.customer-collab`、`.customer-batch-status` 等新类名无交集。
+   - 本轮所有样式改动均落在白名单内的 `app/customer/customer.css`，未出现需要提高特异性去压制 `globals.css` 的情况。若后续要统一客户版视觉，仍需 Codex 开放 `globals.css` 中客户相关段落。
+
+### 本轮仍未取得的证据
+
+1. **真实模型筛查与修图链路尚未做本轮浏览器验收。**
+   - Codex 已使用本地固定示例完成筛查、键盘框选、修图提交、额度 5→4、三项人工确认和下载态的端到端浏览器验收；该流程不触发外部模型，也不能证明真实模型质量。
+   - 真实模型调用、基础 Gate、技术失败释放额度和真实修正版质量，仍需在预算硬停下单独执行一次受控 QA。

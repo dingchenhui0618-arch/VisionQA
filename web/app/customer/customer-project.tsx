@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import type {
@@ -17,6 +18,7 @@ import type {
   ScreeningItem,
 } from "../../lib/beta/contracts";
 import { CustomerShell } from "./customer-shell";
+import { CollaborationWindow, type CollaborationEvent } from "./collaboration-window";
 
 type LocalFile = { id: string; file: File; url: string; width: number; height: number };
 type Region = { x: number; y: number; width: number; height: number };
@@ -72,7 +74,16 @@ export function CustomerProject({
   const [confirmations, setConfirmations] = useState([false, false, false]);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
-  const stage = delivery ? 3 : batch?.status === "COMPLETED" ? (selectedItem ? 3 : 2) : 1;
+  const stage = delivery || selectedItem ? 3 : batch ? 2 : 1;
+  const confirmedCount = confirmations.filter(Boolean).length;
+  const collaborationEvents = useMemo(
+    () => buildCollaborationEvents({ batch, selectedItem, repairRunning: busy === "repair", delivery, confirmedCount }),
+    [batch, selectedItem, busy, delivery, confirmedCount],
+  );
+  const nextStep = useMemo(
+    () => nextStepCopy({ stage, batch, selected: Boolean(selectedItem), delivery, confirmedCount, credits }),
+    [stage, batch, selectedItem, delivery, confirmedCount, credits],
+  );
   const primaryActionDisabled = !skuName.trim() || truthFiles.length < 1 || candidateFiles.length < 1 || busy !== null;
   const selectedSourceUrl = selectedItem ? `/api/assets/${selectedItem.assetId}` : "";
 
@@ -176,6 +187,14 @@ export function CustomerProject({
     }
   }
 
+  function restartBatch() {
+    setBatch(null);
+    setSelectedItem(null);
+    setDelivery(null);
+    setError(null);
+    setProgress("");
+  }
+
   function chooseRepair(item: ScreeningItem) {
     setSelectedItem(item);
     setIssue(item.primaryIssue ?? "请描述需要修正的问题");
@@ -257,7 +276,11 @@ export function CustomerProject({
             ) : null}
 
             {stage === 2 && batch ? (
-              <ScreeningResults batch={batch} chooseRepair={chooseRepair} />
+              batch.status === "COMPLETED" ? (
+                <ScreeningResults batch={batch} chooseRepair={chooseRepair} />
+              ) : (
+                <BatchStatusPanel batch={batch} restart={restartBatch} />
+              )
             ) : null}
 
             {stage === 3 && selectedItem && !delivery ? (
@@ -290,12 +313,10 @@ export function CustomerProject({
             ) : null}
           </div>
 
-          <NextStepAssistant
-            stage={stage}
-            hasBatch={Boolean(batch)}
-            selected={Boolean(selectedItem)}
-            delivered={Boolean(delivery)}
-            credits={credits}
+          <CollaborationWindow
+            events={collaborationEvents}
+            stageLabel={["建立批次", "批量筛查", "修正交付"][stage - 1]}
+            nextStep={nextStep}
           />
         </div>
       </main>
@@ -413,6 +434,48 @@ function ScreeningResults({ batch, chooseRepair }: { batch: ScreeningBatch; choo
   );
 }
 
+function BatchStatusPanel({ batch, restart }: { batch: ScreeningBatch; restart: () => void }) {
+  const running = batch.status === "RUNNING";
+  return (
+    <section className="customer-panel customer-batch-status" aria-labelledby="batch-status-title">
+      <div className="customer-panel__head">
+        <div>
+          <p className="customer-eyebrow">第二步 · 批量筛查</p>
+          <h2 id="batch-status-title">{running ? "这批候选图还在筛查中" : "本次筛查没有完成"}</h2>
+          <p>
+            {running
+              ? "筛查完成后，这一页会列出每张候选图的主问题。本轮不消耗内测额度。"
+              : "本次筛查没有形成结果，也没有消耗内测额度。你可以重新建立这批检查。"}
+          </p>
+        </div>
+        <span className={`customer-result__status ${running ? "is-manual" : "is-attention"}`}>
+          <i aria-hidden />{running ? "进行中" : "未完成"}
+        </span>
+      </div>
+      <dl className="customer-batch-status__facts">
+        <div><dt>SKU 名称</dt><dd>{batch.skuName}</dd></div>
+        <div><dt>真值图</dt><dd>{batch.truthAssetIds.length} 张</dd></div>
+        <div><dt>候选图</dt><dd>{batch.candidateAssetIds.length} 张</dd></div>
+      </dl>
+      <div className="customer-action-row">
+        <div>
+          <strong>{running ? "现在可以做什么" : "下一步"}</strong>
+          <span>{running ? "可以离开这一页，稍后回来查看结果。" : "重新建立后需要再次选择图片。"}</span>
+        </div>
+        {running ? (
+          <button className="customer-primary" type="button" onClick={() => window.location.reload()}>
+            查看最新状态<span aria-hidden>↻</span>
+          </button>
+        ) : (
+          <button className="customer-primary" type="button" onClick={restart}>
+            重新建立这批检查<span aria-hidden>→</span>
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function RepairSetup({ sourceUrl, item, issue, setIssue, region, setRegion, credits, busy, submitRepair, back }: {
   sourceUrl: string; item: ScreeningItem; issue: string; setIssue: (value: string) => void; region: Region; setRegion: (value: Region) => void;
   credits: CreditBalance; busy: "example" | "screen" | "repair" | null; submitRepair: () => void; back: () => void;
@@ -425,23 +488,33 @@ function RepairSetup({ sourceUrl, item, issue, setIssue, region, setRegion, cred
       </div>
       <div className="customer-repair__grid">
         <div>
-          <RegionSelector src={sourceUrl} region={region} onChange={setRegion} />
-          <p className="customer-region-value">问题区域：X {percent(region.x)} · Y {percent(region.y)} · 宽 {percent(region.width)} · 高 {percent(region.height)}</p>
+          <RegionSelector src={sourceUrl} region={region} onChange={setRegion} describedBy="repair-region-value" />
+          <p className="customer-region-value" id="repair-region-value" role="status" aria-live="polite">
+            问题区域：X {percent(region.x)} · Y {percent(region.y)} · 宽 {percent(region.width)} · 高 {percent(region.height)}
+          </p>
+          <p className="customer-region-help">用鼠标拖动框选，或聚焦画面后用方向键移动、Alt+方向键调整大小、Shift 加速。</p>
         </div>
         <div className="customer-repair__form">
           <label className="customer-field"><span>主问题</span><textarea value={issue} onChange={(event) => setIssue(event.target.value)} maxLength={500} rows={5} /></label>
           <div className="customer-repair__evidence"><strong>为什么修这张</strong><p>{item.visibleEvidence}</p></div>
           <div className="customer-charge-note"><div><strong>本次成功后消耗 1 次额度</strong><span>当前可用 {credits.available} 次 · 预计 1–3 分钟</span></div><p>技术失败、超时、没有有效图片或基础检查拦截时，额度会自动释放。</p></div>
-          <button className="customer-primary" type="button" onClick={submitRepair} disabled={!issue.trim() || busy !== null || credits.available < 1}>
-            {busy === "repair" ? "正在生成修正版…" : credits.available < 1 ? "申请更多内测额度" : "提交修正"}<span aria-hidden>→</span>
-          </button>
+          {credits.available < 1 ? (
+            <div className="customer-message is-error" role="alert">
+              <strong>当前没有可用内测额度，本次无法提交修正。</strong>
+              <span>请把这个 SKU 名称发给内测管理员申请额度。已完成的筛查结果会保留。</span>
+            </div>
+          ) : (
+            <button className="customer-primary" type="button" onClick={submitRepair} disabled={!issue.trim() || busy !== null}>
+              {busy === "repair" ? "正在生成修正版…" : "提交修正"}<span aria-hidden>→</span>
+            </button>
+          )}
         </div>
       </div>
     </section>
   );
 }
 
-function RegionSelector({ src, region, onChange }: { src: string; region: Region; onChange: (region: Region) => void }) {
+function RegionSelector({ src, region, onChange, describedBy }: { src: string; region: Region; onChange: (region: Region) => void; describedBy: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
   function point(event: ReactPointerEvent) {
@@ -464,8 +537,39 @@ function RegionSelector({ src, region, onChange }: { src: string; region: Region
     });
   }
   function pointerUp() { start.current = null; }
+  function keyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const step = event.shiftKey ? 0.1 : 0.01;
+    const resizing = event.altKey;
+    let { x, y, width, height } = region;
+    if (event.key === "ArrowLeft") { if (resizing) width -= step; else x -= step; }
+    else if (event.key === "ArrowRight") { if (resizing) width += step; else x += step; }
+    else if (event.key === "ArrowUp") { if (resizing) height -= step; else y -= step; }
+    else if (event.key === "ArrowDown") { if (resizing) height += step; else y += step; }
+    else return;
+    event.preventDefault();
+    width = Math.min(1, Math.max(0.02, width));
+    height = Math.min(1, Math.max(0.02, height));
+    onChange({
+      x: Math.min(1 - width, Math.max(0, x)),
+      y: Math.min(1 - height, Math.max(0, y)),
+      width,
+      height,
+    });
+  }
   return (
-    <div className="customer-region-selector" ref={ref} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp} role="img" aria-label="拖动框选问题区域">
+    <div
+      className="customer-region-selector"
+      ref={ref}
+      onPointerDown={pointerDown}
+      onPointerMove={pointerMove}
+      onPointerUp={pointerUp}
+      onPointerCancel={pointerUp}
+      onKeyDown={keyDown}
+      tabIndex={0}
+      role="application"
+      aria-label="问题区域框选。拖动鼠标框选，或用方向键移动、Alt 加方向键调整大小。"
+      aria-describedby={describedBy}
+    >
       <img src={src} alt="待修正候选图" draggable={false} />
       <div className="customer-region-selector__mask" />
       <div className="customer-region-selector__box" style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }}><span>问题区域</span></div>
@@ -486,20 +590,21 @@ function DeliveryReview({ sourceUrl, delivery, confirmations, setConfirmations, 
         <figure><span>修正后</span><img src={delivery.output_url} alt="修正后候选图" /></figure>
       </div>
       <fieldset className="customer-confirmations"><legend>下载前请确认三项</legend>{labels.map((label, index) => <label key={label}><input type="checkbox" checked={confirmations[index]} onChange={(event) => setConfirmations(confirmations.map((value, itemIndex) => itemIndex === index ? event.target.checked : value))} /><span>{label}</span></label>)}</fieldset>
-      <div className="customer-action-row"><button className="customer-text-button" type="button" onClick={nextRound}>继续处理下一张</button><a className={`customer-primary${allConfirmed ? "" : " is-disabled"}`} href={allConfirmed ? delivery.download_url : undefined} aria-disabled={!allConfirmed} onClick={(event) => { if (!allConfirmed) event.preventDefault(); }}>下载修正版 <span aria-hidden>↓</span></a></div>
+      <div className="customer-action-row">
+        <button className="customer-text-button" type="button" onClick={nextRound}>继续处理下一张</button>
+        {allConfirmed ? (
+          <a className="customer-primary" href={delivery.download_url}>下载修正版 <span aria-hidden>↓</span></a>
+        ) : (
+          <button className="customer-primary" type="button" disabled aria-describedby="delivery-download-hint">
+            下载修正版 <span aria-hidden>↓</span>
+          </button>
+        )}
+      </div>
+      {allConfirmed ? null : (
+        <p className="customer-progress" id="delivery-download-hint">勾选上面三项确认后才能下载。</p>
+      )}
     </section>
   );
-}
-
-function NextStepAssistant({ stage, hasBatch, selected, delivered, credits }: { stage: number; hasBatch: boolean; selected: boolean; delivered: boolean; credits: CreditBalance }) {
-  const copy = delivered
-    ? { title: "检查三项后下载", body: "确认商品、人物和非目标区域。发现问题时先不要下载，继续发起下一轮修正。" }
-    : stage === 3 && selected
-      ? { title: "框选区域并提交", body: `成功后扣 1 次。你还有 ${credits.available} 次可用内测额度；技术失败会自动退回。` }
-      : hasBatch
-        ? { title: "先修“需要处理”的图片", body: "每张只展示一个最重要的问题。你可以先从影响商品真实性最大的图片开始。" }
-        : { title: "准备两组图片", body: "商品真值 1–4 张，候选图 1–10 张。上传后点击“开始免费筛查”。" };
-  return <aside className="customer-assistant" aria-live="polite"><span className="customer-assistant__face" aria-hidden>VQ</span><div><small>下一步助手</small><strong>{copy.title}</strong><p>{copy.body}</p></div></aside>;
 }
 
 async function fileFromPublic(path: string, name: string): Promise<LocalFile> {
@@ -555,3 +660,114 @@ function decisionLabel(decision: ScreeningItem["decision"]): string { return { N
 function formatBytes(bytes: number): string { return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : `${Math.ceil(bytes / 1024)} KB`; }
 function percent(value: number): string { return `${Math.round(value * 100)}%`; }
 function clamp(value: number): number { return Math.max(0, Math.min(1, value)); }
+
+function buildCollaborationEvents({ batch, selectedItem, repairRunning, delivery, confirmedCount }: {
+  batch: ScreeningBatch | null;
+  selectedItem: ScreeningItem | null;
+  repairRunning: boolean;
+  delivery: RepairDelivery | null;
+  confirmedCount: number;
+}): CollaborationEvent[] {
+  if (!batch) return [];
+  const screeningTime = batch.completedAt ?? batch.createdAt;
+  const events: CollaborationEvent[] = [
+    {
+      id: `${batch.id}-truth`,
+      roleLabel: "商品核对",
+      summary: `已载入 ${batch.truthAssetIds.length} 张商品真值图和 ${batch.candidateAssetIds.length} 张候选图。`,
+      status: "DONE",
+      createdAt: batch.createdAt,
+    },
+  ];
+
+  if (batch.status === "RUNNING") {
+    events.push({ id: `${batch.id}-screen`, roleLabel: "问题定位", summary: "正在逐张比对候选图与商品真值。", status: "RUNNING", createdAt: screeningTime });
+  } else if (batch.status === "FAILED") {
+    events.push({ id: `${batch.id}-screen`, roleLabel: "问题定位", summary: "本次筛查没有形成结果，也没有消耗内测额度。", status: "FAILED", createdAt: screeningTime });
+  } else {
+    const attention = batch.items.filter((item) => item.decision === "NEEDS_ATTENTION").length;
+    const manual = batch.items.filter((item) => item.decision === "NEEDS_MANUAL_CHECK").length;
+    const clear = batch.items.filter((item) => item.decision === "NO_OBVIOUS_ISSUE").length;
+    events.push({
+      id: `${batch.id}-screen`,
+      roleLabel: "问题定位",
+      summary: `${attention} 张需要处理、${manual} 张需要人工判断、${clear} 张未见明显问题。`,
+      status: "DONE",
+      createdAt: screeningTime,
+    });
+  }
+
+  if (!selectedItem) return events;
+
+  events.push({
+    id: `${selectedItem.id}-plan`,
+    roleLabel: "方案评审",
+    summary: selectedItem.primaryIssue
+      ? `本次要处理的问题：${selectedItem.primaryIssue}`
+      : "已选定候选图，等待你描述问题并框选区域。",
+    status: delivery || repairRunning ? "DONE" : "WAITING",
+    createdAt: screeningTime,
+  });
+
+  if (repairRunning) {
+    events.push({
+      id: `${selectedItem.id}-repair`,
+      roleLabel: "修正执行",
+      summary: "正在按框选区域生成修正候选，其余区域记录为锁定范围。",
+      status: "RUNNING",
+      createdAt: screeningTime,
+    });
+    return events;
+  }
+
+  if (delivery) {
+    events.push({
+      id: `${delivery.attempt.id}-repair`,
+      roleLabel: "修正执行",
+      summary: "修正候选已返回，本次扣除 1 次内测额度。",
+      status: "DONE",
+      createdAt: delivery.attempt.createdAt,
+    });
+    events.push({
+      id: `${delivery.attempt.id}-review`,
+      roleLabel: "质量复验",
+      summary: confirmedCount >= 3
+        ? "三项人工确认已完成，可以下载修正版。"
+        : `${delivery.gate.message}还需完成 ${3 - confirmedCount} 项人工确认。`,
+      status: confirmedCount >= 3 ? "DONE" : "WAITING",
+      createdAt: delivery.attempt.updatedAt,
+    });
+  }
+
+  return events;
+}
+
+function nextStepCopy({ stage, batch, selected, delivery, confirmedCount, credits }: {
+  stage: number;
+  batch: ScreeningBatch | null;
+  selected: boolean;
+  delivery: RepairDelivery | null;
+  confirmedCount: number;
+  credits: CreditBalance;
+}): { title: string; body: string; actionLabel?: string } {
+  if (delivery) {
+    return confirmedCount >= 3
+      ? { title: "可以下载了", body: "三项确认已完成。下载后可以继续处理下一张候选图。" }
+      : { title: "先完成三项确认", body: `还剩 ${3 - confirmedCount} 项。确认商品、人物和非目标区域都没有新问题后才能下载。` };
+  }
+  if (stage === 3 && selected) {
+    return credits.available < 1
+      ? { title: "需要更多内测额度", body: "当前没有可用额度，本次无法提交修正。请把 SKU 名称发给内测管理员。" }
+      : { title: "框选区域并提交", body: `成功后扣 1 次，你还有 ${credits.available} 次。技术失败会自动退回额度。`, actionLabel: "回到提交按钮" };
+  }
+  if (batch?.status === "RUNNING") {
+    return { title: "筛查进行中", body: "可以离开这一页，稍后回来查看结果。本轮不消耗内测额度。" };
+  }
+  if (batch?.status === "FAILED") {
+    return { title: "重新建立这批检查", body: "本次筛查没有形成结果，也没有扣额度。", actionLabel: "回到主操作" };
+  }
+  if (batch) {
+    return { title: "先修需要处理的图片", body: "每张只展示一个最重要的问题。建议从影响商品真实性最大的图片开始。", actionLabel: "回到筛查结果" };
+  }
+  return { title: "准备两组图片", body: "商品真值 1–4 张，候选图 1–10 张。上传后点击开始免费筛查。", actionLabel: "回到主操作" };
+}

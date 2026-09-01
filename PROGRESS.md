@@ -352,3 +352,36 @@ Codex CLI 只作为未来可替换的 Agent Harness 候选。当前不要为“�
 - 未登录直接访问工作台会跳转登录页；工作台桌面和手机左上角 VQ 标志均返回首页。
 - 线上 active release：`6f1ab23`。公网首页、登录页、未登录重定向、登录后工作台和返回首页链接均已验证；390×844 无横向溢出，console 0 error/warning。
 - 当前试用目标不变：两个受邀账号各完成 2–3 个脱敏案例，并记录真实行为证据。
+
+## 20. 2026-09-01 Claude 客户前端任务 0 基线与计划
+
+- 基线实测（web 目录）：`npm test` 131 项全通过、fail 0、skipped 0、耗时 3.4s；`git status` 分支 `codex/visionqa-phase3-qwen` 与 origin 同步，未提交项 `web/aliyun-fc/src/dependency-loader.mjs`、`deploy/`、`web/artifacts/` 均不纳入本轮。
+- 目标：让客户在刷新、失败和键盘操作下始终知道当前处于哪一步、下一步做什么，且不出现伪装控件。
+- 任务书调整（已获授权的建议调整）：任务 1 由「重做客户旅程」改为「修补实测缺口」。实测客户旅程已具备上传边界、错误 next_action、筛查三态、框选与锁定区、三项确认和额度冻结释放文案，重做会破坏既有正确实现。
+- 顺序：① stage 推导覆盖 RUNNING/FAILED 并可刷新恢复 ② 框选支持键盘与 44px 触达 ③ 移除下载假按钮与额度死路 ④ 协作窗（空状态优先，无真实事件不渲染事件流）⑤ 1440/390 验收与回归。
+- 已确认边界：协作窗采用空状态优先，绝不渲染演示事件流；本轮不改视觉语言，仅在可访问性硬规则处调整尺寸；与 Codex 并行，红灯先归因再决定回滚或记入 BLOCKED.md。
+- 最大风险：`app/globals.css`（6691 行，全局引入，含 `.customer-workflow` 等规则）不在白名单内，客户样式只能在 `app/customer/customer.css` 用更高特异性覆盖，可能积累选择器债；冲突逐条记入 BLOCKED.md。
+- 本轮完成（2026-09-01）：① `stage` 推导改为 `delivery || selectedItem ? 3 : batch ? 2 : 1`，新增 `BatchStatusPanel` 覆盖 RUNNING/FAILED，刷新后不再掉回空的上传表单 ② `RegionSelector` 支持方向键移动、Alt+方向键改尺寸、Shift 加速，`role` 由 `img` 改为 `application` 并加 `tabIndex`、`aria-describedby` 与 `aria-live` 数值播报 ③ 下载控件未确认时改为真实 `disabled` button，移除无 `href` 的假链接 ④ 额度为 0 时改为说明性提示，不再显示承诺动作却禁用的按钮 ⑤ 新增 `app/customer/collaboration-window.tsx`：折叠/展开、未读、拖动、复位、390px 底部抽屉、`prefers-reduced-motion`，事件全部由真实 batch/attempt 记录派生，无真实数据时显示「尚未开始」，不含任何演示事件 ⑥ 新增 `web/tests/customer-ux-guardrails.test.mjs` 7 项，含客户面泄密扫描（provider/模型名/HTTP 状态码/prompt）。
+- 本轮证据：`npm run lint` 0 error；`npm test` 141/141 通过、fail 0、skipped 0（基线在本轮由 Codex 并行提交从 131 升至 141，非本轮改动所致）；`npm run build` exit 0；新增测试单独运行 7/7，并已完成红→绿反向验证（临时破坏「尚未开始」断言 → 1 failed，还原后 7 passed，文件与备份逐字节一致）。
+- 本轮未取得的证据：1440×900 与 390×844 浏览器实测、console error/warning 计数、协作窗拖动与抽屉的真机行为、登录后工作区页面。原因见 `BLOCKED.md` 第 2、3 条，均为环境阻塞而非实现缺失。
+
+## 21. 2026-09-01 客户版视觉重做「灯箱 Lightbox」与浏览器验收
+
+- 视觉方向：`app/customer/customer.css` 全量重写（406 → 991 行）。艺术方向取自审图台世界——中性灰阶、套准线级别的细分隔、图片是主角、UI 退让。项目负责人确认纯黑白灰、无蓝色。
+- 严重度不再依赖颜色：`NEEDS_ATTENTION` 实心方块 + 实线左边框、`NEEDS_MANUAL_CHECK` 空心方块 + 浅色边框、`NO_OBVIOUS_ISSUE` 短横线 + 图片降透明度；协作窗事件用边框线型（实线／虚线／点线／加粗）编码状态。该方案同时满足纯黑白约束与色盲可达性。
+- 灰阶刻意保持中性（无色相偏移），与「校色台用中性灰」的概念一致。
+- 中文排版修正：初版沿用西文度量（`line-height: 1.04`、`letter-spacing: -0.052em`）导致 390px 下大标题两行相撞，已改为 1.16 / -0.022em，并同步放宽 h2、h3、行标题与读数字距。
+- 文案修正：项目行 `candidateCount || "尚未上传"` 在 0 时产出「尚未上传 张候选」，已改为条件整句。
+- 协作窗移动端默认折叠（桌面默认展开，用户手动切换后由 sessionStorage 记住），解决展开抽屉遮挡主动作的问题；抽屉折叠态实测仅占屏高 8%。
+- 浏览器实测证据（真实浏览器，已登录会话）：1425×900 与 390×844 下 `scrollWidth === clientWidth`（横向溢出 0）、无小于 44px 的可交互控件（仅 dropzone 的视觉隐藏 `input` 为 1px，其点击区域是 92px 高的 label）、协作窗折叠／展开与 `aria-expanded` 正确、sessionStorage 记忆生效、拦截 `console.error`／`console.warn`／`window.onerror` 期间捕获数为 0。
+- 工程证据：`npm run lint` 0 error；`npm test` 141/141 通过、fail 0、skipped 0；`npm run build` exit 0；`customer-ux-guardrails` 7/7。
+- 未完成项与原因见 `BLOCKED.md` 同日「本轮仍未取得的证据」。
+
+## 22. 2026-09-01 Codex 独立验收与收口
+
+- 对 Claude 前端结果执行独立 UX 审计；移除粗侧边状态条、半透明模糊顶栏、悬浮位移等偏离灯箱方向的装饰，提升中灰文字对比度，并保留形状、字重、完整边框线型的无色状态编码。
+- 修复客户主动作链接的 P0 可读性问题：全局链接选择器覆盖按钮颜色，导致下载链接黑字黑底；现已用组件级选择器明确为白字黑底，并加入源码守卫。
+- 协作窗拖动位置现约束在当前视口；桌面与手机折叠偏好使用独立 sessionStorage key，避免桌面展开选择把手机底部抽屉强制展开。
+- 浏览器端到端验收使用本地固定示例，不触发外部模型：筛查得到 1 张需要处理、1 张未见明显问题；键盘方向键与 Alt+方向键均可调整框选；提交后额度 5→4；三项人工确认前下载禁用，全部确认后出现有效下载链接。
+- 响应式证据：1425×900 与 390×844 均无横向溢出、小于 44px 的可交互控件为 0；桌面协作窗展开、手机默认折叠且偏好互不污染；新开页当前 bundle 的 console error/warning 为 0。
+- 工程证据：UX 守卫 10/10；完整回归页面/schema/UX/production 27/27、TypeScript/runtime 141/141；生产构建通过。真实模型效果与失败释放额度仍属于下一轮受控 QA，不由本地示例替代。
