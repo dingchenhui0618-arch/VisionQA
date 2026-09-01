@@ -64,6 +64,8 @@ import {
 } from "../lib/visionqa/project-store";
 import type { TrialAccountSession } from "../lib/visionqa/trial-auth";
 
+export type WorkspaceAccountIdentity = Omit<TrialAccountSession, "id"> & { id: string };
+
 type Decision = "PASS" | "REVIEW" | "REJECT";
 type View = "grid" | "evidence";
 type WorkspaceArea = "overview" | "baseline" | "intake" | "review" | "repair" | "delivery";
@@ -1303,15 +1305,16 @@ function SafeImage({
 }
 
 type WorkspaceProps = {
-  initialAccount: TrialAccountSession;
+  initialAccount: WorkspaceAccountIdentity;
+  logoutEndpoint?: string;
 };
 
-export function Workspace({ initialAccount }: WorkspaceProps) {
+export function Workspace({ initialAccount, logoutEndpoint = "/api/trial-auth/logout" }: WorkspaceProps) {
   return (
     <WorkspaceWorkbench
       account={initialAccount}
       onLogout={async () => {
-        const response = await fetch("/api/trial-auth/logout", { method: "POST" });
+        const response = await fetch(logoutEndpoint, { method: "POST" });
         if (response.ok) window.location.assign("/login");
       }}
     />
@@ -1322,7 +1325,7 @@ function WorkspaceWorkbench({
   account,
   onLogout,
 }: {
-  account: TrialAccountSession;
+  account: WorkspaceAccountIdentity;
   onLogout: () => void;
 }) {
   configureProjectStorageScope(account.storageScope);

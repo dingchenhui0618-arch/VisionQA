@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VisionQA · AI 模特图修正与交付工作台",
-  description: "以商品白底图为真值，定位并修正 AI 模特图中的商品漂移、人体异常和非目标区域变化，完成前后复验与 4K 文件交付。",
+  title: "VisionQA · 服饰电商商品图检查与修正",
+  description: "批量筛查同一 SKU 候选图，只修需要处理的图片，并在人工确认后下载修正版。",
 };
 
 export default function RootLayout({

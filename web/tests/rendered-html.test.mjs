@@ -18,8 +18,9 @@ test("server-renders the public VisionQA home page before login", async () => {
   const response = await render("/");
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /服饰电商 AI 模特图修正与交付/);
-  assert.match(html, /进入 VisionQA/);
+  assert.match(html, /先找出真正需要返工的图/);
+  assert.match(html, /接受邀请进入内测/);
+  assert.match(html, /筛查免费/);
   assert.match(html, /href="\/login"/);
 });
 
@@ -35,17 +36,13 @@ test("server-renders the truthful VisionQA login page", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /<html lang="zh-CN">/i);
-  assert.match(html, /<title>登录 VisionQA · 受邀试用<\/title>/i);
-  assert.match(html, /看清问题，修好再交付。/);
-  assert.match(html, /选择商品真值和待修图片/);
-  assert.match(html, /确认问题与修改边界/);
-  assert.match(html, /对比结果并人工放行/);
-  assert.match(html, /登录 VisionQA/);
-  assert.match(html, /受邀试用/);
-  assert.match(html, /请输入试用手机号/);
-  assert.match(html, /登录并开始试用/);
-  assert.match(html, /当前不开放注册和手机号验证/);
-  assert.doesNotMatch(html, /\b1\d{10}\b|工作邮箱|忘记密码/);
+  assert.match(html, /<title>接受 VisionQA 内测邀请<\/title>/i);
+  assert.match(html, /用邀请链接进入你的商品图工作区/);
+  assert.match(html, /首次进入会获得 5 次内测额度/);
+  assert.match(html, /邀请口令/);
+  assert.match(html, /接受邀请并进入/);
+  assert.match(html, /会话保留 30 天/);
+  assert.doesNotMatch(html, /\b1\d{10}\b|工作邮箱|忘记密码|支付二维码|模拟充值成功/);
   assert.doesNotMatch(html, /真实客户已采用|已付款|自动放行已开启|认证成功/);
 });
 

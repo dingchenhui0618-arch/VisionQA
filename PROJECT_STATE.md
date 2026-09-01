@@ -1,5 +1,14 @@
 # VisionQA 项目状态
 
+## 2026-09-01 客户体验内测版重构
+
+- 已完成客户/开发者版本分流：`/`、`/login`、`/workspace`、`/workspace/projects/:id` 为客户流程，`/internal` 保留完整模型、Prompt、Gate 和审计能力；本机固定账号只进入 `/internal/login`。
+- 已实现邀请会话、项目、单文件素材上传、简化筛查、问题框选、修图额度冻结/扣除/释放、服务端基础文件 Gate、三项人工确认和下载恢复；开发者版新增邀请、补次和预算硬停面板。
+- PostgreSQL 正式表迁移已增加 User、Tenant、Membership、Invite、Session、Project、ScreeningBatch/Item、RepairAttempt、CreditWallet/Ledger/Hold、PaymentOrder；支付生产模式保持 `disabled`。
+- 本机示例链已实际验收：5 次额度进入 → 2 张候选免费筛查 → 1 张需要处理 → 修正版通过 Gate → 额度变 4 → 刷新恢复 → 三项确认后开放下载。桌面与 390px 无页面级横向溢出，控制台 0 error/warning。
+- 自动化共 130/130 通过，新增邀请单次消费/过期、租户隔离、1/10/11 张边界、文件大小、额度幂等、失败释放、成功扣次、质量补次、7 天清理、支付关闭和服务端 Gate 测试；构建与 ESLint 通过。
+- 生产发布仍被基础设施绑定阻断：当前本机未配置客户版 PostgreSQL 连接和私有 OSS 上传签名/对象存储；因此未部署到 `visionqa.dionysusding.cn`，也未运行 30 次真实模型 QA。该阻断不能用进程内开发存储或公开图片 URL 绕过。
+
 > 这是本项目的首要状态入口。每次阶段交付、评审结论或方向变化后更新。  
 > 最后更新：2026-08-28（Asia/Shanghai；第五阶段工程收口与新对话交接）
 > 内部代号：`VisionQA`；外部产品名：待定  

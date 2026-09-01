@@ -1,22 +1,25 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  getTrialAccountFromSessionToken,
-  TRIAL_SESSION_COOKIE_NAME,
-} from "../../lib/visionqa/trial-auth";
+import { getBetaSessionFromPage } from "../../lib/beta/auth";
 import { LoginClient } from "./login-client";
 
 export const metadata: Metadata = {
-  title: "登录 VisionQA · 受邀试用",
-  description: "使用受邀试用账号进入 VisionQA 服饰电商 AI 模特图修正工作台。",
+  title: "接受 VisionQA 内测邀请",
+  description: "使用一次性邀请链接进入 VisionQA 客户内测工作区。",
 };
 
-export default async function LoginPage() {
-  const cookieStore = await cookies();
-  const account = getTrialAccountFromSessionToken(
-    cookieStore.get(TRIAL_SESSION_COOKIE_NAME)?.value,
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invite?: string }>;
+}) {
+  const session = await getBetaSessionFromPage();
+  if (session) redirect("/workspace");
+  const params = await searchParams;
+  return (
+    <LoginClient
+      initialInvite={typeof params.invite === "string" ? params.invite.slice(0, 512) : ""}
+      allowLocalInvite={process.env.NODE_ENV !== "production"}
+    />
   );
-  if (account) redirect("/workspace");
-  return <LoginClient />;
 }

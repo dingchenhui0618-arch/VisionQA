@@ -1,16 +1,17 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Workspace } from "../workspace";
-import {
-  getTrialAccountFromSessionToken,
-  TRIAL_SESSION_COOKIE_NAME,
-} from "../../lib/visionqa/trial-auth";
+import { CustomerWorkspace } from "../customer/customer-workspace";
+import { getBetaSessionFromPage } from "../../lib/beta/auth";
+import { getBetaService } from "../../lib/beta/service";
 
 export default async function WorkspacePage() {
-  const cookieStore = await cookies();
-  const initialAccount = getTrialAccountFromSessionToken(
-    cookieStore.get(TRIAL_SESSION_COOKIE_NAME)?.value,
+  const session = await getBetaSessionFromPage();
+  if (!session) redirect("/login");
+  const service = getBetaService();
+  return (
+    <CustomerWorkspace
+      session={session}
+      initialCredits={service.getCredits(session)}
+      initialProjects={service.listProjects(session)}
+    />
   );
-  if (!initialAccount) redirect("/login");
-  return <Workspace initialAccount={initialAccount} />;
 }

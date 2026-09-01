@@ -1,5 +1,14 @@
 # VisionQA interface system
 
+## Customer beta pattern (2026-09-01)
+
+- Customer routes use a three-stage batch flow: establish SKU, screen up to ten candidates, repair and confirm delivery. The internal four-step rail remains only at `/internal`.
+- One focal action per view. Customer results use a vertical film-review strip ordered by attention, manual check, then no obvious issue; one primary issue per image.
+- A 280px next-step assistant is sticky on desktop and moves above the task on tablet/mobile. It always states the next verb, credit effect, and failure recovery without provider language.
+- Credit copy is always `内测额度`; screening is free; repair says `成功后扣 1 次`; technical or Gate failure says no credit was deducted.
+- Repair targeting uses a normalized drag region on the source image. Download remains disabled until the three human checks are complete.
+- Customer pages never show model/provider names, prompts, scores, raw status codes, HTTP codes, 4K, super-resolution, or payment placeholders.
+
 ## Intent
 
 Monochrome studio review desk for apparel ecommerce. The interface recedes into black, white, and neutral gray so uploaded customer imagery carries the strongest color contrast.

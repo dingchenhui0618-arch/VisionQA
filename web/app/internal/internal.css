@@ -1,0 +1,27 @@
+.internal-beta-console {
+  margin: 16px;
+  padding: 20px;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #111111;
+  font-family: var(--font-geist), "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.internal-beta-console__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(17, 17, 17, 0.1); }
+.internal-beta-console__head span { color: #6f6f6f; font-size: 11px; letter-spacing: 0.08em; }
+.internal-beta-console__head h1 { margin: 4px 0 0; font-size: 24px; letter-spacing: -0.04em; }
+.internal-beta-console__status { min-height: 32px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid rgba(17, 17, 17, 0.12); border-radius: 8px; color: #5d5d5d; font-size: 11px; }
+.internal-beta-console__status i { width: 7px; height: 7px; border-radius: 50%; background: #8a5b08; }
+.internal-beta-console__grid { display: grid; grid-template-columns: 1fr 1fr 0.8fr; gap: 0; margin-top: 16px; }
+.internal-beta-console__grid > div { min-width: 0; padding: 8px 20px 8px 0; }
+.internal-beta-console__grid > div + div { padding-left: 20px; border-left: 1px solid rgba(17, 17, 17, 0.1); }
+.internal-beta-console__grid strong { font-size: 13px; }
+.internal-beta-console__grid p { margin: 6px 0 12px; color: #6f6f6f; font-size: 11px; line-height: 1.55; }
+.internal-beta-console__controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.internal-beta-console input { min-width: 0; min-height: 40px; padding: 0 10px; border: 1px solid rgba(17, 17, 17, 0.2); border-radius: 8px; background: #f7f7f5; font-size: 12px; }
+.internal-beta-console button { min-height: 40px; padding: 0 12px; border: 1px solid #111111; border-radius: 8px; background: #111111; color: #ffffff; font-size: 12px; font-weight: 620; cursor: pointer; }
+.internal-beta-console button:disabled { opacity: 0.42; cursor: not-allowed; }
+.internal-beta-console__output { width: 100%; margin-top: 8px; font-family: var(--font-geist-mono), monospace; }
+.internal-beta-console__message { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid rgba(17, 17, 17, 0.1); color: #176b43; font-size: 11px; }
+@media (max-width: 900px) { .internal-beta-console__grid { grid-template-columns: 1fr; } .internal-beta-console__grid > div, .internal-beta-console__grid > div + div { padding: 16px 0; border-left: 0; border-top: 1px solid rgba(17, 17, 17, 0.1); } }
+@media (max-width: 560px) { .internal-beta-console { margin: 8px; padding: 16px; } .internal-beta-console__head { flex-direction: column; } .internal-beta-console__controls { grid-template-columns: 1fr; } .internal-beta-console button { min-height: 44px; } }
