@@ -123,3 +123,20 @@ test("primary-action links keep readable white text on the black button surface"
   const source = await read(styles);
   assert.match(source, /\.customer-shell a\.customer-primary,[\s\S]*color: var\(--paper\)/);
 });
+
+test("the invitation login keeps its complete responsive layout", async () => {
+  const source = await read(styles);
+  for (const selector of [
+    ".invite-entry__brand",
+    ".invite-entry__panel",
+    ".invite-entry__copy h1",
+    ".invite-entry__form",
+    ".invite-entry__form > input",
+    ".invite-entry__dev",
+    ".invite-entry__fineprint",
+  ]) {
+    assert.match(source, new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(source, /@media \(max-width: 1024px\)[\s\S]*\.invite-entry__panel[\s\S]*grid-template-columns: 1fr/);
+  assert.match(source, /@media \(max-width: 720px\)[\s\S]*\.invite-entry[\s\S]*padding: 0 16px/);
+});
