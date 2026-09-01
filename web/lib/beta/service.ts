@@ -17,6 +17,14 @@ import {
   type ScreeningBatch,
   type ScreeningItem,
 } from "./contracts.ts";
+import {
+  addEvolutionEvidence,
+  applyPlannerDecision,
+  createRepairEvolutionEpisode,
+  publicEvolutionEvents,
+  type RepairEvolutionEpisode,
+  type RepairPlannerDecision,
+} from "../visionqa/agents/recursive-repair.ts";
 
 type InviteRecord = {
   id: string;
@@ -94,6 +102,7 @@ export class BetaService {
   private readonly assetBytes = new Map<string, AssetBytes>();
   private readonly batches = new Map<string, ScreeningBatch>();
   private readonly attempts = new Map<string, RepairAttempt>();
+  private readonly repairEvolutions = new Map<string, RepairEvolutionEpisode>();
   private readonly wallets = new Map<string, WalletRecord>();
   private readonly ledger: LedgerRecord[] = [];
   private readonly holds = new Map<string, HoldRecord>();
@@ -526,7 +535,56 @@ export class BetaService {
     };
     this.attempts.set(attemptId, attempt);
     this.attemptByIdempotency.set(key, attemptId);
+    const episode = addEvolutionEvidence(
+      createRepairEvolutionEpisode({
+        projectId: project.id,
+        repairAttemptId: attemptId,
+        now,
+      }),
+      [
+        {
+          fingerprint: `screening:${item.item.id}:issue`,
+          kind: "CUSTOMER_CORRECTION",
+          summary: attempt.issue,
+          verifiedBy: "HUMAN",
+        },
+        {
+          fingerprint: `screening:${item.item.id}:evidence`,
+          kind: "VISIBLE_ISSUE",
+          summary: item.item.visibleEvidence,
+          verifiedBy: "SYSTEM",
+        },
+      ],
+      now,
+    );
+    this.repairEvolutions.set(attemptId, episode);
     return { ...attempt };
+  }
+
+  applyRepairPlannerDecision(
+    session: BetaSessionView,
+    attemptId: string,
+    decision: RepairPlannerDecision,
+    allowedRouteIds: readonly string[],
+  ): RepairEvolutionEpisode {
+    this.requireAttempt(session, attemptId);
+    const current = this.repairEvolutions.get(attemptId);
+    if (!current) throw new Error("Repair evolution episode is unavailable");
+    const next = applyPlannerDecision(current, decision, allowedRouteIds, this.timestamp());
+    this.repairEvolutions.set(attemptId, next);
+    return cloneRepairEvolution(next);
+  }
+
+  latestRepairEvolutionForProject(session: BetaSessionView, projectId: string): RepairEvolutionEpisode | null {
+    const attempt = this.latestRepairForProject(session, projectId);
+    if (!attempt) return null;
+    const episode = this.repairEvolutions.get(attempt.id);
+    return episode ? cloneRepairEvolution(episode) : null;
+  }
+
+  publicRepairEvolutionEventsForProject(session: BetaSessionView, projectId: string) {
+    const episode = this.latestRepairEvolutionForProject(session, projectId);
+    return episode ? publicEvolutionEvents(episode) : [];
   }
 
   markRepairRunning(session: BetaSessionView, attemptId: string): RepairAttempt {
@@ -749,5 +807,13 @@ function cloneBatch(batch: ScreeningBatch): ScreeningBatch {
       ...item,
       issueRegion: item.issueRegion ? { ...item.issueRegion } : null,
     })),
+  };
+}
+
+function cloneRepairEvolution(episode: RepairEvolutionEpisode): RepairEvolutionEpisode {
+  return {
+    ...episode,
+    evidence: episode.evidence.map((entry) => ({ ...entry })),
+    events: episode.events.map((entry) => ({ ...entry })),
   };
 }

@@ -9,6 +9,7 @@ import {
   getQwenImage3Readiness,
   type QwenImage3EditResult,
 } from "../../../lib/visionqa/providers/qwen-image-3";
+import { planCustomerRepair } from "../../../lib/visionqa/agents/repair-planning-service";
 
 type Region = RepairStartInput["issueRegion"];
 
@@ -60,6 +61,34 @@ export async function POST(request: Request) {
           "当前修图服务暂时不可用，本次没有扣除内测额度。",
           503,
           "图片、问题描述和框选区域都已保留，请稍后再次提交。",
+        );
+      }
+      const episode = service.latestRepairEvolutionForProject(session, attempt.projectId);
+      if (!episode) throw new Error("Repair evolution episode is unavailable");
+      const planning = await planCustomerRepair({
+        episode,
+        routing: {
+          localizedRegionAvailable: true,
+          referenceImageCount: references.length,
+          priority: "QUALITY",
+          approvedRouteIds: ["qwen-image-3-pro-edit"],
+        },
+        env: process.env,
+        signal: request.signal,
+        authorizeExternalDispatch: () => authorizeModelDispatch(1),
+      });
+      const plannedEpisode = service.applyRepairPlannerDecision(
+        session,
+        attempt.id,
+        planning.decision,
+        planning.allowedRouteIds,
+      );
+      if (plannedEpisode.status !== "READY_TO_EXECUTE" || plannedEpisode.selectedRoute !== "qwen-image-3-pro-edit") {
+        throw new CustomerVisibleError(
+          "MODEL_UNAVAILABLE",
+          "当前没有适合这张图片的自动修正路线，本次没有扣除内测额度。",
+          422,
+          "问题描述和框选区域已保留，你可以调整后重试或转人工处理。",
         );
       }
       const budget = authorizeModelDispatch(50);

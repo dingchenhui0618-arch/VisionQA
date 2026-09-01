@@ -14,6 +14,7 @@ export async function GET(request: Request, context: Context) {
         project: service.getProject(session, id),
         batch: service.latestBatchForProject(session, id),
         repair: service.latestRepairForProject(session, id),
+        agent_events: service.publicRepairEvolutionEventsForProject(session, id),
         credits: service.getCredits(session),
       },
       { headers: { "cache-control": "no-store" } },
