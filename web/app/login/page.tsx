@@ -19,7 +19,7 @@ export default async function LoginPage({
   return (
     <LoginClient
       initialInvite={typeof params.invite === "string" ? params.invite.slice(0, 512) : ""}
-      allowLocalInvite={process.env.NODE_ENV !== "production" || process.env.VISIONQA_TEST_ENVIRONMENT === "true"}
+      allowLocalInvite={process.env.NODE_ENV !== "production"}
     />
   );
 }

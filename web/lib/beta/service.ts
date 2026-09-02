@@ -123,9 +123,12 @@ export class BetaService {
   }
 
   private async ensureDevelopmentInvite(): Promise<void> {
-    if (this.developmentInviteReady || (process.env.NODE_ENV === "production" && process.env.VISIONQA_TEST_ENVIRONMENT !== "true")) return;
+    const isHostedTest = process.env.NODE_ENV === "production" && process.env.VISIONQA_TEST_ENVIRONMENT === "true";
+    if (this.developmentInviteReady || (process.env.NODE_ENV === "production" && !isHostedTest)) return;
+    const inviteToken = isHostedTest ? process.env.VISIONQA_TEST_INVITE_TOKEN?.trim() : "visionqa-local-beta";
+    if (!inviteToken) return;
     this.developmentInviteReady = true;
-    const tokenHash = await sha256Hex("visionqa-local-beta");
+    const tokenHash = await sha256Hex(inviteToken);
     this.invites.set(tokenHash, {
       id: "invite_local_beta",
       tokenHash,

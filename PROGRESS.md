@@ -408,4 +408,5 @@ Codex CLI 只作为未来可替换的 Agent Harness 候选。当前不要为“�
 - 真实页面示例验收：点击后约 0.8 秒进入“正在修正”，额度进入冻结态；后台完成后页面自动进入前后对比。该验收使用内置示例，不触发外部模型。
 - DeepSeek V4 Flash 只接收结构化证据、轮次和服务端白名单路线，不接收图片；输出仍需经过证据指纹、路线白名单、最多 3 轮、人工终审等确定性 Gate。
 - 测试托管环境新增显式 `VISIONQA_TEST_ENVIRONMENT=true` 开关；支付固定关闭，模型密钥只配置为服务端 Secret。该开关不能用于正式生产。
+- 托管测试邀请改为独立的 `VISIONQA_TEST_INVITE_TOKEN` 服务端 Secret；生产构建不显示本机体验口令，公开后仍只能通过受控邀请链接进入客户工作区。
 - 工程证据：客户 UX 守卫 14/14；完整页面/schema/UX/production 31/31、TypeScript/runtime 141/141；生产构建与 lint 通过。
