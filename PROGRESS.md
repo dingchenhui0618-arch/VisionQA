@@ -411,3 +411,10 @@ Codex CLI 只作为未来可替换的 Agent Harness 候选。当前不要为“�
 - 测试托管环境新增显式 `VISIONQA_TEST_ENVIRONMENT=true` 开关；支付固定关闭，模型密钥只配置为服务端 Secret。该开关不能用于正式生产。
 - 托管测试邀请改为独立的 `VISIONQA_TEST_INVITE_TOKEN` 服务端 Secret；生产构建不显示本机体验口令，公开后仍只能通过受控邀请链接进入客户工作区。
 - 工程证据：客户 UX 守卫 14/14；完整页面/schema/UX/production 31/31、TypeScript/runtime 142/142；生产构建与 lint 通过。
+
+## 26. 2026-09-02 阿里云客户测试环境部署
+
+- 测试环境已部署到阿里云上海轻量服务器，公网入口为 `https://visionqa.dionysusding.cn`；Nginx HTTPS 继续反向代理到 `127.0.0.1:3210`，运行版本为 Git 提交 `707d6d6`。ChatGPT Sites 未绑定该域名。
+- 模型密钥、Workspace ID、邀请口令和签名密钥仅存于服务器 `/etc/visionqa/visionqa.env`；目录权限 `700 root:root`、文件权限 `600 root:root`，由 `visionqa-demo.service` 的 `EnvironmentFile` 服务端加载。
+- 阿里云本机完整客户闭环通过：邀请、单文件上传、示例筛查 `NEEDS_ATTENTION`、修图 POST `202`、异步轮询 `COMPLETED`、基础 Gate 要求人工确认、额度仅捕获 1 次。该验收使用固定示例，不触发外部图像模型，也不作为真实模型质量证据。
+- 验收后已重启服务，清空内存测试项目并恢复未消费的测试邀请；公网首页与 `/login` 均返回 200，客户页面未出现模型名、Provider 或状态码。
