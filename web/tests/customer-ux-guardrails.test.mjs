@@ -158,3 +158,15 @@ test("a failed repair click receives a fresh idempotency key before retry", asyn
     /catch \(cause\) \{[\s\S]*setError\(asCustomerError\(cause\)\);[\s\S]*setIdempotencyKey\(crypto\.randomUUID\(\)\);[\s\S]*fetch\("\/api\/credits"/,
   );
 });
+
+test("customer repair runs as a resumable async task instead of a long browser request", async () => {
+  const route = new URL("../app/api/repair-attempts/route.ts", import.meta.url);
+  const [projectSource, routeSource] = await Promise.all([read(project), read(route)]);
+  assert.match(routeSource, /after\(async \(\) => \{/);
+  assert.match(routeSource, /return Response\.json\(runningPayload\(session, running\), \{[\s\S]*status: 202/);
+  assert.doesNotMatch(routeSource, /signal: request\.signal/);
+  assert.match(routeSource, /AbortSignal\.timeout\(180_000\)/);
+  assert.match(projectSource, /waitForRepair\(payload\.poll_url\)/);
+  assert.match(projectSource, /await delay\(3_000\)/);
+  assert.match(projectSource, /initialRepair\?\.status !== "RUNNING"/);
+});

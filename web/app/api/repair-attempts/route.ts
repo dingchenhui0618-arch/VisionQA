@@ -1,7 +1,8 @@
+import { after } from "next/server";
 import { requireBetaSessionFromRequest } from "../../../lib/beta/auth";
 import { createSignedDownloadUrl } from "../../../lib/beta/asset-urls";
 import { authorizeModelDispatch } from "../../../lib/beta/budget";
-import { CustomerVisibleError, customerErrorResponse, type BetaSessionView } from "../../../lib/beta/contracts";
+import { CustomerVisibleError, customerErrorResponse, type BetaSessionView, type RepairAttempt } from "../../../lib/beta/contracts";
 import { runServerRepairGate } from "../../../lib/beta/repair-gate";
 import { getBetaService, type RepairStartInput } from "../../../lib/beta/service";
 import {
@@ -16,10 +17,8 @@ type Region = RepairStartInput["issueRegion"];
 
 export async function POST(request: Request) {
   const service = getBetaService();
-  let session: BetaSessionView | null = null;
-  let attemptId: string | null = null;
   try {
-    session = await requireBetaSessionFromRequest(request);
+    const session = await requireBetaSessionFromRequest(request);
     const input = (await request.json()) as Record<string, unknown>;
     const region = parseRegion(input.issue_region) ?? { x: 0.25, y: 0.25, width: 0.5, height: 0.5 };
     const lockedRegions = parseRegions(input.locked_regions);
@@ -31,24 +30,75 @@ export async function POST(request: Request) {
       lockedRegions: lockedRegions.length ? lockedRegions : perimeterLocks(region),
       idempotencyKey: String(input.idempotency_key ?? ""),
     });
-    attemptId = attempt.id;
     if (attempt.status === "CAPTURED") {
+      return Response.json(await completedPayload(session, attempt));
+    }
+    if (attempt.status === "RUNNING") return Response.json(runningPayload(session, attempt), { status: 202 });
+    const running = service.markRepairRunning(session, attempt.id);
+    const requestUrl = request.url;
+    after(async () => {
+      await executeRepairAttempt(session, running.id, requestUrl);
+    });
+    return Response.json(runningPayload(session, running), {
+      status: 202,
+      headers: { "cache-control": "no-store" },
+    });
+  } catch (error) {
+    if (error instanceof CustomerVisibleError) return customerErrorResponse(error);
+    return customerErrorResponse(
+      new CustomerVisibleError(
+        "MODEL_FAILED",
+        "修图任务没有成功创建，且没有扣除内测额度。",
+        503,
+        "图片、问题描述和框选区域已保留，请再次提交。",
+      ),
+    );
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const session = await requireBetaSessionFromRequest(request);
+    const attemptId = new URL(request.url).searchParams.get("attempt_id") ?? "";
+    const service = getBetaService();
+    const attempt = service.getRepairAttempt(session, attemptId);
+    if (attempt.status === "CAPTURED") return Response.json(await completedPayload(session, attempt));
+    if (attempt.status === "RELEASED") {
       return Response.json({
+        state: "FAILED",
         attempt,
         credits: service.getCredits(session),
-        output_url: `/api/assets/${attempt.outputAssetId}`,
-        download_url: await createSignedDownloadUrl(session, attempt.outputAssetId!),
-        gate: { message: "修正版已通过基础检查；仍需你人工确认。", human_confirmation_required: true },
-      });
+        error: {
+          message: attempt.failureReason ?? "本次修图没有完成，且没有扣除内测额度。",
+          next_action: "图片、问题描述和框选区域已保留，你可以再次提交。",
+        },
+      }, { headers: { "cache-control": "no-store" } });
     }
-    service.markRepairRunning(session, attempt.id);
+    return Response.json(runningPayload(session, attempt), {
+      headers: { "cache-control": "no-store" },
+    });
+  } catch (error) {
+    if (error instanceof CustomerVisibleError) return customerErrorResponse(error);
+    return customerErrorResponse(new CustomerVisibleError(
+      "MODEL_FAILED",
+      "暂时无法读取修图进度。",
+      503,
+      "请刷新页面，任务记录和额度状态不会丢失。",
+    ));
+  }
+}
+
+async function executeRepairAttempt(session: BetaSessionView, attemptId: string, requestUrl: string) {
+  const service = getBetaService();
+  try {
+    const attempt = service.getRepairAttempt(session, attemptId);
     const source = service.readAsset(session, attempt.sourceAssetId);
     const batch = service.latestBatchForProject(session, attempt.projectId);
     if (!batch) throw new Error("Repair batch is unavailable");
-    const references = batch.truthAssetIds.slice(0, 2).map((id) => service.readAsset(session!, id));
+    const references = batch.truthAssetIds.slice(0, 2).map((id) => service.readAsset(session, id));
 
     const exampleOutput = /demo-cardigan-defect/i.test(source.asset.fileName)
-      ? await loadExampleRepair(request.url)
+      ? await loadExampleRepair(requestUrl)
       : null;
     let providerResult: QwenImage3EditResult | null = null;
     let output: { bytes: Uint8Array; mimeType: "image/png" | "image/jpeg" | "image/webp"; width: number | null; height: number | null };
@@ -75,7 +125,6 @@ export async function POST(request: Request) {
           approvedRouteIds: ["qwen-image-3-pro-edit"],
         },
         env: process.env,
-        signal: request.signal,
         authorizeExternalDispatch: () => authorizeModelDispatch(1),
       });
       const plannedEpisode = service.applyRepairPlannerDecision(
@@ -101,7 +150,7 @@ export async function POST(request: Request) {
           negativePrompt: "禁止改变人物身份、姿势、脸、手脚、背景、镜头、构图和画幅；禁止新增文字、水印、促销信息或未提供的商品细节；禁止修改框选区域以外的商品结构。",
           sourceWidth: source.asset.width,
           sourceHeight: source.asset.height,
-          signal: request.signal,
+          signal: AbortSignal.timeout(180_000),
         });
       } finally {
         budget.record();
@@ -148,45 +197,49 @@ export async function POST(request: Request) {
       height: gate.outputDimensions.height,
     });
     const captured = service.captureRepair(session, attempt.id, outputAsset.id);
-    return Response.json(
-      {
-        attempt: captured,
-        credits: service.getCredits(session),
-        output_url: `/api/assets/${outputAsset.id}`,
-        download_url: await createSignedDownloadUrl(session, outputAsset.id),
-        gate: { message: gate.reason, human_confirmation_required: true },
-        next_step: "对比修正前后，并确认商品、人物和非目标区域后再下载。",
-      },
-      { status: 201, headers: { "cache-control": "no-store" } },
-    );
+    return captured;
   } catch (error) {
-    if (session && attemptId) {
-      try {
-        const attempt = service.getRepairAttempt(session, attemptId);
-        if (attempt.status !== "RELEASED" && attempt.status !== "CAPTURED") {
-          service.releaseRepair(session, attemptId, "修图任务未形成可用结果，额度已自动释放。");
-        }
-      } catch {
-        // Keep the original customer-facing failure.
-      }
-    }
-    if (error instanceof CustomerVisibleError) return customerErrorResponse(error);
+    let reason = "修图任务未形成可用结果，额度已自动释放。";
+    if (error instanceof CustomerVisibleError) reason = `${error.message} ${error.nextAction ?? ""}`.trim();
     if (error instanceof QwenImage3ProviderError) {
+      const customerError = customerErrorForProviderFailure(error.code);
+      reason = `${customerError.message} ${customerError.nextAction ?? ""}`.trim();
       console.warn("[repair-attempt] provider request did not complete", {
         attemptId,
         category: error.code,
       });
-      return customerErrorResponse(customerErrorForProviderFailure(error.code));
     }
-    return customerErrorResponse(
-      new CustomerVisibleError(
-        "MODEL_FAILED",
-        "本次修图没有完成，且没有扣除内测额度。",
-        503,
-        "图片、问题描述和框选区域已保留，请稍后重试。",
-      ),
-    );
+    try {
+      const attempt = service.getRepairAttempt(session, attemptId);
+      if (attempt.status !== "RELEASED" && attempt.status !== "CAPTURED") {
+        service.releaseRepair(session, attemptId, reason, error instanceof CustomerVisibleError && error.code === "GATE_BLOCKED");
+      }
+    } catch {
+      // Preserve the original failure while ensuring the background task settles.
+    }
   }
+}
+
+function runningPayload(session: BetaSessionView, attempt: RepairAttempt) {
+  return {
+    state: "RUNNING",
+    attempt,
+    credits: getBetaService().getCredits(session),
+    poll_url: `/api/repair-attempts?attempt_id=${encodeURIComponent(attempt.id)}`,
+    message: "正在修正图片，通常需要 1–3 分钟。你可以停留在页面，也可以稍后刷新回来查看。",
+  };
+}
+
+async function completedPayload(session: BetaSessionView, attempt: RepairAttempt) {
+  return {
+    state: "COMPLETED",
+    attempt,
+    credits: getBetaService().getCredits(session),
+    output_url: `/api/assets/${attempt.outputAssetId}`,
+    download_url: await createSignedDownloadUrl(session, attempt.outputAssetId!),
+    gate: { message: "修正版已通过基础检查；仍需你人工确认。", human_confirmation_required: true },
+    next_step: "对比修正前后，并确认商品、人物和非目标区域后再下载。",
+  };
 }
 
 function customerErrorForProviderFailure(code: QwenImage3ProviderError["code"]): CustomerVisibleError {

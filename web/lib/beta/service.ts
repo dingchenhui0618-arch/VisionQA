@@ -123,13 +123,13 @@ export class BetaService {
   }
 
   private async ensureDevelopmentInvite(): Promise<void> {
-    if (this.developmentInviteReady || process.env.NODE_ENV === "production") return;
+    if (this.developmentInviteReady || (process.env.NODE_ENV === "production" && process.env.VISIONQA_TEST_ENVIRONMENT !== "true")) return;
     this.developmentInviteReady = true;
     const tokenHash = await sha256Hex("visionqa-local-beta");
     this.invites.set(tokenHash, {
       id: "invite_local_beta",
       tokenHash,
-      label: "本机客户体验",
+      label: process.env.NODE_ENV === "production" ? "测试环境客户体验" : "本机客户体验",
       role: "customer",
       initialCredits: INITIAL_BETA_CREDITS,
       expiresAt: "2999-01-01T00:00:00.000Z",
@@ -174,7 +174,8 @@ export class BetaService {
         "请联系内测管理员重新发送邀请链接。",
       );
     }
-    const reusableLocalInvite = invite.id === "invite_local_beta" && process.env.NODE_ENV !== "production";
+    const reusableLocalInvite = invite.id === "invite_local_beta" &&
+      (process.env.NODE_ENV !== "production" || process.env.VISIONQA_TEST_ENVIRONMENT === "true");
     if (invite.consumedAt && !reusableLocalInvite) {
       throw new CustomerVisibleError(
         "INVITE_ALREADY_USED",
@@ -736,7 +737,7 @@ export function createBetaServiceForTest(now?: () => Date): BetaService {
 }
 
 function assertCustomerBetaBackendReady(): void {
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" && process.env.VISIONQA_TEST_ENVIRONMENT !== "true") {
     throw new CustomerVisibleError(
       "SERVICE_NOT_READY",
       "客户内测服务正在完成正式数据存储配置，暂未开放。",

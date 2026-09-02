@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -23,12 +24,27 @@ import { CollaborationWindow, type CollaborationEvent } from "./collaboration-wi
 type LocalFile = { id: string; file: File; url: string; width: number; height: number };
 type Region = { x: number; y: number; width: number; height: number };
 type RepairDelivery = {
+  state: "COMPLETED";
   attempt: RepairAttempt;
   output_url: string;
   download_url: string;
   credits: CreditBalance;
   gate: { message: string; human_confirmation_required: boolean };
 };
+type RepairProgress = {
+  state: "RUNNING";
+  attempt: RepairAttempt;
+  credits: CreditBalance;
+  poll_url: string;
+  message: string;
+};
+type RepairFailure = {
+  state: "FAILED";
+  attempt: RepairAttempt;
+  credits: CreditBalance;
+  error: { message: string; next_action?: string };
+};
+type RepairTaskPayload = RepairDelivery | RepairProgress | RepairFailure;
 
 export function CustomerProject({
   session,
@@ -60,6 +76,7 @@ export function CustomerProject({
   const [delivery, setDelivery] = useState<RepairDelivery | null>(() =>
     initialRepair?.status === "CAPTURED" && initialRepair.outputAssetId
       ? {
+          state: "COMPLETED",
           attempt: initialRepair,
           output_url: `/api/assets/${initialRepair.outputAssetId}`,
           download_url: initialDownloadUrl ?? "",
@@ -81,11 +98,27 @@ export function CustomerProject({
     [batch, selectedItem, busy, delivery, confirmedCount],
   );
   const nextStep = useMemo(
-    () => nextStepCopy({ stage, batch, selected: Boolean(selectedItem), delivery, confirmedCount, credits }),
-    [stage, batch, selectedItem, delivery, confirmedCount, credits],
+    () => nextStepCopy({ stage, batch, selected: Boolean(selectedItem), repairRunning: busy === "repair", delivery, confirmedCount, credits }),
+    [stage, batch, selectedItem, busy, delivery, confirmedCount, credits],
   );
   const primaryActionDisabled = !skuName.trim() || truthFiles.length < 1 || candidateFiles.length < 1 || busy !== null;
   const selectedSourceUrl = selectedItem ? `/api/assets/${selectedItem.assetId}` : "";
+
+  useEffect(() => {
+    if (initialRepair?.status !== "RUNNING") return;
+    let cancelled = false;
+    setBusy("repair");
+    setProgress("正在恢复修图进度…");
+    void waitForRepair(
+      `/api/repair-attempts?attempt_id=${encodeURIComponent(initialRepair.id)}`,
+      () => cancelled,
+    ).finally(() => {
+      if (!cancelled) setBusy(null);
+    });
+    return () => { cancelled = true; };
+    // The initial repair is a server snapshot and should only resume once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function addFiles(files: FileList | null, role: "truth" | "candidate") {
     if (!files?.length) return;
@@ -224,9 +257,17 @@ export function CustomerProject({
           idempotency_key: requestIdempotencyKey,
         }),
       });
-      const payload = await readPayload<RepairDelivery>(response);
-      setDelivery(payload);
+      const payload = await readPayload<RepairTaskPayload>(response);
       setCredits(payload.credits);
+      if (payload.state === "COMPLETED") {
+        setDelivery(payload);
+      } else if (payload.state === "FAILED") {
+        setError(payload.error);
+        setIdempotencyKey(crypto.randomUUID());
+      } else {
+        setProgress(payload.message);
+        await waitForRepair(payload.poll_url);
+      }
     } catch (cause) {
       setError(asCustomerError(cause));
       // A failed attempt has already released its hold server-side. Reusing its
@@ -237,6 +278,29 @@ export function CustomerProject({
       if (creditResponse.ok) setCredits((await creditResponse.json()) as CreditBalance);
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function waitForRepair(pollUrl: string, isCancelled: () => boolean = () => false) {
+    while (!isCancelled()) {
+      await delay(3_000);
+      if (isCancelled()) return;
+      const response = await fetch(pollUrl, { cache: "no-store" });
+      const payload = await readPayload<RepairTaskPayload>(response);
+      setCredits(payload.credits);
+      if (payload.state === "COMPLETED") {
+        setDelivery(payload);
+        setProgress("");
+        return;
+      }
+      if (payload.state === "FAILED") {
+        setError(payload.error);
+        setIdempotencyKey(crypto.randomUUID());
+        setProgress("");
+        return;
+      }
+      setProgress(payload.message);
+      pollUrl = payload.poll_url;
     }
   }
 
@@ -299,6 +363,7 @@ export function CustomerProject({
                 setRegion={setRegion}
                 credits={credits}
                 busy={busy}
+                progress={progress}
                 submitRepair={submitRepair}
                 back={() => setSelectedItem(null)}
               />
@@ -492,15 +557,15 @@ function BatchStatusPanel({ batch, restart }: { batch: ScreeningBatch; restart: 
   );
 }
 
-function RepairSetup({ sourceUrl, item, issue, setIssue, region, setRegion, credits, busy, submitRepair, back }: {
+function RepairSetup({ sourceUrl, item, issue, setIssue, region, setRegion, credits, busy, progress, submitRepair, back }: {
   sourceUrl: string; item: ScreeningItem; issue: string; setIssue: (value: string) => void; region: Region; setRegion: (value: Region) => void;
-  credits: CreditBalance; busy: "example" | "screen" | "repair" | null; submitRepair: () => void; back: () => void;
+  credits: CreditBalance; busy: "example" | "screen" | "repair" | null; progress: string; submitRepair: () => void; back: () => void;
 }) {
   return (
     <section className="customer-panel customer-repair" aria-labelledby="repair-title">
       <div className="customer-panel__head">
         <div><p className="customer-eyebrow">第三步 · 本次修正</p><h2 id="repair-title">确认要改什么，以及哪些地方不能变</h2><p>在图片上拖动框选问题区域。系统会把其余区域作为锁定范围记录。</p></div>
-        <button className="customer-text-button" type="button" onClick={back}>返回筛查结果</button>
+        <button className="customer-text-button" type="button" onClick={back} disabled={busy === "repair"}>返回筛查结果</button>
       </div>
       <div className="customer-repair__grid">
         <div>
@@ -524,6 +589,7 @@ function RepairSetup({ sourceUrl, item, issue, setIssue, region, setRegion, cred
               {busy === "repair" ? "正在生成修正版…" : "提交修正"}<span aria-hidden>→</span>
             </button>
           )}
+          {busy === "repair" ? <p className="customer-progress" role="status" aria-live="polite">{progress || "正在创建修图任务…"}</p> : null}
         </div>
       </div>
     </section>
@@ -662,6 +728,10 @@ async function readCustomerError(response: Response) {
   try { return (await response.json()).error; } catch { return { message: "图片上传没有完成。", next_action: "请重新上传这张图片。" }; }
 }
 
+function delay(milliseconds: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+}
+
 function asCustomerError(cause: unknown): { message: string; next_action?: string } {
   return cause && typeof cause === "object" && "message" in cause
     ? { message: String(cause.message), next_action: "next_action" in cause ? String(cause.next_action) : undefined }
@@ -764,14 +834,18 @@ function buildCollaborationEvents({ batch, selectedItem, repairRunning, delivery
   return events;
 }
 
-function nextStepCopy({ stage, batch, selected, delivery, confirmedCount, credits }: {
+function nextStepCopy({ stage, batch, selected, repairRunning, delivery, confirmedCount, credits }: {
   stage: number;
   batch: ScreeningBatch | null;
   selected: boolean;
+  repairRunning: boolean;
   delivery: RepairDelivery | null;
   confirmedCount: number;
   credits: CreditBalance;
 }): { title: string; body: string; actionLabel?: string } {
+  if (repairRunning) {
+    return { title: "修正版正在生成", body: "通常需要 1–3 分钟。可以停留在页面，也可以稍后刷新回来查看；请勿重复提交。" };
+  }
   if (delivery) {
     return confirmedCount >= 3
       ? { title: "可以下载，也可以继续修改", body: "三项确认已完成。下载当前版本，或点击“再次修正这张”进入下一轮。" }

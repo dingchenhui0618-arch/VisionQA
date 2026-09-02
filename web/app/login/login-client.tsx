@@ -70,7 +70,7 @@ export function LoginClient({
               type="button"
               onClick={() => setToken("visionqa-local-beta")}
             >
-              填入本机客户体验口令
+              填入测试体验口令
             </button>
           ) : null}
           {error ? (
