@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -85,8 +86,12 @@ export function CustomerProject({
         }
       : null,
   );
-  const [busy, setBusy] = useState<"example" | "screen" | "repair" | null>(null);
-  const [progress, setProgress] = useState("");
+  const [busy, setBusy] = useState<"example" | "screen" | "repair" | null>(() =>
+    initialRepair?.status === "RUNNING" ? "repair" : null,
+  );
+  const [progress, setProgress] = useState(() =>
+    initialRepair?.status === "RUNNING" ? "正在恢复修图进度…" : "",
+  );
   const [error, setError] = useState<{ message: string; next_action?: string } | null>(null);
   const [confirmations, setConfirmations] = useState([false, false, false]);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
@@ -104,21 +109,46 @@ export function CustomerProject({
   const primaryActionDisabled = !skuName.trim() || truthFiles.length < 1 || candidateFiles.length < 1 || busy !== null;
   const selectedSourceUrl = selectedItem ? `/api/assets/${selectedItem.assetId}` : "";
 
+  const waitForRepair = useCallback(async (initialPollUrl: string, isCancelled: () => boolean = () => false) => {
+    let pollUrl = initialPollUrl;
+    while (!isCancelled()) {
+      await delay(3_000);
+      if (isCancelled()) return;
+      const response = await fetch(pollUrl, { cache: "no-store" });
+      const payload = await readPayload<RepairTaskPayload>(response);
+      setCredits(payload.credits);
+      if (payload.state === "COMPLETED") {
+        setDelivery(payload);
+        setProgress("");
+        return;
+      }
+      if (payload.state === "FAILED") {
+        setError(payload.error);
+        setIdempotencyKey(crypto.randomUUID());
+        setProgress("");
+        return;
+      }
+      setProgress(payload.message);
+      pollUrl = payload.poll_url;
+    }
+  }, []);
+
   useEffect(() => {
     if (initialRepair?.status !== "RUNNING") return;
     let cancelled = false;
-    setBusy("repair");
-    setProgress("正在恢复修图进度…");
-    void waitForRepair(
-      `/api/repair-attempts?attempt_id=${encodeURIComponent(initialRepair.id)}`,
-      () => cancelled,
-    ).finally(() => {
-      if (!cancelled) setBusy(null);
-    });
-    return () => { cancelled = true; };
-    // The initial repair is a server snapshot and should only resume once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const timer = window.setTimeout(() => {
+      void waitForRepair(
+        `/api/repair-attempts?attempt_id=${encodeURIComponent(initialRepair.id)}`,
+        () => cancelled,
+      ).finally(() => {
+        if (!cancelled) setBusy(null);
+      });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [initialRepair, waitForRepair]);
 
   async function addFiles(files: FileList | null, role: "truth" | "candidate") {
     if (!files?.length) return;
@@ -278,29 +308,6 @@ export function CustomerProject({
       if (creditResponse.ok) setCredits((await creditResponse.json()) as CreditBalance);
     } finally {
       setBusy(null);
-    }
-  }
-
-  async function waitForRepair(pollUrl: string, isCancelled: () => boolean = () => false) {
-    while (!isCancelled()) {
-      await delay(3_000);
-      if (isCancelled()) return;
-      const response = await fetch(pollUrl, { cache: "no-store" });
-      const payload = await readPayload<RepairTaskPayload>(response);
-      setCredits(payload.credits);
-      if (payload.state === "COMPLETED") {
-        setDelivery(payload);
-        setProgress("");
-        return;
-      }
-      if (payload.state === "FAILED") {
-        setError(payload.error);
-        setIdempotencyKey(crypto.randomUUID());
-        setProgress("");
-        return;
-      }
-      setProgress(payload.message);
-      pollUrl = payload.poll_url;
     }
   }
 

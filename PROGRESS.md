@@ -407,6 +407,7 @@ Codex CLI 只作为未来可替换的 Agent Harness 候选。当前不要为“�
 - 修图改为异步任务：POST 立即返回 `202 + attemptId`，服务端使用请求后任务执行规划、Provider 和基础 Gate；客户页每 3 秒查询状态，刷新后会自动恢复 RUNNING 任务。Provider 使用独立 180 秒安全超时，不再绑定浏览器连接。
 - 真实页面示例验收：点击后约 0.8 秒进入“正在修正”，额度进入冻结态；后台完成后页面自动进入前后对比。该验收使用内置示例，不触发外部模型。
 - DeepSeek V4 Flash 只接收结构化证据、轮次和服务端白名单路线，不接收图片；输出仍需经过证据指纹、路线白名单、最多 3 轮、人工终审等确定性 Gate。
+- 真实 DeepSeek 规划探针返回 200 与结构化 JSON，但动作枚举使用小写 `route`；解析器现仅对已知动作做大小写归一化，路线白名单与证据指纹校验不变。修复后真实探针成功得到 `ROUTE → qwen-image-3-pro-edit`；模型偶发非契约输出时仍会安全回退到确定性路线，不自动重复计费调用。
 - 测试托管环境新增显式 `VISIONQA_TEST_ENVIRONMENT=true` 开关；支付固定关闭，模型密钥只配置为服务端 Secret。该开关不能用于正式生产。
 - 托管测试邀请改为独立的 `VISIONQA_TEST_INVITE_TOKEN` 服务端 Secret；生产构建不显示本机体验口令，公开后仍只能通过受控邀请链接进入客户工作区。
-- 工程证据：客户 UX 守卫 14/14；完整页面/schema/UX/production 31/31、TypeScript/runtime 141/141；生产构建与 lint 通过。
+- 工程证据：客户 UX 守卫 14/14；完整页面/schema/UX/production 31/31、TypeScript/runtime 142/142；生产构建与 lint 通过。

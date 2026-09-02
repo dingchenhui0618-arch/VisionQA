@@ -147,6 +147,26 @@ test("DeepSeek planner sends structured facts only, parses JSON, and never leaks
   assert.equal(decision.routeId, "qwen-image-3-pro-edit");
 });
 
+test("DeepSeek planner normalizes lowercase action enums without relaxing route policy", async () => {
+  const planner = createDeepSeekRepairPlanner(configuredPlanner, async () => new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify({
+      action: "route",
+      route_id: "qwen-image-3-pro-edit",
+      public_summary: "执行局部修正。",
+      strategy_revision: null,
+      evidence_fingerprints: ["issue:1"],
+    }) } }],
+  }), { status: 200, headers: { "content-type": "application/json" } }));
+  const decision = await planner.decide({
+    objective: "修正已确认问题",
+    round: 1,
+    evidence: [{ fingerprint: "issue:1", kind: "CUSTOMER_CORRECTION", summary: "多余装饰", verifiedBy: "HUMAN" }],
+    allowedRouteIds: ["qwen-image-3-pro-edit"],
+  });
+  assert.equal(decision.action, "ROUTE");
+  assert.equal(decision.routeId, "qwen-image-3-pro-edit");
+});
+
 test("DeepSeek planner rejects a model-selected route outside the server whitelist without retry", async () => {
   let calls = 0;
   const planner = createDeepSeekRepairPlanner(configuredPlanner, async () => {

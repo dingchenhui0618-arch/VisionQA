@@ -90,7 +90,7 @@ export class DeepSeekRepairPlanner {
     const message = asRecord(asRecord(asArray(body.choices)[0]).message);
     if (typeof message.content !== "string") throw new DeepSeekPlannerError("INVALID_OUTPUT", "DeepSeek 未返回结构化规划结果。");
     const raw = asRecord(parseJson(message.content));
-    const action = raw.action;
+    const action = typeof raw.action === "string" ? raw.action.toUpperCase() : raw.action;
     if (action !== "ROUTE" && action !== "REFINE" && action !== "STOP" && action !== "ESCALATE") {
       throw new DeepSeekPlannerError("INVALID_OUTPUT", "DeepSeek 返回了未知规划动作。");
     }
