@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createBetaServiceForTest } from "../lib/beta/service.ts";
+import { createBetaServiceForTest, readHostedTestInviteTokens } from "../lib/beta/service.ts";
 import { CustomerVisibleError } from "../lib/beta/contracts.ts";
 import { getPaymentCapability } from "../lib/beta/payment.ts";
 import { runServerRepairGate } from "../lib/beta/repair-gate.ts";
@@ -68,6 +68,16 @@ test("invite token is hashed, single-use, and creates a 30-day customer session 
     assert.equal(error.code, "INVITE_ALREADY_USED");
     return true;
   });
+});
+
+test("hosted test environment accepts multiple unique invite tokens with precedence over the legacy token", () => {
+  assert.deepEqual(readHostedTestInviteTokens({
+    VISIONQA_TEST_INVITE_TOKEN: "legacy-token",
+    VISIONQA_TEST_INVITE_TOKENS: "customer-a, customer-b, customer-a, , customer-c",
+  }), ["customer-a", "customer-b", "customer-c"]);
+  assert.deepEqual(readHostedTestInviteTokens({
+    VISIONQA_TEST_INVITE_TOKEN: "legacy-token",
+  }), ["legacy-token"]);
 });
 
 test("invite expires after its validity window", async () => {

@@ -125,20 +125,22 @@ export class BetaService {
   private async ensureDevelopmentInvite(): Promise<void> {
     const isHostedTest = process.env.NODE_ENV === "production" && process.env.VISIONQA_TEST_ENVIRONMENT === "true";
     if (this.developmentInviteReady || (process.env.NODE_ENV === "production" && !isHostedTest)) return;
-    const inviteToken = isHostedTest ? process.env.VISIONQA_TEST_INVITE_TOKEN?.trim() : "visionqa-local-beta";
-    if (!inviteToken) return;
+    const inviteTokens = isHostedTest ? readHostedTestInviteTokens(process.env) : ["visionqa-local-beta"];
+    if (inviteTokens.length === 0) return;
     this.developmentInviteReady = true;
-    const tokenHash = await sha256Hex(inviteToken);
-    this.invites.set(tokenHash, {
-      id: "invite_local_beta",
-      tokenHash,
-      label: process.env.NODE_ENV === "production" ? "测试环境客户体验" : "本机客户体验",
-      role: "customer",
-      initialCredits: INITIAL_BETA_CREDITS,
-      expiresAt: "2999-01-01T00:00:00.000Z",
-      consumedAt: null,
-      createdAt: this.timestamp(),
-    });
+    for (const [index, inviteToken] of inviteTokens.entries()) {
+      const tokenHash = await sha256Hex(inviteToken);
+      this.invites.set(tokenHash, {
+        id: isHostedTest ? `invite_hosted_beta_${index + 1}` : "invite_local_beta",
+        tokenHash,
+        label: isHostedTest ? `测试环境客户体验 ${String(index + 1).padStart(2, "0")}` : "本机客户体验",
+        role: "customer",
+        initialCredits: INITIAL_BETA_CREDITS,
+        expiresAt: "2999-01-01T00:00:00.000Z",
+        consumedAt: null,
+        createdAt: this.timestamp(),
+      });
+    }
   }
 
   async createInvite(input: {
@@ -737,6 +739,17 @@ export function getBetaService(): BetaService {
 
 export function createBetaServiceForTest(now?: () => Date): BetaService {
   return new BetaService({ now });
+}
+
+export function readHostedTestInviteTokens(env: NodeJS.ProcessEnv): string[] {
+  const multiple = (env.VISIONQA_TEST_INVITE_TOKENS ?? "")
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean);
+  const candidates = multiple.length > 0
+    ? multiple
+    : [env.VISIONQA_TEST_INVITE_TOKEN?.trim() ?? ""].filter(Boolean);
+  return [...new Set(candidates)].slice(0, 20);
 }
 
 function assertCustomerBetaBackendReady(): void {
