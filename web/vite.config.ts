@@ -40,7 +40,7 @@ export default defineConfig(async () => {
     const nodeOnlyDependencies = ["@mastra/core", "@mastra/libsql", "libsql", "@libsql/client", "zod"];
     return {
       plugins: [vinext()],
-      server: { host: "localhost", port: 6300, strictPort: true },
+      server: { host: "localhost", port: 6300, strictPort: true, forwardConsole: false },
       optimizeDeps: { exclude: ["@mastra/core", "@mastra/libsql", "libsql"] },
       ssr: { external: nodeOnlyDependencies },
       // Vinext has separate RSC/SSR environments. Root ssr.external alone does

@@ -32,6 +32,7 @@ export type ConversationInput = z.infer<typeof conversationInput>;
 export type ConversationPlan = z.infer<typeof conversationPlan>;
 export type TaskView = {
   id: string;
+  conversationId: string;
   parentId: string | null;
   objective: string;
   skuName: string;

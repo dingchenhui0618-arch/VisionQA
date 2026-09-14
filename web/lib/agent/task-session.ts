@@ -28,9 +28,11 @@ export class TaskSessions {
     }
     const parent = body.parentId ? this.entries.get(body.parentId) : undefined;
     if (body.parentId && (!parent || parent.owner !== owner)) throw new TaskSessionError("原任务不存在。", 404);
-    if (parent && (parent.busy || !["NEEDS_INPUT", "UNSUPPORTED", "AWAITING_APPROVAL", "FAILED"].includes(parent.view.status))) {
+    if (parent && (parent.busy || !["NEEDS_INPUT", "UNSUPPORTED", "AWAITING_APPROVAL", "FAILED", "PROJECT_READY", "STOPPED"].includes(parent.view.status))) {
       throw new TaskSessionError("原任务已变化，请刷新后继续。", 409);
     }
+    if (parent && body.skuName.trim() !== parent.view.skuName) throw new TaskSessionError("这个对话只属于当前商品。其他商品请新建对话。", 409);
+    if (parent && [...this.entries.values()].some(e => e.view.parentId === parent.view.id)) throw new TaskSessionError("该商品已有更新的对话，请刷新后继续。", 409);
     const history = parent ? [...parent.history,
       { role: "user" as const, content: parent.view.objective },
       { role: "assistant" as const, content: parent.view.plan ? JSON.stringify(parent.view.plan) : "上次计划未生成，请重新理解需求。" },
@@ -40,17 +42,19 @@ export class TaskSessions {
     if (!parsed.success) throw new TaskSessionError("请填写 SKU 名称和任务目标，目标最多 2000 字。");
     if (this.entries.size >= 100) throw new TaskSessionError("本地任务容量已满，请保留结果后重启开发服务。", 429);
     const entry: Entry = { owner, history, busy: true, view: {
-      id: body.id, parentId: body.parentId ?? null, skuName: parsed.data.skuName, objective: parsed.data.objective,
-      status: "STARTING", projectId: null, plan: null, error: null,
+      id: body.id, conversationId: parent?.view.conversationId ?? body.id, parentId: body.parentId ?? null, skuName: parsed.data.skuName, objective: parsed.data.objective,
+      status: "STARTING", projectId: parent?.view.projectId ?? null, plan: null, error: null,
     } };
     // Reserve synchronously before the first await; a revised plan invalidates its predecessor.
     this.entries.set(body.id, entry);
-    if (parent) parent.view.status = "SUPERSEDED";
+    if (parent && parent.view.status === "AWAITING_APPROVAL") parent.view.status = "SUPERSEDED";
     try {
       const plan = conversationPlan.parse(await deps.plan(parsed.data));
       entry.view.plan = plan;
       if (plan.decision === "READY") {
-        entry.run = await deps.prepare({ skuName: parsed.data.skuName, objective: plan.summary });
+        const projectId = entry.view.projectId;
+        entry.run = projectId ? { approve: async approved => ({ projectId, stopped: !approved }) }
+          : await deps.prepare({ skuName: parsed.data.skuName, objective: plan.summary });
         entry.view.status = "AWAITING_APPROVAL";
       } else entry.view.status = plan.decision === "CLARIFY" ? "NEEDS_INPUT" : "UNSUPPORTED";
     } catch (error) {

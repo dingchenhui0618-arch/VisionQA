@@ -107,6 +107,42 @@ test("stopping a ready workflow never creates a project", async () => {
   assert.equal(f.counts().tools, 0);
 });
 
+test("each root creates an isolated product conversation, even with identical names", async () => {
+  const f = fixture();
+  const a = await f.sessions.create("u", request("product-a"), f.deps);
+  const b = await f.sessions.create("u", request("product-b"), f.deps);
+  assert.notEqual(a.conversationId, b.conversationId);
+  const child = await f.sessions.create("u", request("product-a-next", a.id), { ...f.deps, plan: async facts => {
+    assert.equal(facts.history.length, 2);
+    return ready;
+  } });
+  assert.equal(child.conversationId, a.conversationId);
+});
+
+test("continued dialogue reuses product after approval, rejection and another round", async () => {
+  const f = fixture();
+  const a = await f.sessions.create("u", request("product-ready"), f.deps);
+  await f.sessions.act("u", a.id, "approve");
+  const b = await f.sessions.create("u", request("next-requirement", a.id), f.deps);
+  assert.equal(b.projectId, "project");
+  assert.equal(b.conversationId, a.conversationId);
+  await f.sessions.act("u", b.id, "stop");
+  const c = await f.sessions.create("u", request("third-request", b.id), f.deps);
+  await f.sessions.act("u", c.id, "approve");
+  assert.deepEqual(f.counts(), { calls: 3, prepares: 1, tools: 1 });
+  assert.equal(f.sessions.list("u")[0].status, "PROJECT_READY");
+});
+
+test("product identity is immutable and stale parent cannot fork the conversation", async () => {
+  const f = fixture();
+  const a = await f.sessions.create("u", request("immutable"), f.deps);
+  await assert.rejects(f.sessions.create("u", { ...request("other-product", a.id), skuName: "另一个商品" }, f.deps), /只属于当前商品/);
+  await f.sessions.act("u", a.id, "approve");
+  await f.sessions.create("u", request("latest-product", a.id), f.deps);
+  await assert.rejects(f.sessions.create("u", request("stale-product", a.id), f.deps), /更新的对话/);
+  assert.equal(f.counts().calls, 2);
+});
+
 test("Mastra model + approval workflow integration uses one mocked request; upstream failures are not retried", async t => {
   const keys = {
     DEEPSEEK_API_KEY: "test-only-not-a-secret",
