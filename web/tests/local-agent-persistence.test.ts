@@ -19,7 +19,7 @@ test("budget reservations survive process restart and stop at the call limit wit
   const script = `import {authorizeModelDispatch,getBudgetState} from ${JSON.stringify(moduleUrl)};
     for(let i=0;i<15;i++){const reservation=authorizeModelDispatch(50,{});reservation.record();reservation.record();}
     process.stdout.write(JSON.stringify(getBudgetState('prelaunch')));`;
-  const options = { cwd: dir, env: { ...process.env, VISIONQA_AGENT_LOCAL: "true", NODE_ENV: "test" }, encoding: "utf8" as const };
+  const options = { cwd: dir, env: { ...process.env, VISIONQA_AGENT_LOCAL: "true", NODE_ENV: "test" as const }, encoding: "utf8" as const };
   for (const calls of [15, 30]) {
     const result = spawnSync(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", script], options);
     assert.equal(result.status, 0);
