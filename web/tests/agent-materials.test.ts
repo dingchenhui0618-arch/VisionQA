@@ -3,8 +3,63 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { BetaService } from "../lib/beta/service.ts";
 import { fileProblem, materialPayload, selectionProblem, type Material } from "../lib/agent/material-client.ts";
+import { lockedOutside, regionProblem } from "../lib/agent/repair-client.ts";
 
 const asset = (id: string, role: Material["role"]): Material => ({ id, role, fileName: `${id}.png`, byteSize: 4, width: 64, height: 64 });
+test("repair regions stay in bounds and real outside locks cover the remaining area", () => {
+  const region = { x: 0.2, y: 0.3, width: 0.4, height: 0.2 };
+  assert.equal(regionProblem(region), null);
+  assert.ok(Math.abs(lockedOutside(region).reduce((n, r) => n + r.width * r.height, 0) + region.width * region.height - 1) < 1e-9);
+  assert.ok(regionProblem({ ...region, width: 2 }));
+  assert.ok(regionProblem({ x: 0, y: 0, width: 1, height: 1 }));
+  assert.ok(regionProblem({ ...region, x: NaN }));
+});
+test("theme, version-bound human review and no filename-based repair stand-ins remain explicit", () => {
+  const ui = readFileSync(new URL("../app/agent/workspace.tsx", import.meta.url), "utf8");
+  const repair = readFileSync(new URL("../app/agent/repair-panel.tsx", import.meta.url), "utf8");
+  const route = readFileSync(new URL("../app/api/repair-attempts/route.ts", import.meta.url), "utf8");
+  assert.match(ui, /localStorage.setItem\("visionqa-agent-theme"/);
+  assert.match(ui, /aria-label="切换黑白主题"/);
+  assert.match(repair, /checkedVersion === version.id/);
+  assert.match(repair, /!fullyReviewed/);
+  assert.match(repair, /source_asset_id: sourceId/);
+  assert.equal(route.includes("loadExampleRepair"), false);
+  assert.match(route, /getRepairReferenceBatch/);
+});
+test("multi-round repairs use an explicit historical source, keep original references and charge each accepted output once", async () => {
+  const service = new BetaService();
+  const { session } = await service.consumeInvite("visionqa-local-beta");
+  const p = service.createProject(session, "version fixture");
+  const bytes = new Uint8Array([1, 2, 3, 4]); // storage/ledger fixture only, not image quality
+  const add = async (role: "TRUTH" | "CANDIDATE") => {
+    const a = service.createUploadIntent(session, { projectId: p.id, role, fileName: "fixture.png", mimeType: "image/png", width: 64, height: 64, byteSize: 4 });
+    await service.putAsset(session, a.id, bytes); return a.id;
+  };
+  const truth = await add("TRUTH"), original = await add("CANDIDATE");
+  const batch = service.createScreeningBatch(session, { projectId: p.id, skuName: "fixture", truthAssetIds: [truth], candidateAssetIds: [original] });
+  const region = { x: 0.2, y: 0.2, width: 0.4, height: 0.4 };
+  const complete = service.completeScreeningBatch(session, batch.id, [{ assetId: original, decision: "NEEDS_ATTENTION", primaryIssue: "fixture", visibleEvidence: "synthetic", repairPrompt: null, issueRegion: region }]);
+  const input = { projectId: p.id, screeningItemId: complete.items[0].id, sourceAssetId: original, issue: "first", issueRegion: region, lockedRegions: lockedOutside(region), idempotencyKey: "first" };
+  const first = service.beginRepair(session, input);
+  assert.equal(service.beginRepair(session, input).id, first.id);
+  assert.throws(() => service.beginRepair(session, { ...input, issue: "different" }), /不一致/);
+  assert.throws(() => service.beginRepair(session, { ...input, idempotencyKey: "parallel" }), /进行中/);
+  const output = await service.createOutputAsset(session, { projectId: p.id, sourceFileName: "fixture.png", mimeType: "image/png", bytes, width: 64, height: 64 });
+  service.captureRepair(session, first.id, output.id);
+  service.captureRepair(session, first.id, output.id);
+  const nextBatch = service.createScreeningBatch(session, { projectId: p.id, skuName: "new batch", truthAssetIds: [truth], candidateAssetIds: [original] });
+  service.failScreeningBatch(session, nextBatch.id);
+  const second = service.beginRepair(session, { ...input, issue: "second", sourceAssetId: output.id, idempotencyKey: "second" });
+  assert.equal(second.sourceAssetId, output.id);
+  assert.equal(service.getRepairReferenceBatch(session, second.id).id, batch.id);
+  service.releaseRepair(session, second.id, "fixture failure");
+  const unaccepted = await service.createOutputAsset(session, { projectId: p.id, sourceFileName: "fixture.png", mimeType: "image/png", bytes, width: 64, height: 64 });
+  assert.throws(() => service.beginRepair(session, { ...input, sourceAssetId: unaccepted.id, idempotencyKey: "invalid" }), /母版/);
+  assert.equal(service.listProjectRepairs(session, p.id).length, 2);
+  assert.equal(service.getCredits(session).available, 4);
+  assert.equal(service.getCredits(session).held, 0);
+  assert.equal(service.getCredits(session).captured, 1);
+});
 test("customer screening never substitutes filename-based fixture diagnoses", () => {
   const route = readFileSync(new URL("../app/api/screening-batches/route.ts", import.meta.url), "utf8");
   assert.equal(route.includes("exampleScreeningResult"), false);

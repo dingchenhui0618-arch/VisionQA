@@ -14,6 +14,18 @@ export function AgentWorkspace() {
   const [skuName, setSkuName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      try { setTheme(localStorage.getItem("visionqa-agent-theme") === "light" ? "light" : "dark"); } catch { /* Session-only theme when storage is unavailable. */ }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    try { localStorage.setItem("visionqa-agent-theme", next); } catch { /* Switching still works without persistence. */ }
+  }
   const [needsLogin, setNeedsLogin] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const drafts = useRef<Record<string, string>>({});
@@ -81,12 +93,12 @@ export function AgentWorkspace() {
     setObjective(text); pendingId.current = null; pendingRequest.current = null;
     document.getElementById("agent-goal")?.focus();
   }
-  return <main className="agent-lab">
+  return <main className="agent-lab" data-theme={theme}>
     <nav className="agent-lab__sidebar" aria-label="商品对话">
       <Link className="agent-lab__brand" href="/">VisionQA</Link>
       <button className="agent-lab__new" disabled={busy} onClick={() => selectConversation(null)}><span aria-hidden="true">＋</span> 新商品对话</button>
       <a className="agent-lab__navlink" href="/workspace"><span aria-hidden="true">▧</span> 素材工作台</a>
-      <details className="agent-lab__capabilities"><summary>◇ 能力范围</summary><p>已接入：商品图需求规划、对话内保存素材与筛查。修图交付暂时保留完整工作区入口。</p><p>信息流脚本修正、视觉方向：尚待接入。</p></details>
+      <details className="agent-lab__capabilities"><summary>◇ 能力范围</summary><p>已接入：商品图需求规划、素材与筛查、修图对比和多轮版本选择。</p><p>信息流脚本修正、视觉方向：尚待接入。</p></details>
       <div className="agent-lab__products"><h2>商品对话历史</h2>
         {!conversations.length && <p>从你的第一个商品开始</p>}
         {conversations.map(t => <button key={t.id} aria-current={selected === t.conversationId ? "page" : undefined} disabled={busy} onClick={() => selectConversation(t.conversationId)}>{t.skuName}<small>{tasks.filter(item => item.conversationId === t.conversationId).length} 轮对话</small></button>)}
@@ -98,7 +110,7 @@ export function AgentWorkspace() {
       </div>
     </nav>
     <section className={`agent-lab__main ${current ? "has-conversation" : "is-empty"}`} aria-label="商品任务对话">
-      <div className="agent-lab__topline"><span>{current?.skuName ?? "新商品对话"}</span><span>本地原型</span></div>
+      <div className="agent-lab__topline"><span>{current?.skuName ?? "新商品对话"}</span><button className="secondary" onClick={toggleTheme} aria-label="切换黑白主题" aria-pressed={theme === "light"}>{theme === "dark" ? "◐ 切换白色" : "◑ 切换黑色"}</button></div>
       <div className="agent-lab__stage">
         <div className="agent-lab__identity"><div className="agent-lab__mark" aria-hidden="true">VQ</div><div><h1>{current?.skuName ?? "你的电商视觉助手"}</h1><p>{current ? "一个商品，一段持续协作的对话" : "从一件商品出发，把视觉想法变成可交付的内容。"}</p></div><span className="agent-lab__mode">商品图评审 · 规划</span></div>
         {visibleTasks.length > 0 && <div className="agent-lab__history" aria-live="polite">
@@ -111,7 +123,7 @@ export function AgentWorkspace() {
           <p>{current.projectId ? "沿用已有商品项目；确认计划不会自动修图。" : "确认只建立商品项目，不发送图片、不扣修图额度。"}</p>
           {current.status === "AWAITING_APPROVAL" && <div className="agent-lab__actions"><button disabled={working || Boolean(objective.trim())} onClick={() => void send("approve")}>{current.projectId ? "确认本轮计划" : "确认，建立商品项目"}</button><button className="secondary" disabled={working} onClick={() => void send("stop")}>暂不执行</button>{objective.trim() && <p>已有补充要求，请先发送后再确认。</p>}</div>}
         </details>}
-        {current?.projectId && <><MaterialPanel key={current.projectId} projectId={current.projectId} skuName={current.skuName} onDiscuss={suggest} /><a className="agent-lab__project" href={`/workspace/projects/${current.projectId}`}>打开完整修图工作区（对话内修图仍在接入） ↗</a></>}
+        {current?.projectId && <><MaterialPanel key={current.projectId} projectId={current.projectId} skuName={current.skuName} onDiscuss={suggest} /><a className="agent-lab__project" href={`/workspace/projects/${current.projectId}`}>打开传统工作区 ↗</a></>}
         {current && ["NEEDS_INPUT", "UNSUPPORTED", "FAILED"].includes(current.status) && <div className="agent-lab__actions">
           {current.status === "FAILED" && <button disabled={working || Boolean(objective.trim())} onClick={() => { pendingId.current = null; pendingRequest.current = null; void send("create", true); }}>重新生成计划</button>}
           <button className="secondary" disabled={working} onClick={() => void send("stop")}>结束本轮任务</button>

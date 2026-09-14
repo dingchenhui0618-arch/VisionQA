@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ScreeningBatch, ScreeningItem } from "../../lib/beta/contracts";
 import { fileProblem, materialPayload, selectionProblem, type Material } from "../../lib/agent/material-client";
+import { RepairPanel } from "./repair-panel";
 
 type Snapshot = { assets: Material[]; batch: ScreeningBatch | null };
 const decisionLabels = { NEEDS_ATTENTION: "■ 需要处理", NEEDS_MANUAL_CHECK: "□ 需要人工判断", NO_OBVIOUS_ISSUE: "— 未见明显问题" };
@@ -12,6 +13,7 @@ export function MaterialPanel({ projectId, skuName, onDiscuss }: { projectId: st
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [consent, setConsent] = useState(false);
+  const [repairItem, setRepairItem] = useState<string | undefined>();
   const lock = useRef(false);
   const alive = useRef(true);
   const applySnapshot = (next: Snapshot) => {
@@ -120,6 +122,8 @@ export function MaterialPanel({ projectId, skuName, onDiscuss }: { projectId: st
       <strong>{decisionLabels[item.decision]}</strong><small>{snapshot.assets.find(a => a.id === item.assetId)?.fileName ?? "原图已过期"}</small>
       <p>{item.primaryIssue ?? (item.decision === "NO_OBVIOUS_ISSUE" ? "未见明显问题，仍需要人工复验。" : "信息不足，暂不能形成可靠结论，请人工核对。")}</p><p>{item.visibleEvidence}</p>
       {item.decision !== "NO_OBVIOUS_ISSUE" && <button className="secondary" onClick={() => discuss(item)}>在对话里讨论这个问题</button>}
+      <button className="secondary" disabled={running} onClick={() => setRepairItem(item.id)}>选择这张进行修正</button>
     </article>)}</div>}
+    {snapshot && <RepairPanel key={`${projectId}:${repairItem ?? "restore"}`} projectId={projectId} initialItemId={repairItem} />}
   </section>;
 }

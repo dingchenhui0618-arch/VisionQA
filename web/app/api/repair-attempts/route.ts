@@ -25,6 +25,7 @@ export async function POST(request: Request) {
     const attempt = service.beginRepair(session, {
       projectId: String(input.project_id ?? ""),
       screeningItemId: String(input.screening_item_id ?? ""),
+      sourceAssetId: typeof input.source_asset_id === "string" ? input.source_asset_id : undefined,
       issue: String(input.issue ?? ""),
       issueRegion: region,
       lockedRegions: lockedRegions.length ? lockedRegions : perimeterLocks(region),
@@ -34,10 +35,10 @@ export async function POST(request: Request) {
       return Response.json(await completedPayload(session, attempt));
     }
     if (attempt.status === "RUNNING") return Response.json(runningPayload(session, attempt), { status: 202 });
+    if (attempt.status === "RELEASED") return Response.json({ state: "FAILED", attempt, credits: service.getCredits(session), error: { message: attempt.failureReason ?? "本轮未完成，额度已退回。", next_action: "请开始新一轮。" } });
     const running = service.markRepairRunning(session, attempt.id);
-    const requestUrl = request.url;
     after(async () => {
-      await executeRepairAttempt(session, running.id, requestUrl);
+      await executeRepairAttempt(session, running.id);
     });
     return Response.json(runningPayload(session, running), {
       status: 202,
@@ -88,23 +89,18 @@ export async function GET(request: Request) {
   }
 }
 
-async function executeRepairAttempt(session: BetaSessionView, attemptId: string, requestUrl: string) {
+async function executeRepairAttempt(session: BetaSessionView, attemptId: string) {
   const service = getBetaService();
   try {
     const attempt = service.getRepairAttempt(session, attemptId);
     const source = service.readAsset(session, attempt.sourceAssetId);
-    const batch = service.latestBatchForProject(session, attempt.projectId);
+    const batch = service.getRepairReferenceBatch(session, attempt.id);
     if (!batch) throw new Error("Repair batch is unavailable");
     const references = batch.truthAssetIds.slice(0, 2).map((id) => service.readAsset(session, id));
 
-    const exampleOutput = /demo-cardigan-defect/i.test(source.asset.fileName)
-      ? await loadExampleRepair(requestUrl)
-      : null;
     let providerResult: QwenImage3EditResult | null = null;
     let output: { bytes: Uint8Array; mimeType: "image/png" | "image/jpeg" | "image/webp"; width: number | null; height: number | null };
-    if (exampleOutput) {
-      output = exampleOutput;
-    } else {
+    {
       const readiness = getQwenImage3Readiness(process.env);
       if (!readiness.liveReady) {
         throw new CustomerVisibleError(
@@ -114,7 +110,7 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string,
           "图片、问题描述和框选区域都已保留，请稍后再次提交。",
         );
       }
-      const episode = service.latestRepairEvolutionForProject(session, attempt.projectId);
+      const episode = service.getRepairEvolution(session, attempt.id);
       if (!episode) throw new Error("Repair evolution episode is unavailable");
       const planning = await planCustomerRepair({
         episode,
@@ -265,17 +261,6 @@ function customerErrorForProviderFailure(code: QwenImage3ProviderError["code"]):
     503,
     "请直接再次提交；系统会创建一笔新的修图任务。",
   );
-}
-
-async function loadExampleRepair(requestUrl: string) {
-  const response = await fetch(new URL("/fashion/demo-cardigan-repaired.png", requestUrl));
-  if (!response.ok) return null;
-  return {
-    bytes: new Uint8Array(await response.arrayBuffer()),
-    mimeType: "image/png" as const,
-    width: null,
-    height: null,
-  };
 }
 
 function buildCustomerRepairPrompt(issue: string, region: Region): string {

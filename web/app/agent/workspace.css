@@ -1,5 +1,22 @@
 .agent-lab { --lab-paper:#0b0b0d; --lab-surface:#18181b; --lab-hover:#262629; --lab-ink:#f0f0f2; --lab-muted:#a0a0aa; --lab-line:#303035; color-scheme:dark; min-height:100dvh; display:grid; grid-template-columns:260px minmax(0,1fr); background:var(--lab-paper); color:var(--lab-ink); font-family:Arial,"Microsoft YaHei",sans-serif; font-size:14px; }
 .agent-lab * { box-sizing:border-box; }
+.agent-lab[data-theme=light] { --lab-paper:#fafafa; --lab-surface:#f0f0f0; --lab-hover:#e5e5e5; --lab-ink:#171717; --lab-muted:#626262; --lab-line:#d4d4d4; color-scheme:light; }
+.agent-lab select { font:inherit; color:var(--lab-ink); background:var(--lab-surface); width:100%; min-width:0; min-height:44px; border:1px solid var(--lab-line); border-radius:8px; padding:8px; }
+.agent-lab select:focus-visible { outline:2px solid var(--lab-ink); outline-offset:3px; }
+.agent-repair { margin-top:24px; padding-top:24px; border-top:1px solid var(--lab-line); }
+.agent-repair > label,.agent-repair__delivery > label { display:grid; gap:8px; margin:16px 0; }
+.agent-repair textarea,.agent-repair input[type=number] { width:100%; min-height:44px; border:1px solid var(--lab-line); border-radius:8px; background:var(--lab-surface); color:var(--lab-ink); padding:8px; }
+.agent-repair__region { position:relative; width:min(100%,480px); margin:16px auto; touch-action:none; cursor:crosshair; }
+.agent-repair__region img { display:block; width:100%; height:auto; pointer-events:none; }
+.agent-repair__box { position:absolute; pointer-events:none; border:2px solid white; outline:1px solid black; background:rgba(0,0,0,.12); }
+.agent-repair__coordinates { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.agent-repair__coordinates label { min-width:0; font-size:12px; }
+.agent-repair__compare { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.agent-repair__compare figure { margin:0; min-width:0; }
+.agent-repair__compare img { width:100%; height:auto; display:block; }
+.agent-repair__compare figcaption { padding:12px 0; }
+.agent-repair__delivery .agent-materials__consent { display:flex; }
+@media(max-width:500px) { .agent-repair__coordinates { grid-template-columns:repeat(2,minmax(0,1fr)); } .agent-repair__compare { grid-template-columns:1fr; } }
 .agent-lab :is(button,input,textarea) { font:inherit; color:inherit; }
 .agent-lab :is(button,a,summary) { -webkit-tap-highlight-color:transparent; }
 .agent-lab :is(button,a,input,textarea,summary):focus-visible { outline:2px solid var(--lab-ink); outline-offset:3px; }

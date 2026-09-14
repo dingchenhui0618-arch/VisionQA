@@ -26,6 +26,7 @@ import {
   type RepairPlannerDecision,
 } from "../visionqa/agents/recursive-repair.ts";
 import { localStateStore, type StateStore } from "./local-state.ts";
+import { regionProblem } from "../agent/repair-client.ts";
 
 type InviteRecord = {
   id: string;
@@ -84,6 +85,7 @@ export type CreateUploadIntentInput = Pick<
 >;
 
 export type RepairStartInput = {
+  sourceAssetId?: string;
   projectId: string;
   screeningItemId: string;
   issue: string;
@@ -565,7 +567,26 @@ export class BetaService {
     }
     const key = `${session.tenantId}:${cleanText(input.idempotencyKey, 128)}`;
     const replayId = this.attemptByIdempotency.get(key);
-    if (replayId) return { ...this.attempts.get(replayId)! };
+    if (replayId) {
+      const replay = this.attempts.get(replayId)!;
+      if (replay.projectId !== project.id || replay.screeningItemId !== input.screeningItemId || replay.sourceAssetId !== (input.sourceAssetId ?? item.item.assetId)
+        || replay.issue !== cleanText(input.issue, 500) || JSON.stringify(replay.issueRegion) !== JSON.stringify(normalizeRegion(input.issueRegion))
+        || JSON.stringify(replay.lockedRegions) !== JSON.stringify(input.lockedRegions.map(normalizeRegion).slice(0, 12))) {
+        throw new CustomerVisibleError("BATCH_INVALID", "本次修图内容与原提交不一致。", 409, "请确认原任务状态后再开始新一轮。");
+      }
+      return { ...replay };
+    }
+    if ([...this.attempts.values()].some(a => a.projectId === project.id && ["HELD", "RUNNING"].includes(a.status))) {
+      throw new CustomerVisibleError("BATCH_INVALID", "当前商品还有修图任务进行中。", 409, "请等待结果后再开始下一轮。");
+    }
+    const sourceAssetId = input.sourceAssetId ?? item.item.assetId;
+    if (input.sourceAssetId && regionProblem(input.issueRegion)) throw new CustomerVisibleError("BATCH_INVALID", regionProblem(input.issueRegion)!, 422, "请调整本轮修改范围。");
+    const source = this.readAsset(session, sourceAssetId).asset;
+    if (source.projectId !== project.id || (sourceAssetId !== item.item.assetId && ![...this.attempts.values()].some(a =>
+      a.projectId === project.id && a.screeningItemId === item.item.id && a.outputAssetId === sourceAssetId && a.status === "CAPTURED"))) {
+      throw new CustomerVisibleError("BATCH_INVALID", "这个版本不能作为当前图片的修图母版。", 422, "请选择这张图片的原图或已完成修正版。");
+    }
+    if (!input.issue.trim() || !input.idempotencyKey.trim()) throw new CustomerVisibleError("BATCH_INVALID", "请填写修改要求。", 422, "确认问题与范围后再提交。");
     const wallet = this.wallets.get(session.tenantId);
     if (!wallet || wallet.available < 1) {
       throw new CustomerVisibleError(
@@ -588,7 +609,7 @@ export class BetaService {
       tenantId: session.tenantId,
       projectId: project.id,
       screeningItemId: item.item.id,
-      sourceAssetId: item.item.assetId,
+      sourceAssetId,
       outputAssetId: null,
       issue: cleanText(input.issue, 500),
       issueRegion: normalizeRegion(input.issueRegion),
@@ -644,6 +665,29 @@ export class BetaService {
     return cloneRepairEvolution(next);
   }
 
+  listProjectRepairs(session: BetaSessionView, projectId: string): RepairAttempt[] {
+    this.getProject(session, projectId);
+    return [...this.attempts.values()].filter(a => a.tenantId === session.tenantId && a.projectId === projectId)
+      .map(a => ({ ...a, issueRegion: { ...a.issueRegion }, lockedRegions: a.lockedRegions.map(r => ({ ...r })) }));
+  }
+
+  listProjectScreeningItems(session: BetaSessionView, projectId: string): ScreeningItem[] {
+    this.getProject(session, projectId);
+    return [...this.batches.values()].filter(b => b.tenantId === session.tenantId && b.projectId === projectId && b.status === "COMPLETED")
+      .flatMap(b => cloneBatch(b).items);
+  }
+
+  getRepairReferenceBatch(session: BetaSessionView, attemptId: string): ScreeningBatch {
+    const attempt = this.requireAttempt(session, attemptId);
+    return cloneBatch(this.findScreeningItem(session, attempt.screeningItemId).batch);
+  }
+
+  getRepairEvolution(session: BetaSessionView, attemptId: string) {
+    this.requireAttempt(session, attemptId);
+    const episode = this.repairEvolutions.get(attemptId);
+    return episode ? cloneRepairEvolution(episode) : null;
+  }
+
   latestRepairEvolutionForProject(session: BetaSessionView, projectId: string): RepairEvolutionEpisode | null {
     const attempt = this.latestRepairForProject(session, projectId);
     if (!attempt) return null;
@@ -669,6 +713,7 @@ export class BetaService {
     if (attempt.status === "CAPTURED") return { ...attempt };
     if (!["HELD", "RUNNING"].includes(attempt.status)) throw new Error("Released repair cannot be captured");
     const output = this.requireAsset(session, outputAssetId);
+    if (output.projectId !== attempt.projectId) throw new Error("Repair output must belong to the same project");
     requireReadyRole(output, "REPAIR_OUTPUT");
     const wallet = this.wallets.get(session.tenantId)!;
     wallet.held -= 1;

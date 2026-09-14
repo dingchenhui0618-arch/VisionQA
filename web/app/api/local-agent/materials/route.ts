@@ -11,6 +11,6 @@ export async function GET(request: Request) {
     const session = await requireBetaSessionFromRequest(request);
     const service = getBetaService();
     const id = url.searchParams.get("project") ?? "";
-    return Response.json({ assets: service.listProjectAssets(session, id), batch: service.latestBatchForProject(session, id) }, { headers: { "cache-control": "no-store" } });
+    return Response.json({ assets: service.listProjectAssets(session, id), batch: service.latestBatchForProject(session, id), items: service.listProjectScreeningItems(session, id), repairs: service.listProjectRepairs(session, id), credits: service.getCredits(session) }, { headers: { "cache-control": "no-store" } });
   } catch (error) { return customerErrorResponse(error); }
 }
