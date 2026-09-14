@@ -1,42 +1,75 @@
-.agent-lab { --lab-paper: #fafafa; --lab-ink: #171717; --lab-muted: #626262; --lab-line: #dedede; min-height: 100vh; background: var(--lab-paper); color: var(--lab-ink); }
-.agent-lab header { min-height: 72px; display: flex; align-items: center; gap: 24px; padding: 12px 32px; border-bottom: 1px solid var(--lab-line); }
-.agent-lab header a:first-child { font-size: 22px; font-weight: 650; margin-right: auto; }
-.agent-lab header span, .agent-lab small, .agent-lab__eyebrow { color: var(--lab-muted); font-size: 13px; }
-.agent-lab a { color: inherit; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
-.agent-lab a:hover { text-decoration: underline; }
-.agent-lab__body { display: grid; grid-template-columns: 220px minmax(0, 1.4fr) minmax(280px, 1fr); max-width: 1600px; margin: 0 auto; }
-.agent-lab__products { padding: 24px 16px; border-right: 1px solid var(--lab-line); min-width: 0; }
-.agent-lab__products button { display: block; width: 100%; text-align: left; margin: 12px 0; overflow-wrap: anywhere; }
-.agent-lab__products small { display: block; margin-top: 8px; }
-.agent-lab__products button[aria-current="page"] { border-color: var(--lab-ink); background: var(--lab-line); }
-.agent-lab__products p { font-size: 13px; color: var(--lab-muted); }
-@media (min-width: 761px) and (max-width: 1150px) { .agent-lab__body { grid-template-columns: 180px minmax(0, 1fr); } .agent-lab__inspector { grid-column: 2; border-top: 1px solid var(--lab-line); } }
-.agent-lab__conversation { padding: 48px; min-width: 0; }
-.agent-lab h1 { font-size: clamp(28px, 3vw, 42px); font-weight: 600; line-height: 1.3; letter-spacing: -.025em; margin: 16px 0; }
-.agent-lab p { line-height: 1.8; overflow-wrap: anywhere; }
-.agent-lab__history { margin: 32px 0; max-height: 320px; overflow: auto; }
-.agent-lab__history article { padding: 16px 0; border-top: 1px solid var(--lab-line); }
-.agent-lab__history article p { white-space: pre-wrap; margin: 8px 0; }
-.agent-lab__intro { color: var(--lab-muted); }
-.agent-lab form { display: grid; gap: 12px; }
-.agent-lab label { font-size: 14px; font-weight: 550; }
-.agent-lab input, .agent-lab textarea { width: 100%; min-height: 44px; padding: 12px; background: #f1f1f1; border: 1px solid var(--lab-line); border-radius: 8px; }
-.agent-lab textarea { min-height: 112px; resize: vertical; }
-.agent-lab button, .agent-lab__primary-link { min-height: 44px; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--lab-ink); background: var(--lab-ink); color: white !important; cursor: pointer; font-size: 14px; }
-.agent-lab button:hover { background: #333; }
-.agent-lab button:disabled { opacity: .5; cursor: not-allowed; }
-.agent-lab .secondary { background: transparent; color: var(--lab-ink) !important; border-color: var(--lab-line); }
-.agent-lab :is(button,a,input,textarea):focus-visible { outline: 2px solid var(--lab-ink); outline-offset: 4px; }
-.agent-lab__inspector { border-left: 1px solid var(--lab-line); padding: 32px; background: #f4f4f4; min-width: 0; }
-.agent-lab__section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
-.agent-lab h2 { font-size: 16px; font-weight: 600; }
-.agent-lab__section-head span { font-size: 13px; color: var(--lab-muted); }
-.agent-lab__plan { margin-top: 32px; padding: 24px; background: white; border: 1px solid var(--lab-line); }
-.agent-lab h3 { font-size: 20px; font-weight: 550; margin: 12px 0 24px; overflow-wrap: anywhere; }
-.agent-lab ol { list-style: decimal; padding-left: 24px; }
-.agent-lab li { padding: 10px 0; }
-.agent-lab__actions { display: flex; flex-wrap: wrap; gap: 12px; }
-.agent-lab__boundary { padding: 24px 0; color: var(--lab-muted); font-size: 13px; }
-.agent-lab__boundary h3 { font-size: 14px; margin-bottom: 12px; }
-.agent-lab__error { border: 1px solid var(--lab-ink); padding: 12px; margin-bottom: 16px; }
-@media (max-width: 760px) { .agent-lab__body { grid-template-columns: 1fr; } .agent-lab header { padding: 12px 20px; gap: 12px; flex-wrap: wrap; } .agent-lab header span { display: none; } .agent-lab__conversation, .agent-lab__inspector { padding: 24px 20px; } .agent-lab__inspector { border-left: 0; border-top: 1px solid var(--lab-line); } .agent-lab__plan { margin-top: 16px; padding: 20px; } }
+.agent-lab { --lab-paper:#0b0b0d; --lab-surface:#18181b; --lab-hover:#262629; --lab-ink:#f0f0f2; --lab-muted:#a0a0aa; --lab-line:#303035; color-scheme:dark; min-height:100dvh; display:grid; grid-template-columns:260px minmax(0,1fr); background:var(--lab-paper); color:var(--lab-ink); font-family:Arial,"Microsoft YaHei",sans-serif; font-size:14px; }
+.agent-lab * { box-sizing:border-box; }
+.agent-lab :is(button,input,textarea) { font:inherit; color:inherit; }
+.agent-lab :is(button,a,summary) { -webkit-tap-highlight-color:transparent; }
+.agent-lab :is(button,a,input,textarea,summary):focus-visible { outline:2px solid var(--lab-ink); outline-offset:3px; }
+.agent-lab a { color:inherit; text-decoration:none; }
+.agent-lab button { cursor:pointer; min-height:44px; padding:10px 16px; border:1px solid var(--lab-line); border-radius:8px; background:var(--lab-ink); color:var(--lab-paper); }
+.agent-lab button:disabled { opacity:.4; cursor:not-allowed; }
+.agent-lab button:not(:disabled):hover { filter:brightness(1.15); }
+.agent-lab button:not(:disabled):active { transform:translateY(1px); }
+.agent-lab .secondary { background:transparent; color:var(--lab-ink); }
+.agent-lab p { line-height:1.75; overflow-wrap:anywhere; }
+.agent-lab small { font-size:12px; color:var(--lab-muted); }
+.agent-lab__sidebar { height:100dvh; position:sticky; top:0; display:flex; flex-direction:column; background:var(--lab-surface); padding:16px 12px; border-right:1px solid var(--lab-line); min-width:0; overflow:auto; }
+.agent-lab__brand { min-height:44px; padding:0 8px; display:flex; align-items:center; gap:5px; font-size:23px; font-weight:700; letter-spacing:-.6px; margin-bottom:16px; }
+.agent-lab__brand span { font-weight:400; }
+.agent-lab .agent-lab__new { background:var(--lab-hover); color:var(--lab-ink); border-color:transparent; text-align:left; }
+.agent-lab__new span { margin-right:8px; }
+.agent-lab__navlink { display:flex; gap:12px; align-items:center; min-height:44px; padding:8px 12px; }
+.agent-lab__navlink:hover { background:var(--lab-hover); border-radius:8px; }
+.agent-lab summary { cursor:pointer; min-height:44px; padding:12px; }
+.agent-lab__capabilities p,.agent-lab__sidebar-bottom p { color:var(--lab-muted); font-size:12px; padding:0 12px; }
+.agent-lab__products { margin-top:32px; flex:1; }
+.agent-lab__products h2 { font-size:12px; font-weight:400; color:var(--lab-muted); margin:0 12px 12px; }
+.agent-lab__products > p { color:var(--lab-muted); padding:0 12px; font-size:13px; }
+.agent-lab__products button { background:transparent; color:var(--lab-ink); border-color:transparent; display:block; width:100%; text-align:left; overflow-wrap:anywhere; margin:4px 0; }
+.agent-lab__products button[aria-current="page"] { background:var(--lab-hover); border-color:var(--lab-line); }
+.agent-lab__products small { display:block; margin-top:4px; }
+.agent-lab__sidebar-bottom { margin-top:32px; padding-top:12px; border-top:1px solid var(--lab-line); }
+.agent-lab__sidebar-bottom > small { display:block; margin:12px; }
+.agent-lab__sidebar-bottom > a { display:flex; align-items:center; justify-content:center; min-height:44px; background:var(--lab-paper); border-radius:8px; }
+.agent-lab__main { min-width:0; min-height:100dvh; display:flex; flex-direction:column; padding:0 40px; }
+.agent-lab__topline { display:flex; justify-content:space-between; align-items:center; gap:16px; min-height:64px; color:var(--lab-muted); font-size:12px; }
+.agent-lab__stage { width:100%; max-width:800px; margin:0 auto; }
+.agent-lab__main.is-empty .agent-lab__stage { padding-top:clamp(48px,22vh,240px); }
+.agent-lab__main.has-conversation .agent-lab__stage { padding-top:32px; padding-bottom:32px; }
+.agent-lab__identity { display:flex; align-items:center; gap:16px; margin-bottom:24px; }
+.agent-lab__mark { display:grid; place-items:center; width:52px; height:52px; flex:none; border:1px solid var(--lab-line); background:var(--lab-surface); border-radius:12px; font-size:18px; font-weight:700; letter-spacing:-1px; }
+.agent-lab h1 { margin:0 0 4px; font-size:22px; font-weight:600; line-height:1.4; overflow-wrap:anywhere; }
+.agent-lab__identity p { margin:0; color:var(--lab-muted); font-size:13px; }
+.agent-lab__mode { margin-left:auto; flex:none; color:var(--lab-muted); border:1px solid var(--lab-line); padding:8px 12px; border-radius:20px; font-size:12px; }
+.agent-lab__composer { border:1px solid var(--lab-line); border-radius:22px; background:var(--lab-surface); padding:12px 16px; margin:0; }
+.agent-lab__composer:focus-within { border-color:#686872; }
+.agent-lab__product-input { display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--lab-line); }
+.agent-lab__product-input label { color:var(--lab-muted); font-size:12px; flex:none; }
+.agent-lab__product-input input { min-width:0; flex:1; height:44px; border:0; outline:0; background:transparent; }
+.agent-lab__composer textarea { width:100%; display:block; resize:vertical; min-height:100px; max-height:280px; border:0; background:transparent; padding:16px 0 8px; line-height:1.7; outline:0; }
+.agent-lab :is(input,textarea)::placeholder { color:var(--lab-muted); opacity:1; }
+.agent-lab__composer-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; }
+.agent-lab__composer-bar > span { color:var(--lab-muted); font-size:12px; }
+.agent-lab .agent-lab__send { border-radius:50%; width:44px; height:44px; padding:0; flex:none; font-size:24px; }
+.agent-lab__starters { display:flex; justify-content:center; flex-wrap:wrap; gap:12px; margin:28px 0 16px; }
+.agent-lab__starters button { border-radius:24px; background:var(--lab-surface); color:var(--lab-ink); font-size:13px; }
+.agent-lab__notice { color:var(--lab-muted); font-size:11px; text-align:center; margin:16px 0; }
+.agent-lab__main footer { margin-top:auto; padding:32px 0 16px; text-align:center; color:var(--lab-muted); font-size:11px; line-height:1.7; }
+.agent-lab__history article { padding:16px 0; }
+.agent-lab__history p { white-space:pre-wrap; margin:8px 0; }
+.agent-lab__user { margin-left:auto; width:fit-content; max-width:88%; padding:12px 20px; border-radius:16px; background:var(--lab-surface); }
+.agent-lab__answer { padding:24px 0 8px; }
+.agent-lab__answer > small { font-weight:600; }
+.agent-lab__plan { border:1px solid var(--lab-line); border-radius:12px; padding:4px 16px 12px; margin:16px 0; background:var(--lab-surface); }
+.agent-lab__plan summary { padding-left:0; }
+.agent-lab__plan summary span { float:right; color:var(--lab-muted); font-size:12px; }
+.agent-lab__plan h3 { font-size:13px; margin:16px 0 8px; }
+.agent-lab__plan ul { padding-left:20px; list-style:disc; }
+.agent-lab__plan li { line-height:1.8; }
+.agent-lab__plan p { font-size:12px; color:var(--lab-muted); }
+.agent-lab__actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:16px 0; }
+.agent-lab__project { display:flex; align-items:center; min-height:44px; padding:12px 0; margin:8px 0; }
+.agent-lab__error { padding:12px 16px; border-left:2px solid var(--lab-muted); font-size:13px; line-height:1.6; margin:16px 0; }
+.agent-lab__error a { display:inline-flex; align-items:center; min-height:44px; margin-left:12px; text-decoration:underline; }
+.agent-lab__sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(max-width:1100px) { .agent-lab { grid-template-columns:220px minmax(0,1fr); } .agent-lab__main { padding:0 24px; } .agent-lab__mode { display:none; } }
+@media(max-width:700px) { .agent-lab { display:block; } .agent-lab__sidebar { position:relative; height:auto; padding:12px 16px; border-right:0; border-bottom:1px solid var(--lab-line); display:grid; grid-template-columns:1fr auto; gap:8px; } .agent-lab__brand { margin:0; font-size:20px; } .agent-lab__navlink,.agent-lab__capabilities,.agent-lab__sidebar-bottom { display:none; } .agent-lab__products { grid-column:1/-1; margin:8px 0 0; max-height:144px; overflow:auto; } .agent-lab__products h2 { margin:0 0 8px; } .agent-lab__products > p { margin:0; padding:0; } .agent-lab__main { min-height:calc(100dvh - 170px); padding:0 20px; } .agent-lab__main.is-empty .agent-lab__stage { padding-top:48px; } .agent-lab__identity { gap:12px; } .agent-lab h1 { font-size:20px; } .agent-lab__mark { width:44px; height:44px; } .agent-lab__composer { border-radius:16px; padding:8px 12px; } .agent-lab__starters { gap:8px; margin-top:20px; } .agent-lab__starters button { padding:8px 12px; } }
+@media(prefers-reduced-motion:reduce) { .agent-lab button:not(:disabled):active { transform:none; } }
