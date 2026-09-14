@@ -9,20 +9,25 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
+    "pretest": "npm run test:agent",
     "test": "npm run build && node --test tests/rendered-html.test.mjs tests/schema-examples.test.mjs tests/production-smoke.test.mjs tests/customer-ux-guardrails.test.mjs && node --experimental-strip-types --test tests/contracts-rules.test.ts tests/product-expression.test.ts tests/agent-orchestrator.test.ts tests/l2-agent-runtime.test.ts tests/qwen-marketing-provider.test.ts tests/qwen-image-edit-provider.test.ts tests/qwen-image-3-provider.test.ts tests/recursive-repair-agent.test.ts tests/repair-output-gate.test.ts tests/repair-boundary.test.ts tests/repair-orchestrator.test.ts tests/local-mvp.test.ts tests/data-processing-contract.test.ts tests/model-adapter.test.ts tests/object-storage.test.ts tests/platform-persistence.test.ts tests/postgres-persistence.test.ts tests/ui-adapter.test.ts tests/batch-download.test.ts tests/project-store.test.ts tests/upscale.test.ts tests/synthetic-ground-truth.test.ts tests/trial-auth.test.ts tests/customer-beta.test.ts",
     "test:contracts": "node --test tests/schema-examples.test.mjs && node --experimental-strip-types --test tests/contracts-rules.test.ts tests/product-expression.test.ts tests/agent-orchestrator.test.ts tests/l2-agent-runtime.test.ts tests/qwen-marketing-provider.test.ts tests/platform-persistence.test.ts tests/postgres-persistence.test.ts",
     "test:adapters": "node --experimental-strip-types --test tests/model-adapter.test.ts",
+    "test:agent": "node --experimental-strip-types --test tests/visual-task-workflow.test.ts tests/conversation-agent.test.ts",
     "test:production-smoke": "node --test tests/production-smoke.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "materials:manifest": "node scripts/build-local-material-manifest.mjs"
   },
   "dependencies": {
+    "@mastra/core": "1.65.0",
+    "@mastra/libsql": "1.22.4",
     "drizzle-orm": "0.45.2",
     "next": "16.2.6",
     "pg": "^8.16.3",
     "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react-dom": "19.2.6",
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",

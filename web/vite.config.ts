@@ -34,6 +34,23 @@ const localBindingConfig = {
 };
 
 export default defineConfig(async () => {
+  // Local Node-only agent lab: native SQLite must not enter Cloudflare or
+  // browser dependency optimization. This switch is never used for builds.
+  if (process.env.VISIONQA_AGENT_LOCAL === "true" && process.env.NODE_ENV !== "production") {
+    const nodeOnlyDependencies = ["@mastra/core", "@mastra/libsql", "libsql", "@libsql/client", "zod"];
+    return {
+      plugins: [vinext()],
+      server: { host: "localhost", port: 6300, strictPort: true },
+      optimizeDeps: { exclude: ["@mastra/core", "@mastra/libsql", "libsql"] },
+      ssr: { external: nodeOnlyDependencies },
+      // Vinext has separate RSC/SSR environments. Root ssr.external alone does
+      // not stop the RSC runner from transforming native SDKs and all Zod locales.
+      environments: {
+        rsc: { resolve: { external: nodeOnlyDependencies } },
+        ssr: { resolve: { external: nodeOnlyDependencies } },
+      },
+    };
+  }
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";
