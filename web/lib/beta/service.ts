@@ -25,6 +25,7 @@ import {
   type RepairEvolutionEpisode,
   type RepairPlannerDecision,
 } from "../visionqa/agents/recursive-repair.ts";
+import { localStateStore, type StateStore } from "./local-state.ts";
 
 type InviteRecord = {
   id: string;
@@ -92,12 +93,14 @@ export type RepairStartInput = {
 };
 
 export class BetaService {
+  private readonly storage?: StateStore;
   private readonly invites = new Map<string, InviteRecord>();
   private readonly users = new Map<string, UserRecord>();
   private readonly tenants = new Map<string, TenantRecord>();
   private readonly memberships = new Map<string, MembershipRecord>();
   private readonly sessions = new Map<string, SessionRecord>();
   private readonly projects = new Map<string, BetaProject>();
+  private readonly projectByConversation = new Map<string, string>();
   private readonly assets = new Map<string, BetaAsset>();
   private readonly assetBytes = new Map<string, AssetBytes>();
   private readonly batches = new Map<string, ScreeningBatch>();
@@ -110,8 +113,43 @@ export class BetaService {
   private readonly now: () => Date;
   private developmentInviteReady = false;
 
-  constructor(options: { now?: () => Date } = {}) {
+  constructor(options: { now?: () => Date; storage?: StateStore } = {}) {
     this.now = options.now ?? (() => new Date());
+    this.storage = options.storage;
+    const snapshot = this.storage?.load() as { version: number; maps: Record<string, Array<[string, unknown]>>; ledger: LedgerRecord[]; developmentInviteReady: boolean } | null;
+    if (snapshot) {
+      if (snapshot.version !== 1 || !snapshot.maps || !Array.isArray(snapshot.ledger)) throw new Error("Incompatible local beta snapshot");
+      for (const [key, map] of Object.entries(this.stateMaps())) {
+        if (!Array.isArray(snapshot.maps[key])) throw new Error("Invalid local beta snapshot");
+        for (const [id, value] of snapshot.maps[key]) map.set(id, value);
+      }
+      this.ledger.push(...snapshot.ledger);
+      this.developmentInviteReady = snapshot.developmentInviteReady;
+      // The previous process cannot deliver pending work. Never resume paid calls automatically.
+      for (const attempt of this.attempts.values()) {
+        if (attempt.status !== "HELD" && attempt.status !== "RUNNING") continue;
+        const session = [...this.sessions.values()].find(item => item.tenantId === attempt.tenantId);
+        if (!session) throw new Error("Cannot recover orphaned local repair");
+        this.releaseRepair(this.sessionView(session), attempt.id, "本地服务在修图期间中断，未交付结果，修图额度已退回；不会自动重复调用模型。");
+      }
+      for (const batch of this.batches.values()) {
+        if (batch.status === "RUNNING") this.batches.set(batch.id, { ...batch, status: "FAILED", completedAt: this.timestamp() });
+      }
+      this.cleanupExpiredAssets();
+      this.persistLocalState();
+    }
+  }
+
+  private stateMaps(): Record<string, Map<string, unknown>> {
+    return { invites: this.invites, users: this.users, tenants: this.tenants, memberships: this.memberships,
+      sessions: this.sessions, projects: this.projects, projectByConversation: this.projectByConversation, assets: this.assets, assetBytes: this.assetBytes,
+      batches: this.batches, attempts: this.attempts, repairEvolutions: this.repairEvolutions,
+      wallets: this.wallets, holds: this.holds, attemptByIdempotency: this.attemptByIdempotency };
+  }
+
+  persistLocalState(): void {
+    this.storage?.save({ version: 1, maps: Object.fromEntries(Object.entries(this.stateMaps()).map(([key, map]) => [key, [...map]])),
+      ledger: this.ledger, developmentInviteReady: this.developmentInviteReady });
   }
 
   private timestamp(): string {
@@ -292,6 +330,15 @@ export class BetaService {
     wallet.available += amount;
     this.wallets.set(tenantId, wallet);
     this.addLedger(tenantId, "GRANT", amount, referenceId, reason);
+  }
+
+  createProjectForConversation(session: BetaSessionView, name: string, conversationId: string): BetaProject {
+    const key = `${session.tenantId}:${session.userId}:${conversationId}`;
+    const existing = this.projectByConversation.get(key);
+    if (existing) return this.getProject(session, existing);
+    const project = this.createProject(session, name);
+    this.projectByConversation.set(key, project.id);
+    return project;
   }
 
   createProject(session: BetaSessionView, name: string, isExample = false): BetaProject {
@@ -733,8 +780,32 @@ export class BetaService {
 let betaService: BetaService | null = null;
 
 export function getBetaService(): BetaService {
-  betaService ??= new BetaService();
+  betaService ??= process.env.VISIONQA_AGENT_LOCAL === "true" && process.env.NODE_ENV !== "production"
+    ? createPersistentBetaService(localStateStore("beta")) : new BetaService();
   return betaService;
+}
+
+export function createPersistentBetaService(storage: StateStore): BetaService {
+  const service = new BetaService({ storage });
+  let storageFailed = false;
+  const persist = () => {
+    try { service.persistLocalState(); }
+    catch (error) { storageFailed = true; throw error; }
+  };
+  // Preserve sync public APIs and persist async mutations before returning success.
+  // Single-process local runtime only; not a substitute for production DB transactions.
+  return new Proxy(service, { get(target, key) {
+    const value = Reflect.get(target, key);
+    if (typeof value !== "function" || key === "persistLocalState") return value;
+    return (...args: unknown[]) => {
+      if (storageFailed) throw new Error("Local storage failed; restart after restoring writable storage");
+      const result = value.apply(target, args);
+      if (typeof key === "string" && /^(get|list|read|resolve|latest|ledger|public)/.test(key)) return result;
+      if (result instanceof Promise) return result.then(output => { persist(); return output; });
+      persist();
+      return result;
+    };
+  } });
 }
 
 export function createBetaServiceForTest(now?: () => Date): BetaService {

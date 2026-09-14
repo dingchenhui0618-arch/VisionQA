@@ -9,7 +9,7 @@ export const conversationInput = z.object({
   history: z.array(z.object({
     role: z.enum(["user", "assistant"]),
     content: z.string().min(1).max(3800),
-  }).strict()).max(10).default([]),
+  }).strict()).max(78).default([]),
 }).strict();
 
 // A plan is a proposal, never evidence that an image was inspected or repaired.

@@ -90,14 +90,14 @@ test("revision carries only owner history and invalidates old approval even if n
   assert.equal((await f.sessions.act("u", body.id, "approve")).status, "SUPERSEDED");
   assert.equal(f.counts().tools, 0);
 });
-test("dialogue has a finite six-turn bound", async () => {
+test("dialogue retains full history beyond six turns and has a finite forty-turn bound", async () => {
   const f = fixture(); let parentId: string | undefined;
-  for (let i = 0; i < 6; i++) {
-    const body = request(`turn${i}`, parentId);
+  for (let i = 0; i < 40; i++) {
+    const body = request(`turn-${i}-`, parentId);
     parentId = (await f.sessions.create("u", body, f.deps)).id;
   }
-  await assert.rejects(f.sessions.create("u", request("overflow", parentId), f.deps), /六轮/);
-  assert.equal(f.counts().calls, 6);
+  await assert.rejects(f.sessions.create("u", request("overflow", parentId), f.deps), /40 轮/);
+  assert.equal(f.counts().calls, 40);
 });
 test("stopping a ready workflow never creates a project", async () => {
   const f = fixture(); const body = request("stop");

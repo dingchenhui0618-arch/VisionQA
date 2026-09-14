@@ -44,7 +44,8 @@ export async function planWithDeepSeek(input: unknown): Promise<ConversationPlan
       maxRetries: 0,
     });
     // Reserve conservatively before dispatch, including ambiguous failures. No automatic paid retries.
-    // Existing beta budget is process-local; this is NOT a persistent/cross-process spend guarantee.
+    // Local mode persists reservations; estimates are not reconciled provider bills.
+    // This single-process prototype is not a distributed budget guarantee.
     authorizeModelDispatch(10).record();
     // Disable framework request-error logging; raw provider payloads must not become application logs.
     const mastra = new Mastra({ agents: { intake: agent }, logger: false });

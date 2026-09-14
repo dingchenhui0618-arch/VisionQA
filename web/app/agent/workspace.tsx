@@ -91,7 +91,7 @@ export function AgentWorkspace() {
         {conversations.map(t => <button key={t.id} aria-current={selected === t.conversationId ? "page" : undefined} disabled={busy} onClick={() => selectConversation(t.conversationId)}>{t.skuName}<small>{tasks.filter(item => item.conversationId === t.conversationId).length} 轮对话</small></button>)}
       </div>
       <div className="agent-lab__sidebar-bottom">
-        <details><summary>ⓘ 本地原型说明</summary><p>每个商品独立上下文，当前最多六轮。刷新可恢复，开发服务重启后不保留。模型建议不是商品事实，图片结果仍需人工确认。</p></details>
+        <details><summary>ⓘ 本地原型说明</summary><p>每个商品独立上下文。本地持久化模式下，新对话、关联项目和素材在服务重启后可恢复；中断任务不会自动重跑。当前上限为 40 轮或 24000 字，达到上限会提示，不会静默遗忘旧要求。模型建议不是商品事实，图片结果仍需人工确认。</p></details>
         <small>本地体验 · 不连接线上项目</small>
         <a href="/login" target="_blank" rel="noreferrer">{needsLogin ? "登录本地体验账号 ↗" : "账号入口 ↗"}</a>
       </div>
