@@ -70,6 +70,22 @@
 .agent-lab__error { padding:12px 16px; border-left:2px solid var(--lab-muted); font-size:13px; line-height:1.6; margin:16px 0; }
 .agent-lab__error a { display:inline-flex; align-items:center; min-height:44px; margin-left:12px; text-decoration:underline; }
 .agent-lab__sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.agent-materials { margin:24px 0; padding:24px 0; border-block:1px solid var(--lab-line); }
+.agent-materials h2 { font-size:16px; font-weight:600; }
+.agent-materials h3 { font-size:14px; margin:16px 0 8px; }
+.agent-materials > p,.agent-materials__results > p { font-size:12px; color:var(--lab-muted); }
+.agent-materials__group { margin:20px 0; }
+.agent-materials__upload { display:grid; gap:8px; font-size:13px; }
+.agent-materials__upload input { display:block; width:100%; max-width:100%; min-height:44px; padding:8px; background:var(--lab-surface); border-radius:8px; }
+.agent-materials__upload input::file-selector-button { min-height:44px; background:var(--lab-hover); color:var(--lab-ink); border:1px solid var(--lab-line); border-radius:8px; padding:8px 12px; margin-right:12px; cursor:pointer; }
+.agent-materials__images { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(140px,100%),1fr)); gap:12px; margin-top:12px; }
+.agent-materials__images > label { min-width:0; cursor:pointer; }
+.agent-materials__images img { display:block; width:100%; height:148px; object-fit:contain; background:var(--lab-surface); border:1px solid var(--lab-line); border-radius:8px; }
+.agent-materials__images span { min-height:44px; display:flex; align-items:center; gap:8px; overflow-wrap:anywhere; font-size:12px; }
+.agent-materials input[type=checkbox] { flex:none; width:20px; height:20px; accent-color:var(--lab-ink); }
+.agent-materials__consent { display:flex; align-items:center; gap:12px; min-height:44px; padding:12px 0; font-size:12px; line-height:1.7; }
+.agent-materials__results article { padding:16px 0; border-top:1px solid var(--lab-line); }
+.agent-materials__results small { display:block; margin-top:8px; overflow-wrap:anywhere; }
 @media(max-width:1100px) { .agent-lab { grid-template-columns:220px minmax(0,1fr); } .agent-lab__main { padding:0 24px; } .agent-lab__mode { display:none; } }
 @media(max-width:700px) { .agent-lab { display:block; } .agent-lab__sidebar { position:relative; height:auto; padding:12px 16px; border-right:0; border-bottom:1px solid var(--lab-line); display:grid; grid-template-columns:1fr auto; gap:8px; } .agent-lab__brand { margin:0; font-size:20px; } .agent-lab__navlink,.agent-lab__capabilities,.agent-lab__sidebar-bottom { display:none; } .agent-lab__products { grid-column:1/-1; margin:8px 0 0; max-height:144px; overflow:auto; } .agent-lab__products h2 { margin:0 0 8px; } .agent-lab__products > p { margin:0; padding:0; } .agent-lab__main { min-height:calc(100dvh - 170px); padding:0 20px; } .agent-lab__main.is-empty .agent-lab__stage { padding-top:48px; } .agent-lab__identity { gap:12px; } .agent-lab h1 { font-size:20px; } .agent-lab__mark { width:44px; height:44px; } .agent-lab__composer { border-radius:16px; padding:8px 12px; } .agent-lab__starters { gap:8px; margin-top:20px; } .agent-lab__starters button { padding:8px 12px; } }
 @media(prefers-reduced-motion:reduce) { .agent-lab button:not(:disabled):active { transform:none; } }

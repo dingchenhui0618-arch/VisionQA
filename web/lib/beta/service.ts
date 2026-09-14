@@ -387,6 +387,14 @@ export class BetaService {
     }
   }
 
+  listProjectAssets(session: BetaSessionView, projectId: string) {
+    this.getProject(session, projectId);
+    return [...this.assets.values()]
+      .filter(asset => asset.tenantId === session.tenantId && asset.projectId === projectId
+        && asset.uploadStatus === "READY" && asset.retentionUntil > this.timestamp())
+      .map(({ id, role, fileName, byteSize, width, height }) => ({ id, role, fileName, byteSize, width, height }));
+  }
+
   createUploadIntent(session: BetaSessionView, input: CreateUploadIntentInput): BetaAsset {
     this.getProject(session, input.projectId);
     if (!/^image\/(jpeg|png|webp)$/.test(input.mimeType)) {
@@ -451,6 +459,9 @@ export class BetaService {
     input: { projectId: string; skuName: string; truthAssetIds: string[]; candidateAssetIds: string[] },
   ): ScreeningBatch {
     const project = this.getProject(session, input.projectId);
+    if ([...this.batches.values()].some(batch => batch.projectId === project.id && batch.status === "RUNNING")) {
+      throw new CustomerVisibleError("BATCH_INVALID", "这个商品已有筛查正在进行。", 409, "请等待当前结果，不要重复提交。");
+    }
     if (
       input.truthAssetIds.length < 1 ||
       input.truthAssetIds.length > SCREENING_MAX_TRUTH_IMAGES ||
@@ -465,6 +476,11 @@ export class BetaService {
       );
     }
     const all = [...new Set([...input.truthAssetIds, ...input.candidateAssetIds])];
+    for (const id of all) {
+      if (this.requireAsset(session, id).projectId !== project.id) {
+        throw new CustomerVisibleError("BATCH_INVALID", "所选图片不属于当前商品。", 422, "请返回当前商品重新选择图片。");
+      }
+    }
     if (all.length !== input.truthAssetIds.length + input.candidateAssetIds.length) {
       throw new CustomerVisibleError("BATCH_INVALID", "同一张图片不能同时作为真值图和候选图。", 422, "请检查图片分组后重试。");
     }

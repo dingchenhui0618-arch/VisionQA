@@ -2,7 +2,7 @@ import { POST as runLiveEvaluation } from "../live-evaluate/route";
 import { requireBetaSessionFromRequest } from "../../../lib/beta/auth";
 import { authorizeModelDispatch } from "../../../lib/beta/budget";
 import { CustomerVisibleError, customerErrorResponse } from "../../../lib/beta/contracts";
-import { exampleScreeningResult, mapEvaluationToCustomerScreening } from "../../../lib/beta/screening";
+import { mapEvaluationToCustomerScreening } from "../../../lib/beta/screening";
 import { getBetaService } from "../../../lib/beta/service";
 
 export async function POST(request: Request) {
@@ -23,12 +23,6 @@ export async function POST(request: Request) {
     const results = [];
     for (const candidateId of batch.candidateAssetIds) {
       const candidate = service.readAsset(session, candidateId);
-      const example = exampleScreeningResult(candidate.asset.id, candidate.asset.fileName);
-      if (example) {
-        results.push(example);
-        continue;
-      }
-
       const budget = authorizeModelDispatch(10);
       const form = new FormData();
       form.set(

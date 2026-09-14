@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { TaskView } from "../../lib/agent/conversation-contract";
 import "./workspace.css";
+import { MaterialPanel } from "./material-panel";
 
 type Task = TaskView;
 const labels: Record<Task["status"], string> = { STARTING: "正在理解需求", NEEDS_INPUT: "等你补充", UNSUPPORTED: "暂不支持这项任务", AWAITING_APPROVAL: "等待你确认", PROJECT_READY: "项目已建立", STOPPED: "已停止", SUPERSEDED: "已由新计划替代", FAILED: "任务未完成" };
@@ -85,7 +86,7 @@ export function AgentWorkspace() {
       <Link className="agent-lab__brand" href="/">VisionQA</Link>
       <button className="agent-lab__new" disabled={busy} onClick={() => selectConversation(null)}><span aria-hidden="true">＋</span> 新商品对话</button>
       <a className="agent-lab__navlink" href="/workspace"><span aria-hidden="true">▧</span> 素材工作台</a>
-      <details className="agent-lab__capabilities"><summary>◇ 能力范围</summary><p>已接入：商品图需求规划。图片操作仍在素材工作台进行。</p><p>信息流脚本修正、视觉方向：尚待接入。</p></details>
+      <details className="agent-lab__capabilities"><summary>◇ 能力范围</summary><p>已接入：商品图需求规划、对话内保存素材与筛查。修图交付暂时保留完整工作区入口。</p><p>信息流脚本修正、视觉方向：尚待接入。</p></details>
       <div className="agent-lab__products"><h2>商品对话历史</h2>
         {!conversations.length && <p>从你的第一个商品开始</p>}
         {conversations.map(t => <button key={t.id} aria-current={selected === t.conversationId ? "page" : undefined} disabled={busy} onClick={() => selectConversation(t.conversationId)}>{t.skuName}<small>{tasks.filter(item => item.conversationId === t.conversationId).length} 轮对话</small></button>)}
@@ -110,7 +111,7 @@ export function AgentWorkspace() {
           <p>{current.projectId ? "沿用已有商品项目；确认计划不会自动修图。" : "确认只建立商品项目，不发送图片、不扣修图额度。"}</p>
           {current.status === "AWAITING_APPROVAL" && <div className="agent-lab__actions"><button disabled={working || Boolean(objective.trim())} onClick={() => void send("approve")}>{current.projectId ? "确认本轮计划" : "确认，建立商品项目"}</button><button className="secondary" disabled={working} onClick={() => void send("stop")}>暂不执行</button>{objective.trim() && <p>已有补充要求，请先发送后再确认。</p>}</div>}
         </details>}
-        {current?.projectId && <a className="agent-lab__project" href={`/workspace/projects/${current.projectId}`}>▧ 打开这个商品的素材与修图工作区 ↗</a>}
+        {current?.projectId && <><MaterialPanel key={current.projectId} projectId={current.projectId} skuName={current.skuName} onDiscuss={suggest} /><a className="agent-lab__project" href={`/workspace/projects/${current.projectId}`}>打开完整修图工作区（对话内修图仍在接入） ↗</a></>}
         {current && ["NEEDS_INPUT", "UNSUPPORTED", "FAILED"].includes(current.status) && <div className="agent-lab__actions">
           {current.status === "FAILED" && <button disabled={working || Boolean(objective.trim())} onClick={() => { pendingId.current = null; pendingRequest.current = null; void send("create", true); }}>重新生成计划</button>}
           <button className="secondary" disabled={working} onClick={() => void send("stop")}>结束本轮任务</button>
@@ -127,7 +128,7 @@ export function AgentWorkspace() {
           <button disabled={working} onClick={() => suggest("帮我规划这张图的局部修正，只修改问题区域，保持商品颜色、结构和构图不变。")}>⌖ 定向修图</button>
           <button disabled={working} onClick={() => suggest("帮我检查这组商品图的颜色、图案和配件数量是否一致，信息不足时请明确指出。")}>◇ 一致性评审</button>
         </div>}
-        <p className="agent-lab__notice">发送会调用文字规划模型并产生接口费用，不扣修图额度。不发送图片，请勿填写密钥或个人隐私。</p>
+        <p className="agent-lab__notice">发送文字会调用规划模型并产生接口费用，不扣修图额度。图片仅在你确认并点击筛查时发送，请勿填写密钥或个人隐私。</p>
       </div>
       <footer>AI 建议需要你的确认。商品事实与最终交付，请以真实资料和人工复验为准。</footer>
     </section>
