@@ -82,7 +82,7 @@ export function AgentWorkspace() {
   }
   return <main className="agent-lab">
     <nav className="agent-lab__sidebar" aria-label="商品对话">
-      <Link className="agent-lab__brand" href="/">VisionQA <span>Work</span></Link>
+      <Link className="agent-lab__brand" href="/">VisionQA</Link>
       <button className="agent-lab__new" disabled={busy} onClick={() => selectConversation(null)}><span aria-hidden="true">＋</span> 新商品对话</button>
       <a className="agent-lab__navlink" href="/workspace"><span aria-hidden="true">▧</span> 素材工作台</a>
       <details className="agent-lab__capabilities"><summary>◇ 能力范围</summary><p>已接入：商品图需求规划。图片操作仍在素材工作台进行。</p><p>信息流脚本修正、视觉方向：尚待接入。</p></details>
