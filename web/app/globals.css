@@ -5940,6 +5940,13 @@ h3 {
   gap: 2rem;
 }
 
+.login-test-entry { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-top:20px; border-top:1px solid rgba(0,0,0,.12); }
+.login-test-entry > div { display:grid; gap:4px; }
+.login-test-entry span { color:#666; font-size:12px; line-height:1.5; }
+.login-test-entry form { margin:0; }
+.login-test-button { min-height:44px; white-space:nowrap; border:1px solid #111; border-radius:8px; background:transparent; color:#111; padding:10px 16px; cursor:pointer; }
+@media(max-width:640px) { .login-test-entry { align-items:stretch; flex-direction:column; } .login-test-button { width:100%; } }
+
 .trial-entry .login-form-heading h2 {
   max-width: 12ch;
   font-size: 2.25rem;

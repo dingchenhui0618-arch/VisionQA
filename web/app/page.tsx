@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Landing from "./landing/Landing";
 
 export const metadata: Metadata = {
-  title: "VisionQA · 批量找出需要返工的商品图",
+  title: "VisionQA · AI 模特图修正与交付",
   description:
-    "同一 SKU 最多免费筛查 10 张候选图，只对需要处理的图片发起修正，成功后再扣内测额度。",
+    "以商品白底图为真值，为服饰电商定位并修正 AI 模特图中的商品漂移、人体异常和非目标变化。",
 };
 
 export default function Home() {
