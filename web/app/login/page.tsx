@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getBetaSessionFromPage } from "../../lib/beta/auth";
 import { LoginClient } from "./login-client";
+import { MockLogin } from "./mock-login";
+import { localMockEnabled } from "../../lib/agent/mock-mode";
 
 export const metadata: Metadata = {
   title: "接受 VisionQA 内测邀请",
@@ -13,6 +15,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ invite?: string }>;
 }) {
+  if (localMockEnabled()) return <MockLogin />;
   const session = await getBetaSessionFromPage();
   if (session) redirect("/workspace");
   const params = await searchParams;
