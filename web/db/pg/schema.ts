@@ -3,6 +3,7 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -308,5 +309,80 @@ export const auditEvents = pgTable(
       table.tenantId,
       table.createdAt,
     ),
+  ],
+);
+
+// Agent runtime tables are append/revision oriented. They complement the
+// customer-beta project/credit tables created by drizzle-pg/0002.
+export const productConversationContexts = pgTable(
+  "product_conversation_contexts",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    projectId: text("project_id").notNull(),
+    conversationId: text("conversation_id").notNull(),
+    productId: text("product_id").notNull(),
+    schemaVersion: text("schema_version").notNull(),
+    contextJson: jsonb("context_json").notNull(),
+    revision: integer("revision").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("product_context_tenant_conversation_unique").on(table.tenantId, table.conversationId),
+    index("product_context_project_idx").on(table.tenantId, table.projectId),
+  ],
+);
+
+export const imageVersions = pgTable(
+  "image_versions",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    projectId: text("project_id").notNull(),
+    conversationId: text("conversation_id").notNull(),
+    productId: text("product_id").notNull(),
+    assetId: text("asset_id").notNull(),
+    parentVersionId: text("parent_version_id"),
+    versionKind: text("version_kind").notNull(),
+    instruction: text("instruction").notNull(),
+    confirmationJson: jsonb("confirmation_json").notNull().default([]),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index("image_versions_asset_created_idx").on(table.tenantId, table.assetId, table.createdAt),
+    index("image_versions_parent_idx").on(table.parentVersionId),
+  ],
+);
+
+export const modelCallLedger = pgTable(
+  "model_call_ledger",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    projectId: text("project_id"),
+    conversationId: text("conversation_id"),
+    requestId: text("request_id").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    operation: text("operation").notNull(),
+    providerId: text("provider_id").notNull(),
+    modelSnapshot: text("model_snapshot").notNull(),
+    status: text("status").notNull(),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    inputImageCount: integer("input_image_count"),
+    outputImageCount: integer("output_image_count"),
+    costAmount: doublePrecision("cost_amount"),
+    costCurrency: text("cost_currency").notNull().default("CNY"),
+    latencyMs: integer("latency_ms"),
+    retryOf: text("retry_of"),
+    idempotencyKey: text("idempotency_key").notNull(),
+    errorCode: text("error_code"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("model_call_tenant_idempotency_unique").on(table.tenantId, table.idempotencyKey),
+    index("model_call_project_created_idx").on(table.tenantId, table.projectId, table.createdAt),
   ],
 );

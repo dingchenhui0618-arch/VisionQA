@@ -1,5 +1,18 @@
 # VisionQA 项目状态
 
+## 2026-09-15 单商品智能体运行内核第一批
+
+- 本地主线仍为 `localhost:6300`，线上系统未改动。官网 `/`、登录 `/login`、单商品对话 `/agent` 的路由关系保持不变。
+- 新增商品级结构化上下文：固定 project / conversation / product identity，SKU facts、已选素材、任务状态、压缩摘要、revision 与更新时间；跨商品写入和旧 revision 均失败关闭。
+- 新增图片版本树：原图与修正版保留 parent-child 来源链，当前版本可切换；人工确认严格绑定单个版本，新版本不继承父版本放行。Mock 会映射到同一契约但继续明确为 `MOCK_ONLY`。
+- 新增统一 Provider Runtime：Mock 与注入式真实 Provider 使用相同请求、结果和错误契约。真实 Qwen 修图路由已接入统一运行时；每次修图只允许一个已确认图片调用，禁止无限自动重试。外部执行前必须取得租户级派发声明，重复执行在 Provider 调用前即被拦截；生产缺少 `DATABASE_URL` 时失败关闭。
+- 新增模型调用账本：只记录 request/project/conversation/operation/provider/model/status/token/图片计数/成本/耗时/retry/idempotency 等元数据，不保存 Prompt、密钥或图片字节；本地开发账本写入 `web/work/local-agent-state`，生产表迁移已准备但未执行。
+- 积分状态继续沿用真实 BetaService 的 `AVAILABLE → HELD → CAPTURED / RELEASED`；另新增 Provider 无关的结算状态机测试。技术失败与 Gate 拦截释放，成功候选捕获一次，重复动作幂等。
+- 新增正式数据库迁移草案 `web/drizzle-pg/0003_agent_runtime.sql`，包含商品对话上下文、图片版本和模型调用账本；父版本使用租户/项目/对话/商品/资产复合约束，派发账本使用租户幂等唯一键。该迁移尚未应用到本地或线上 PostgreSQL，不得据此声称生产持久化完成。
+- 协作方式：本轮主线程负责架构、集成和验收；两个 Luna 子智能体分别实现上下文/版本与 runtime/账本核心，另一个 Luna 输出明确标注的模拟客户发现。用户指定的 `gpt-5.6-sol` 作为规划主模型是后续产品运行策略；本轮未新增或触发 5.6 Sol 真实接口调用，现有 DeepSeek/Qwen 真实路由保持原事实。
+- 验证：Agent 运行与交互测试 62/62、原业务/runtime 测试 143/143、页面/Schema/生产守卫 31/31 通过；ESLint 0 error/warning，生产构建通过。四段 PostgreSQL 迁移已在 `pg-mem` 空库顺序应用，并验证跨租户父版本和重复派发键被数据库拒绝；未对本地或线上真实数据库执行。浏览器实际完成 Mock 建商品 → 示例素材 → 筛查 → 选择 → V1 → 刷新恢复；构建期间曾捕获一次 Vite HMR 连接错误，刷新后未出现新时间戳错误。真实模型结果、390px 移动端和线上仍为 `NOT_RUN`。
+- 详细架构与边界见 [Agent Runtime 基础](docs/17_AGENT_RUNTIME_FOUNDATION.md)；模拟客户发现见 [Day 1 报告](reports/SIMULATED_DAILY_DISCOVERY_AGENT_SUBSCRIPTION_DAY1.md)。
+
 ## 2026-09-15 入口恢复与后端接入第一批
 
 - `localhost:6300/` 已按历史冻结版本 `6f1ab23` 恢复最初 P1 首页，所有入口统一指向 `/login`；`/login` 恢复原左右分栏登录视觉，测试入口在登录表单下方；成功后进入 `/agent`。

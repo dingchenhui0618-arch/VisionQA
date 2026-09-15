@@ -1,4 +1,5 @@
 import { applyMock, emptyMock, MOCK_SCHEMA, type ConversationPort, type MockSnapshot } from "./mock-contract.ts";
+import { createMockProviderRuntime } from "./provider-runtime.ts";
 
 // Deliberately separate from beta cookies, server assets, wallets and all providers.
 function database(): Promise<IDBDatabase> {
@@ -46,8 +47,24 @@ export function createMockPort(): ConversationPort {
       } finally { db.close(); }
     },
     async execute(state, conversationId, commandId, command) {
-      // No network or model SDK. Delay expresses mock progress only.
-      if (command.kind === "screen" || command.kind === "repair") await new Promise(resolve => setTimeout(resolve, 650));
+      // The mock uses the same provider contract as live execution, with a
+      // deterministic in-process executor and no network or model SDK.
+      if (command.kind === "screen" || command.kind === "repair") {
+        const runtime = createMockProviderRuntime({ respond: () => {
+          if (command.kind === "repair" && command.fail) throw { code: "NETWORK", message: "simulated connection failure", retryable: true };
+          return { mode: "MOCK_ONLY", command: command.kind };
+        } });
+        const result = await runtime.dispatch({
+          request: `mock-${command.kind}:${commandId}`,
+          project: conversationId ? `mock-project:${conversationId}` : null,
+          conversation: conversationId,
+          operation: command.kind === "repair" ? "IMAGE" : "SCREENING",
+          idempotency: commandId,
+          confirmed: command.kind !== "repair" || !command.fail,
+        });
+        if (!result.ok && !(command.kind === "repair" && command.fail)) throw new Error(result.error.message);
+        await new Promise(resolve => setTimeout(resolve, 650));
+      }
       const next = applyMock(state, conversationId, commandId, command);
       await this.save(next);
       return next;

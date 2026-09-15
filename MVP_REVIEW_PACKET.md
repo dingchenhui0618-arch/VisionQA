@@ -1,109 +1,148 @@
-# VisionQA 修图边界闭环 MVP Review Packet
+# VisionQA Agent Runtime MVP Review Packet
 
-日期：2026-08-27
-状态：`LOCAL_SYNTHETIC_VERTICAL_SLICE_COMPLETE / ENGINEERING_VERIFIED / INDEPENDENT_QA_PASS / REAL_CUSTOMER_VALIDATION_NOT_RUN`
+日期：2026-09-15。Verdict：`ACCEPT FOR LOCAL ENGINEERING LEARNING / PRODUCTION NOT READY`。
 
 ## 1. Original brief and success definition
 
-- 目标客户：已有商品真值和 AI/真人模特图、需要在上架前减少 PS 返工的服饰电商美工与运营。
-- 核心痛点：局部商品错误、人体异常和再次生成造成的非目标漂移。
-- 最小旅程：载入真值与待修图 → AI 识别或用户描述 → 智能边界建议 → 用户确认 → 局修/重生成路由 → 前后对比 → 人工复验。
-- 本轮成功定义：至少覆盖局修与重生成两类案例；大错不能进入局修；所有结论保留合成与人工终审边界。
-- 排除：真实客户效果、自动放行、营销扩展、真实 AI 超分、正式账户和计费。
+- 用户请求：更新项目状态，并完成商品级上下文、图片版本树、模型调用账本、积分冻结/结算、有上限执行循环、Mock/真实 Provider 同接口。
+- 目标用户：拥有商品真值和 AI 候选图的服饰电商美工、视觉负责人或运营。
+- 最小旅程：登录本地 Mock → 建商品 → 加参考/候选 → 筛查 → 选图 → 一次有界修正 → 版本复验。
+- 工程成功定义：六项核心能力有可复用契约、关键失败关闭、统一接口和自动化证据；Mock 浏览器链可复现。
+- 约束：仅 localhost；不发布线上；不触发真实模型、支付或数据库迁移；密钥不进前端、日志或 Git。
+- 排除：真实订阅价格、支付、线上迁移、真实模型效果、自动放行、跨品类。
 
 ## 2. Assumption register
 
-- `VERIFIED`：本地闭环、案例载入、边界路由和 UI 可运行。
-- `USER-SUPPLIED`：美工会在 AI 图生成后进行 PS 返工，用户希望系统减少这一过程。
-- `HYPOTHESIS`：清晰的问题边界和路由能减少 PS 收尾时间。
-- `UNKNOWN`：真实客户一次修正成功率、节省分钟数、采用和付款。
-- 最大风险：合成案例上的正确路由不能证明真实图片上的诊断或修图质量。
+- `VERIFIED`：现有 BetaService 已有幂等额度 hold/capture/release，真实修图要求用户确认并经过 Gate。
+- `VERIFIED`：本轮新增核心模块与测试、浏览器 Mock 链、未执行数据库迁移文件。
+- `USER-SUPPLIED`：以 5.6 Sol 负责主要规划、较小模型执行独立任务。
+- `HYPOTHESIS`：对话式商品上下文能减少返工沟通并形成订阅价值。
+- `SIMULATION`：报告中的用户反对意见和付费方式。
+- `UNKNOWN`：真实单次成本、结果采用、客户愿付价格、复购、迁移后的生产可靠性。
+- 最大风险假设：用户愿意为“可复验交付”持续付费，而不是只喜欢对话界面。
 
 ## 3. Team governance
 
-| Agent | Admission proof | Output | Result |
-|---|---|---|---|
-| 基准案例策展 | 独立可维护契约并降低标签错误 | `agents/repair_benchmark_curator_v0.2.md` | PASS |
-| 客户发现 | 与生产分离，防止把模拟当市场证据 | `reports/SIMULATED_DAILY_DISCOVERY_REPAIR_WORKFLOW_DAY2.md` | PASS |
-| 独立 QA | 降低图像标签、路由和证据声明错误 | `agents/repair_library_independent_qa_v0.1.md` | 首轮 FAIL；修复后 2026-08-28 二次复验 PASS |
+| Agent | Admission proof | Scope/output | Acceptance | Integration |
+| --- | --- | --- | --- | --- |
+| Context/version Luna | 独立可复用资产；降低跨商品串线风险 | `product-context.ts`、`version-tree.ts` 与测试 | 7/7 pass | 已集成 Mock 投影与默认测试 |
+| Runtime/ledger Luna | 并行缩短时间；降低重复调用/扣费风险 | runtime、ledger、settlement、bounded loop 与测试 | 11/11 pass | 已接入 Mock 与真实修图路由 |
+| Customer discovery Luna | MVP 治理要求独立发现角色 | 模拟 Day 1 报告 | 标签和禁造事实检查通过 | 用于 `KEEP/CHANGE NOW/TEST NEXT/DEFER` |
+| Primary orchestrator | 紧耦合集成关键路径 | API、迁移、文档、测试、浏览器验收 | 本文件所列 | 集成 owner |
 
-拒绝本轮新增营销 Agent、Agent 经理和六个常驻模型角色：它们不缩短核心图片闭环，也不降低当前主要风险。
+拒绝的角色：独立 UI 设计 Agent（本轮无 UI 重构）；DevOps/部署 Agent（用户明确不动线上）；支付 Agent（无真实价格与支付授权）。
 
 ## 4. Implemented MVP
 
-- 合成素材与 manifest：`data/synthetic_repair_case_library_v0.1/`。
-- 公共本地体验资源：`web/public/fashion/repair-library/`。
-- 边界契约：`web/lib/visionqa/repair-boundary.ts`。
-- 工作台接入：`web/app/workspace.tsx`、`web/app/workspace-repair.tsx`、`web/app/globals.css`。
-- 测试：`web/tests/repair-boundary.test.ts`、`web/tests/rendered-html.test.mjs`。
-- 部署状态：仅本地；公网版本未更新。
+- 商品上下文：`web/lib/agent/product-context.ts`
+- 图片版本树：`web/lib/agent/version-tree.ts`
+- Provider 统一契约：`web/lib/agent/provider-runtime.ts`
+- 模型调用元数据账本与本地恢复：`model-call-ledger.ts`、`runtime-registry.ts`
+- Provider 派发幂等声明：`dispatch-claim-store.ts`；生产使用 PostgreSQL 唯一键先 claim，缺库失败关闭。
+- 积分结算与有界循环：`credit-settlement.ts`、`bounded-agent-loop.ts`
+- Mock 映射：`mock-runtime-adapter.ts`；Mock port 使用无网络统一 Runtime。
+- 真实路由：`app/api/repair-attempts/route.ts` 使用同一 Runtime 和一次图片调用上限；客户额度仍由 BetaService 权威结算。
+- 数据库准备：`db/pg/schema.ts`、`drizzle-pg/0003_agent_runtime.sql`。
+- 部署：`NOT RUN`；线上未改变。
 
 ## 5. Reproduction guide
 
-1. 在 `D:\VisionQA\web` 运行 `npm run dev -- --host 127.0.0.1 --port 3141`。
-2. 打开 `http://localhost:3141/workspace` 并进入内部预览。
-3. 展开左侧“缺陷案例库 · 5”。
-4. 选择“小错 · 多一颗纽扣”，直接描述问题并进入修正；预期显示“局部修正”，可建立任务。
-5. 选择“大错 · 额外手臂”，描述额外手臂并进入修正；预期显示“整体重生成”，建立局修任务禁用。
-6. 清理：案例只写入现有本机 Project；可通过载入其他案例覆盖当前工作集。
+```powershell
+Set-Location D:\VisionQA\web
+npm run test:agent
+npm test
+npm run lint
+$env:VISIONQA_AGENT_LOCAL='true'
+npm run dev -- --port 6300
+```
+
+浏览器打开 `http://localhost:6300/login`，选择“直接体验 Mock”，建立商品并载入示例。清理仅限删除 Git 忽略的 `web/work/local-agent-state` 或浏览器站点数据；这是破坏性动作，不能由测试自动执行。
 
 ## 6. Test evidence
 
-- `npm run lint`：PASS，0 error。
-- `npm test`：PASS；15 项页面/Schema/production 检查，118 项 TypeScript/runtime 测试。
-- 浏览器：1280×720 和 390×844 无横向溢出；侧栏可滚动；合成图 1024×1536 正常载入；console 0 error。
-- 未运行：真实 Provider 修图、真实客户素材、真实 AI 超分、客户采用与付款。
+| Check | Result | Limitation |
+| --- | --- | --- |
+| `npm run test:agent` | 62/62 pass | 零网络；不证明模型质量 |
+| `npm test` | 页面/Schema 31/31 + runtime/business 143/143 pass | 含构建；不证明真实数据库/Provider |
+| `npm run lint` | exit 0 | 构建依赖仍有既有 direct-eval warning |
+| migration sequence | 0000–0003 pg-mem pass；跨租户父链、重复派发键均拒绝 | 未在真实 PostgreSQL 执行 |
+| Browser Mock | 建商品→素材→筛查→V1→刷新恢复 pass | 仅桌面；Mock 图片未变化 |
+| Real model | `NOT RUN` | 本轮明确禁止付费调用 |
+| 390px mobile | `NOT RUN` | 下一轮补验 |
+
+浏览器日志在构建/HMR期间出现一次旧时间戳的 Vite connection error；刷新后功能恢复，未观察到新时间戳错误。此项记录为开发热更新噪声，不宣称控制台绝对为零。
 
 ## 7. Customer discovery
 
-Day 2 为明确标记的模拟报告，不是访谈事实。建议用真实参与者验证最近一次返工流程、实际往返次数、PS 分钟数、采用决定和预算责任人。详见 `reports/SIMULATED_DAILY_DISCOVERY_REPAIR_WORKFLOW_DAY2.md`。
+见 `reports/SIMULATED_DAILY_DISCOVERY_AGENT_SUBSCRIPTION_DAY1.md`。它是 `SIMULATED / NOT CUSTOMER EVIDENCE`。
+
+- `KEEP`：单商品事实→边界→确认→版本→人工终审。
+- `CHANGE NOW`：动作、预计消耗、失败退回必须同时可见；Mock 持续明确标记。
+- `TEST NEXT`：2–3 名真实从业者对照现有流程，记录时间、返工点、采用理由。
+- `DEFER`：公开支付、月订阅价格、自动放行、跨品类。
 
 ## 8. Data feedback
 
-- `case_loaded` → 激活率 → 判断测试者是否找到入口。
-- `issue_path_selected`（AI/manual）→ 路径选择率 → 判断是否保留双入口。
-- `boundary_decision_confirmed` → 60 秒内有理由决策率；`PROPOSED >=70%` → 保留当前边界呈现，否则简化文案。
-- `repair_route_overridden` → 路由改判率 → 高于真实基线后调整规则或 AI 判断。
-- `repair_candidate_adopted`、`ps_finish_minutes` → 采用与收尾时间 → 决定是否进入付费小批次。
+当前真实捕获：模型调用元数据、额度 hold/capture/release、版本父链和人工确认。用户行为事件统一埋点仍为 `MISSING`。
+
+| Event | Trigger | Metric | Proposed decision |
+| --- | --- | --- | --- |
+| `product_context_created` | 新建商品 | activation | 若真实参与者不能在 90 秒内完成，简化 intake |
+| `repair_attempt_settled` | capture/release | technical success/failure | 失败率高则停止扩展套餐，先修 Provider 链 |
+| `version_human_decided` | approve/reject | adoptable candidate rate | 低则调整修图边界，不增加自动重试 |
+| `sku_task_completed` | 用户选版并取得文件 | task completion/time-to-value | 与现有流程对照决定 keep/change |
+| `next_batch_requested` | 主动再次提交 | repeat intent | 仅与真实付款分开记录 |
+
+阈值均为 `PROPOSED`，尚无测量基线。
 
 ## 9. Internal review
 
-- 已修复 HIGH：案例展开后侧栏不可滚动，第三个以后按钮在 720px 视口不可点击。
-- 首轮独立 QA 的 CRITICAL/HIGH 已关闭：L3 同义描述不可绕过冻结重生成策略；SC-001 使用单问题 v2；合成证据标签贯穿持久化、修正页和导出链。
-- 已通过：小错开放局修；额外肢体关闭局修；缺真值失败关闭；Logo 走确定性资产合成；运行时案例元数据与 manifest 自动一致性检查。
-- 残余风险：文本规则只能提供本地可解释基线，不能替代真实视觉模型定位；自动诊断仍可能漏检或假阳性；任务 JSON 缺少下载后解析 E2E；SC-002～005 不能作为严格单问题准确率数据集；truth 图暂无浏览器端 SHA Gate。
+- `CRITICAL`：独立 QA 发现“外部调用后才记录幂等”可能导致重复 Provider 费用；已修复为调用前 PostgreSQL 原子 claim，重复 runtime 测试确认 executor 仅执行一次。
+- `HIGH`：BetaService 的生产任务、钱包和额度状态仍未接 PostgreSQL repository；现阶段不能声称跨实例只冻结/结算一次。
+- `HIGH`：独立 QA 发现版本树可形成多节点环、数据库可跨租户指向父版本；已补循环检测、商品 identity 参数和复合父链约束。
+- `MEDIUM`：商品上下文/版本树在 Mock 为派生投影，正式 BetaService 尚未写入新表。
+- `MEDIUM`：当前实际文字规划仍可能使用 DeepSeek；5.6 Sol 是目标策略，不是已验证运行事实。
+- `LOW`：开发构建期间 HMR 会留下旧 console 错误；刷新可恢复。
+
+修复：真实 Qwen 修图经过统一 Runtime 和有界循环；Mock 使用无网络执行器；账本只接受受限标识和元数据；派发先 claim 后执行；迁移顺序与跨租户约束新增自动测试。
 
 ## 10. Claims-to-evidence matrix
 
 | Claim | Evidence | Strength | Limitation | Verdict |
-|---|---|---|---|---|
-| 本地双入口和边界路由可运行 | tests + browser | strong | 合成案例 | supported |
-| 大错不会建立局修任务 | unit test + browser | strong | 当前规则覆盖范围 | supported |
-| ImageGen 案例代表真实缺陷分布 | synthetic assets | weak | 无客户样本统计 | unsupported |
-| 产品能减少 PS 时间 | none | missing | 未做真实计时 | unsupported |
-| 客户愿意付款 | none | missing | 未付款 | unsupported |
+| --- | --- | --- | --- | --- |
+| 六项核心契约存在并可测试 | 62 Agent tests | strong engineering | 未生产迁移 | supported locally |
+| Mock/真实 Provider 同接口 | provider runtime tests + route source/build | strong contract | 真实调用未运行 | provisional runtime |
+| 重复派发不会再次调用 Provider | shared-claim runtime test + PG unique constraint test | strong logic | 未做真实数据库崩溃测试 | supported locally |
+| 失败不重复扣客户额度 | Beta tests + bounded-loop tests | partial | BetaService 尚未接生产事务库 | supported single-process only |
+| 订阅适合市场 | simulated report | weak | 无客户付款 | unsupported |
+| 5.6 Sol 已主导产品运行 | 用户目标/文档 | none operational | 未接实际 Provider | unsupported currently |
 
 ## 11. Cost and scope ledger
 
-- 使用项目既有运行环境和内置 ImageGen；未调用项目中的 Qwen/DeepSeek API，未触发本轮 Provider 付费请求。
-- 新增 5 张合成图、一个边界模块、少量工作台入口与测试；未扩展营销、账户、计费或云租户模块。
+- 新付费模型、云资源、支付：0 次创建；真实调用 `NOT RUN`。
+- 复用：现有 BetaService、Qwen Provider、Gate、Mock UI、Mastra 工作流和本地存储。
+- 延后：生产 repository、订阅定价、支付、移动端和线上发布。
 
-## 12. Security, privacy, and dependency notes
+## 12. Security, privacy and dependencies
 
-- 无客户私有图片进入案例库；无 API Key 写入代码、日志或文档。
-- 本地案例离线载入；只有用户再次勾选发送授权并点击 AI 分析/改图时才可能调用外部 Provider。
-- 自动放行关闭，人工终审必需。
+- 未读取 `.env`；变更与新文件的密钥模式扫描无命中。
+- 模型账本不接受 Prompt、图片 byte payload 或秘密字段；仅保存计数和标识元数据。
+- Mock data URL 仍只在浏览器 IndexedDB；正式图片继续由现有服务资产接口管理。
+- Mastra/Vinext/Next 等既有依赖风险未在本轮升级；构建 direct-eval warning 来自 `gray-matter` 依赖。
 
 ## 13. External review questions
 
-1. 大错/小错的路由语言是否让美工在 60 秒内做出有依据的决定？
-2. 允许修改区和停止条件是否足够指导真实 PS 或生成式局修？
-3. 真实 SKU 中哪些错误会让当前文本规则误判为局修？
-4. 前后对比和四项人工复验是否足以支持上架责任人签署？
+1. 从干净状态复现正常 Mock 链、一次模拟失败和跨商品写入攻击。
+2. 检查真实修图路由在并发、进程中断和幂等重放下是否最多一次 Provider dispatch/一次 capture。
+3. 在 staging 事务中验证三张新表的 tenant ownership、revision conflict 与回滚。
+4. 质疑订阅积分是否比按批次服务更符合首批真实客户。
+
+建议外部结论仅选：`accept for learning / accept with conditions / reject and revise`。
 
 ## 14. Cheapest next experiment
 
-- 招募 3 名真实美工或运营，每人完成 2–3 个脱敏案例。
-- 记录路径选择、60 秒内有理由决策、路由改判、PS 收尾分钟数和是否采用候选。
-- `PROPOSED` 通过：至少 70% 案例在 60 秒内完成有理由路由，且没有把 L3 大错当局修交付。
-- 若通过：进入一个获授权真实 SKU 的小批次；若失败：先调整问题语言、边界规则和视觉定位，不增加智能体数量。
+- 参与者：2–3 名真实服饰商品图返工人员。
+- 动作：每人用一个获授权脱敏 SKU 同时走现有流程和本地 Agent 流程。
+- 证据：完成时间、人工介入点、采用/返工/放弃理由、是否愿意提交下一批。
+- 建议阈值：多数参与者能独立完成且没有额度/版本理解错误；这是 proposed，不是批准的商业门。
+- 若失败：回到服务交付或简化问题定位，不上线订阅。

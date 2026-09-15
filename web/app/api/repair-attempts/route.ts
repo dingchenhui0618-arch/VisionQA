@@ -8,10 +8,15 @@ import { getBetaService, type RepairStartInput } from "../../../lib/beta/service
 import {
   createQwenImage3Provider,
   getQwenImage3Readiness,
+  QWEN_IMAGE_3_MODEL,
+  QWEN_IMAGE_3_PROVIDER_ID,
   QwenImage3ProviderError,
   type QwenImage3EditResult,
 } from "../../../lib/visionqa/providers/qwen-image-3";
 import { planCustomerRepair } from "../../../lib/visionqa/agents/repair-planning-service";
+import { createTrackedRealProvider, getModelCallLedger } from "../../../lib/agent/runtime-registry";
+import { runBoundedAgentLoop } from "../../../lib/agent/bounded-agent-loop";
+import type { ProviderResult } from "../../../lib/agent/provider-runtime";
 
 type Region = RepairStartInput["issueRegion"];
 
@@ -112,6 +117,7 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
       }
       const episode = service.getRepairEvolution(session, attempt.id);
       if (!episode) throw new Error("Repair evolution episode is unavailable");
+      const planningStarted = Date.now();
       const planning = await planCustomerRepair({
         episode,
         routing: {
@@ -123,6 +129,24 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
         env: process.env,
         authorizeExternalDispatch: () => authorizeModelDispatch(1),
       });
+      if (planning.mode === "DEEPSEEK_V4_FLASH" || planning.plannerFailureCode) {
+        getModelCallLedger().record({
+          request: `repair-plan:${attempt.id}`,
+          project: attempt.projectId,
+          conversation: null,
+          operation: "TEXT_PLAN",
+          provider: "deepseek",
+          model: "deepseek-v4-flash",
+          status: planning.mode === "DEEPSEEK_V4_FLASH" ? "SUCCEEDED" : "FAILED",
+          cost: null,
+          token: null,
+          image: null,
+          latency: Date.now() - planningStarted,
+          retry: 0,
+          idempotency: `repair-plan:${attempt.id}`,
+          ...(planning.plannerFailureCode ? { errorCode: planning.plannerFailureCode } : {}),
+        });
+      }
       const plannedEpisode = service.applyRepairPlannerDecision(
         session,
         attempt.id,
@@ -139,15 +163,57 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
       }
       const budget = authorizeModelDispatch(50);
       try {
-        providerResult = await createQwenImage3Provider(process.env).edit({
-          source: { bytes: source.bytes, mimeType: source.asset.mimeType },
-          references: references.map((entry) => ({ bytes: entry.bytes, mimeType: entry.asset.mimeType })),
-          prompt: buildCustomerRepairPrompt(attempt.issue, attempt.issueRegion),
-          negativePrompt: "禁止改变人物身份、姿势、脸、手脚、背景、镜头、构图和画幅；禁止新增文字、水印、促销信息或未提供的商品细节；禁止修改框选区域以外的商品结构。",
-          sourceWidth: source.asset.width,
-          sourceHeight: source.asset.height,
-          signal: AbortSignal.timeout(180_000),
+        const provider = createQwenImage3Provider(process.env);
+        const runtime = createTrackedRealProvider({
+          tenantId: session.tenantId,
+          provider: QWEN_IMAGE_3_PROVIDER_ID,
+          model: QWEN_IMAGE_3_MODEL,
+          executor: () => provider.edit({
+            source: { bytes: source.bytes, mimeType: source.asset.mimeType },
+            references: references.map((entry) => ({ bytes: entry.bytes, mimeType: entry.asset.mimeType })),
+            prompt: buildCustomerRepairPrompt(attempt.issue, attempt.issueRegion),
+            negativePrompt: "禁止改变人物身份、姿势、脸、手脚、背景、镜头、构图和画幅；禁止新增文字、水印、促销信息或未提供的商品细节；禁止修改框选区域以外的商品结构。",
+            sourceWidth: source.asset.width,
+            sourceHeight: source.asset.height,
+            signal: AbortSignal.timeout(180_000),
+          }),
         });
+        const request = {
+          request: `repair-image:${attempt.id}`,
+          project: attempt.projectId,
+          conversation: null,
+          operation: "IMAGE" as const,
+          idempotency: `repair-image:${attempt.id}`,
+          confirmed: true,
+          image: {
+            inputCount: 1 + references.length,
+            outputCount: 1,
+            inputBytes: source.bytes.byteLength + references.reduce((total, entry) => total + entry.bytes.byteLength, 0),
+            mimeTypes: [source.asset.mimeType, ...references.map((entry) => entry.asset.mimeType)],
+            width: source.asset.width,
+            height: source.asset.height,
+          },
+        };
+        let dispatched = false;
+        const loop = await runBoundedAgentLoop({
+          runtime,
+          maxTextSteps: 0,
+          maxImageCalls: 1,
+          maxAttempts: 2,
+          next: () => {
+            if (dispatched) return { kind: "done" as const };
+            dispatched = true;
+            return { kind: "image" as const, request, confirmed: true };
+          },
+        });
+        const result = loop.results[0] as ProviderResult<QwenImage3EditResult> | undefined;
+        if (!result) throw new QwenImage3ProviderError("NETWORK", loop.error ?? "Repair provider was not dispatched");
+        if (!result.ok) {
+          const code = (["CONFIGURATION", "INVALID_INPUT", "AUTHENTICATION", "RATE_LIMITED", "QUOTA", "NETWORK", "INVALID_OUTPUT", "OUTPUT_FETCH"] as const)
+            .find((candidate) => candidate === result.error.code) ?? "NETWORK";
+          throw new QwenImage3ProviderError(code, result.error.message);
+        }
+        providerResult = result.output;
       } finally {
         budget.record();
       }
