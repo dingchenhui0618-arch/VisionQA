@@ -17,6 +17,8 @@
 
 ## 3. Team governance
 
+以下括号内模型均为研发、测试或独立审查 Agent 标识，不代表 VisionQA 产品运行 Provider；产品运行当前仅使用国内 DeepSeek 与 Qwen，未来 Seedance 需单独通过 Gate。
+
 - Product Manager / Orchestrator：主 Agent，冻结 MVP 契约、整合 API/UI、控制费用并执行最终回归。
 - Provider Engineer（gpt-5.6-terra）：输出 Qwen 3 / Wan 方案和 Qwen 3 受控适配器；只写 Provider 与测试，真实调用为 0；10 项 fake-fetch 测试通过。
 - Visual QA（gpt-5.6-terra）：建立 12 案例基准契约并独立复核首次 Qwen 3 候选；结论 `ACCEPTED_FOR_INTERNAL_DEMO`、客户交付 `BLOCKED`。

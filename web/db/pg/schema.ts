@@ -55,6 +55,7 @@ export const assets = pgTable(
       .notNull()
       .default("aliyun_oss"),
     objectKey: text("object_key"),
+    repairAttemptId: text("repair_attempt_id"),
     storageRegion: text("storage_region").notNull().default("cn-beijing"),
     retentionUntil: timestamp("retention_until", { withTimezone: true }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -384,5 +385,37 @@ export const modelCallLedger = pgTable(
   (table) => [
     uniqueIndex("model_call_tenant_idempotency_unique").on(table.tenantId, table.idempotencyKey),
     index("model_call_project_created_idx").on(table.tenantId, table.projectId, table.createdAt),
+  ],
+);
+
+// Columns added by 0004. The customer beta tables themselves originate in
+// 0002; these exports keep the transaction-critical repair state visible to
+// Drizzle without changing the existing in-memory BetaService contract.
+export const repairAttemptsRuntime = pgTable(
+  "repair_attempts",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    projectId: text("project_id").notNull(),
+    screeningItemId: text("screening_item_id").notNull(),
+    sourceAssetId: text("source_asset_id").notNull(),
+    outputAssetId: text("output_asset_id"),
+    issue: text("issue").notNull(),
+    issueRegionJson: jsonb("issue_region_json").notNull(),
+    lockedRegionsJson: jsonb("locked_regions_json").notNull(),
+    status: text("status").notNull(),
+    gateVersion: text("gate_version").notNull(),
+    gateResult: text("gate_result").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    executionOwner: text("execution_owner"),
+    executionStartedAt: timestamp("execution_started_at", { withTimezone: true }),
+    failureReason: text("failure_reason"),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  table => [
+    uniqueIndex("repair_attempts_tenant_idempotency_runtime_unique").on(table.tenantId, table.idempotencyKey),
+    index("repair_attempts_project_status_runtime_idx").on(table.tenantId, table.projectId, table.status),
   ],
 );

@@ -19,8 +19,8 @@
 
 ## 3. 模型组织策略
 
-- 产品策略目标：`gpt-5.6-sol` 负责主要任务规划、约束整理和工具选择；更小模型负责可独立验证的分类、摘要或结构化执行；图像修改仍由获准图像 Provider 完成。
-- 当前运行事实：现有文字规划仍包含 DeepSeek 路由，图像修正为 Qwen Image 3。没有仅凭策略文档把它们冒充为 5.6 Sol 调用。
+- 研发与独立审查策略：`gpt-5.6-sol`、`gpt-5.6-luna` 仅用于系统开发、测试、独立审查和压力对抗，不属于 VisionQA 产品运行 Provider。
+- 产品运行时只使用已批准的国内模型：当前文字规划由 DeepSeek 承担，视觉理解与图像修正由 Qwen 承担；未来 Seedance 必须单独通过数据范围、预算、能力和 Provider Gate 后才能接入。
 - 任何模型替换必须通过同一 Provider Runtime，记录模型快照、调用状态和成本，并保持用户积分语义不变。
 
 ## 4. 调用与积分口径
@@ -34,11 +34,12 @@
 
 - 浏览器 Mock 继续保存在独立 IndexedDB，映射到统一上下文/版本契约时使用 `mock-*` 身份并明确 `MOCK_ONLY`。
 - 本地模型调用元数据进入 Git 忽略的 `web/work/local-agent-state/model-call-ledger.json`。
-- `drizzle-pg/0003_agent_runtime.sql` 为未执行迁移；应用前必须在 staging 备份、迁移、回滚和租户隔离检查中验证。迁移已包含租户级派发唯一键与版本父链复合约束。
+- `drizzle-pg/0003_agent_runtime.sql` 与 `drizzle-pg/0004_repair_transactions.sql` 均为未在真实数据库执行的迁移；应用前必须在 staging 备份、迁移、回滚和租户隔离检查中验证。`0003` 包含派发与版本父链约束，`0004` 补齐修图 request fingerprint、执行 claim、输出资产归属、活动任务唯一约束与额度事务所需字段。
+- `postgres-repair-repository.ts` 已实现 begin / claim / capture / release / interrupted recovery；钱包、hold 和 attempt 在同一事务中条件更新，任一不一致即回滚。capture 需要匹配 claim 时的 execution owner，旧 Worker 不能结算新结果。数据库测试已覆盖重复动作、双 Worker 竞争与崩溃恢复语义，但 API 尚未切换到该 repository。
 - 生产派发必须使用 PostgreSQL 原子 claim；没有 `DATABASE_URL` 时真实 Provider 路由失败关闭。开发环境共享内存 claim 只用于本机进程测试，不作为跨进程耐久证据。
 
 ## 6. 当前验收和未完成项
 
 - 已验证：上下文、版本树、统一运行时、模型账本、积分状态机、有界循环、Mock 映射、真实修图路由构建。
-- 未验证：真实 PostgreSQL 迁移、BetaService 钱包/任务的生产 repository、进程崩溃中间态、真实 Provider 成本回填、浏览器真实修图结果、移动端、线上部署、订阅支付。
+- 未验证：真实 PostgreSQL 迁移、API 到生产 repository 的切换、真实进程崩溃中间态、真实 Provider 成本回填、浏览器真实修图结果、移动端、线上部署、订阅支付。
 - 订阅额度必须基于真实 Provider 账单和修图成本 P90 决定；当前只保留积分机制，不发布价格。

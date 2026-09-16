@@ -1,5 +1,16 @@
 # VisionQA 项目状态
 
+## 2026-09-16 PostgreSQL 修图事务第一批
+
+- 新增 `web/drizzle-pg/0004_repair_transactions.sql` 与 `web/lib/beta/postgres-repair-repository.ts`，把修图任务、额度冻结、执行权获取、成功扣次、失败退回和中断恢复纳入同一 PostgreSQL 事务边界。
+- 同租户同项目最多一个 `HELD / RUNNING` 修图任务；同租户幂等键复用必须保持请求指纹一致。重复建立、重复 capture/release 不重复冻结或结算。
+- Worker 通过条件更新从 `HELD` 原子 claim 为 `RUNNING`；只有一个执行者取得外部调用权，成功结算还必须携带相同 execution owner。输出资产必须显式绑定本次 repair attempt，同时属于同租户、同项目且为已就绪修正版。
+- 结算同时校验钱包、hold 和 attempt 的条件更新；任一状态不一致则整笔回滚。技术失败、Gate 拦截与服务中断释放额度，不伪装为业务成功。
+- 数据库空库迁移及事务测试通过 5/5。尚未把 `/api/repair-attempts` 切换到该 repository，也未在真实 PostgreSQL 或线上应用迁移；现有生产 API 仍不能宣称具备跨进程强一致扣次。
+- 最终回归：Agent 67/67、页面/Schema/生产守卫 31/31、原业务/runtime 143/143、生产构建与 ESLint 均通过；仅依赖构建仍报告既有 `gray-matter` direct-eval warning。
+- 产品运行边界不变：只允许 DeepSeek / Qwen；Sol/Luna 仅用于开发、测试和压力对抗。本轮真实模型调用、线上变更与新费用均为 0。
+- 模拟客户发现 Day 2 已记录到 `reports/SIMULATED_DAILY_DISCOVERY_AGENT_SUBSCRIPTION_DAY2.md`；它不是真实访谈、采用或付款证据。
+
 ## 2026-09-15 单商品智能体运行内核第一批
 
 - 本地主线仍为 `localhost:6300`，线上系统未改动。官网 `/`、登录 `/login`、单商品对话 `/agent` 的路由关系保持不变。
@@ -8,9 +19,9 @@
 - 新增统一 Provider Runtime：Mock 与注入式真实 Provider 使用相同请求、结果和错误契约。真实 Qwen 修图路由已接入统一运行时；每次修图只允许一个已确认图片调用，禁止无限自动重试。外部执行前必须取得租户级派发声明，重复执行在 Provider 调用前即被拦截；生产缺少 `DATABASE_URL` 时失败关闭。
 - 新增模型调用账本：只记录 request/project/conversation/operation/provider/model/status/token/图片计数/成本/耗时/retry/idempotency 等元数据，不保存 Prompt、密钥或图片字节；本地开发账本写入 `web/work/local-agent-state`，生产表迁移已准备但未执行。
 - 积分状态继续沿用真实 BetaService 的 `AVAILABLE → HELD → CAPTURED / RELEASED`；另新增 Provider 无关的结算状态机测试。技术失败与 Gate 拦截释放，成功候选捕获一次，重复动作幂等。
-- 新增正式数据库迁移草案 `web/drizzle-pg/0003_agent_runtime.sql`，包含商品对话上下文、图片版本和模型调用账本；父版本使用租户/项目/对话/商品/资产复合约束，派发账本使用租户幂等唯一键。该迁移尚未应用到本地或线上 PostgreSQL，不得据此声称生产持久化完成。
-- 协作方式：本轮主线程负责架构、集成和验收；两个 Luna 子智能体分别实现上下文/版本与 runtime/账本核心，另一个 Luna 输出明确标注的模拟客户发现。用户指定的 `gpt-5.6-sol` 作为规划主模型是后续产品运行策略；本轮未新增或触发 5.6 Sol 真实接口调用，现有 DeepSeek/Qwen 真实路由保持原事实。
-- 验证：Agent 运行与交互测试 62/62、原业务/runtime 测试 143/143、页面/Schema/生产守卫 31/31 通过；ESLint 0 error/warning，生产构建通过。四段 PostgreSQL 迁移已在 `pg-mem` 空库顺序应用，并验证跨租户父版本和重复派发键被数据库拒绝；未对本地或线上真实数据库执行。浏览器实际完成 Mock 建商品 → 示例素材 → 筛查 → 选择 → V1 → 刷新恢复；构建期间曾捕获一次 Vite HMR 连接错误，刷新后未出现新时间戳错误。真实模型结果、390px 移动端和线上仍为 `NOT_RUN`。
+- 新增正式数据库迁移草案 `web/drizzle-pg/0003_agent_runtime.sql`，包含商品对话上下文、图片版本和模型调用账本；父版本使用租户/项目/对话/商品/资产复合约束，派发账本使用租户幂等唯一键。后续 `0004` 已补修图事务。两项迁移均尚未应用到本地或线上真实 PostgreSQL，不得据此声称生产持久化完成。
+- 协作方式：`gpt-5.6-sol` / `gpt-5.6-luna` 仅用于研发、测试、独立审查和压力对抗，不进入产品运行时；VisionQA 当前产品运行模型固定为 DeepSeek + Qwen，未来 Seedance 需独立 Gate 后才可接入。本轮未触发真实模型调用。
+- 验证（该阶段快照）：Agent 运行与交互测试 62/62、原业务/runtime 测试 143/143、页面/Schema/生产守卫 31/31 通过；ESLint 0 error/warning，生产构建通过。后续 2026-09-16 已扩展为五段迁移与 67 项 Agent 测试。浏览器实际完成 Mock 建商品 → 示例素材 → 筛查 → 选择 → V1 → 刷新恢复；构建期间曾捕获一次 Vite HMR 连接错误，刷新后未出现新时间戳错误。真实模型结果、390px 移动端和线上仍为 `NOT_RUN`。
 - 详细架构与边界见 [Agent Runtime 基础](docs/17_AGENT_RUNTIME_FOUNDATION.md)；模拟客户发现见 [Day 1 报告](reports/SIMULATED_DAILY_DISCOVERY_AGENT_SUBSCRIPTION_DAY1.md)。
 
 ## 2026-09-15 入口恢复与后端接入第一批

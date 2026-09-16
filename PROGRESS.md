@@ -1,14 +1,22 @@
 # VisionQA 当前产品与项目进度
 
+## 2026-09-16 当前交接：修图事务持久化
+
+- PostgreSQL 迁移已从 `0003` 扩展到 `0004_repair_transactions.sql`，新增请求指纹、执行 owner/started、输出资产到 repair attempt 的绑定、活动修图唯一约束与额度结算唯一约束。
+- 新 repository 已覆盖 begin → claim → capture/release → restart recovery；数据库事务测试 5/5 通过，包含幂等重放、租户隔离、余额不足零残留和失败只退一次。
+- 当前仍是“repository 已实现、API 尚未切换”的中间状态。下一步必须让 `/api/repair-attempts` 在 production/staging 使用 PostgreSQL repository，并保留本地 Mock/受限开发回退；不能长期保留双权威状态。
+- 迁移未在真实 PostgreSQL 应用，线上未动，真实模型未调用。产品运行只使用 DeepSeek/Qwen，研发与压力测试才可使用 Sol/Luna。
+- 回归结果：Agent 67/67、页面/Schema/生产守卫 31/31、原业务/runtime 143/143、生产构建与 ESLint 均通过。
+
 ## 2026-09-15 当前交接：对话智能体运行内核
 
 - 当前产品入口保持 `/` → `/login` → `/agent`，只改本地 `localhost:6300`，没有发布线上。
 - 已实现商品上下文、图片版本树、统一 Mock/真实 Provider 接口、模型调用元数据账本、积分冻结/结算状态机和有界执行循环；现有真实修图路由开始使用统一 Runtime。
 - 客户积分仍以“成功形成可复验修正版”为 1 次结算口径；规划、筛查、失败和 Gate 拦截不直接扣客户修图额度。真实供应商成本单独记录，当前未形成公开订阅价格证据。
 - Provider 外部调用前已加入租户级持久派发声明；生产缺少 PostgreSQL 连接时失败关闭。版本树已拒绝多节点环和跨租户父链，账本会拒绝 Prompt、密钥与 URL 型请求字段。
-- PostgreSQL `0003_agent_runtime.sql` 仍是待在真实库执行的迁移；线上、真实模型质量、真实采用、付款和复购均没有因本轮工程实现而得到证明。
+- PostgreSQL `0003_agent_runtime.sql` 与 `0004_repair_transactions.sql` 仍是待在真实库执行的迁移；线上、真实模型质量、真实采用、付款和复购均没有因本轮工程实现而得到证明。
 - 回归结果：Agent 62/62、页面/Schema/生产守卫 31/31、原业务/runtime 143/143，ESLint 和生产构建通过。
-- 下一步：在 staging PostgreSQL 备份后实跑迁移 → 把 BetaService 钱包/任务状态接入同一事务 repository → 做进程中断恢复测试 → 再用已授权示例做一次受控真实链路。
+- 下一步：把修图 API 接入 PostgreSQL repository → 在 staging PostgreSQL 备份后实跑 0000–0004 → 做真实进程中断恢复测试 → 再用已授权示例做一次受控真实链路。
 
 ## 2026-09-01 当前交接
 
