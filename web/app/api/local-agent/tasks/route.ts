@@ -1,5 +1,5 @@
 import { requireBetaSessionFromRequest } from "../../../../lib/beta/auth";
-import { getBetaService } from "../../../../lib/beta/service";
+import { getBetaBackend } from "../../../../lib/beta/backend";
 import { TaskSessions, TaskSessionError } from "../../../../lib/agent/task-session";
 import { localStateStore } from "../../../../lib/beta/local-state";
 import { CustomerVisibleError } from "../../../../lib/beta/contracts";
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   const owner = `${session.tenantId}:${session.userId}`;
   const prepare = async (input: { skuName: string; objective: string; conversationId: string }) => {
     const { createVisualTaskWorkflow } = await import("../../../../lib/agent/task-workflow");
-    const { workflow } = await createVisualTaskWorkflow(async name => getBetaService().createProjectForConversation(session, name, input.conversationId).id);
+    const { workflow } = await createVisualTaskWorkflow(async name => (await getBetaBackend().createProjectForConversation(session, name, input.conversationId)).id);
     const run = await workflow.createRun();
     const result = await run.start({ inputData: { skuName: input.skuName, objective: input.objective } });
     if (result.status !== "suspended") throw new Error("Workflow did not suspend");

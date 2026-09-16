@@ -1,11 +1,11 @@
 import { requireBetaSessionFromRequest } from "../../../lib/beta/auth";
 import { customerErrorResponse } from "../../../lib/beta/contracts";
-import { getBetaService } from "../../../lib/beta/service";
+import { getBetaBackend } from "../../../lib/beta/backend";
 
 export async function GET(request: Request) {
   try {
     const session = await requireBetaSessionFromRequest(request);
-    return Response.json(getBetaService().getCredits(session), { headers: { "cache-control": "no-store" } });
+    return Response.json(await getBetaBackend().getCredits(session), { headers: { "cache-control": "no-store" } });
   } catch (error) {
     return customerErrorResponse(error);
   }

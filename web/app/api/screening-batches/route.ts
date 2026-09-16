@@ -3,26 +3,26 @@ import { requireBetaSessionFromRequest } from "../../../lib/beta/auth";
 import { authorizeModelDispatch } from "../../../lib/beta/budget";
 import { CustomerVisibleError, customerErrorResponse } from "../../../lib/beta/contracts";
 import { mapEvaluationToCustomerScreening } from "../../../lib/beta/screening";
-import { getBetaService } from "../../../lib/beta/service";
+import { getBetaBackend } from "../../../lib/beta/backend";
 
 export async function POST(request: Request) {
-  const service = getBetaService();
+  const service = getBetaBackend();
   let session;
   let batchId: string | null = null;
   try {
     session = await requireBetaSessionFromRequest(request);
     const input = (await request.json()) as Record<string, unknown>;
-    const batch = service.createScreeningBatch(session, {
+    const batch = await service.createScreeningBatch(session, {
       projectId: String(input.project_id ?? ""),
       skuName: String(input.sku_name ?? ""),
       truthAssetIds: stringList(input.truth_asset_ids),
       candidateAssetIds: stringList(input.candidate_asset_ids),
     });
     batchId = batch.id;
-    const references = batch.truthAssetIds.map((id) => service.readAsset(session!, id));
+    const references = await Promise.all(batch.truthAssetIds.map((id) => service.readAsset(session!, id)));
     const results = [];
     for (const candidateId of batch.candidateAssetIds) {
-      const candidate = service.readAsset(session, candidateId);
+      const candidate = await service.readAsset(session, candidateId);
       const budget = authorizeModelDispatch(10);
       const form = new FormData();
       form.set(
@@ -66,13 +66,13 @@ export async function POST(request: Request) {
       }
       results.push(mapEvaluationToCustomerScreening(candidate.asset.id, await response.json()));
     }
-    const completed = service.completeScreeningBatch(session, batch.id, results);
+    const completed = await service.completeScreeningBatch(session, batch.id, results);
     return Response.json(
-      { batch: completed, credits: service.getCredits(session) },
+      { batch: completed, credits: await service.getCredits(session) },
       { status: 201, headers: { "cache-control": "no-store" } },
     );
   } catch (error) {
-    if (session && batchId) service.failScreeningBatch(session, batchId);
+    if (session && batchId) await service.failScreeningBatch(session, batchId);
     return customerErrorResponse(error);
   }
 }

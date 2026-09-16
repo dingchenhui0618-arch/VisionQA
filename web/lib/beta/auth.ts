@@ -5,7 +5,7 @@ import {
   readCookie,
   type BetaSessionView,
 } from "./contracts";
-import { getBetaService } from "./service";
+import { getBetaBackend } from "./backend";
 import {
   getTrialAccountFromSessionToken,
   TRIAL_SESSION_COOKIE_NAME,
@@ -13,11 +13,11 @@ import {
 
 export async function getBetaSessionFromPage(): Promise<BetaSessionView | null> {
   const cookieStore = await cookies();
-  return getBetaService().resolveSession(cookieStore.get(BETA_SESSION_COOKIE)?.value);
+  return getBetaBackend().resolveSession(cookieStore.get(BETA_SESSION_COOKIE)?.value);
 }
 
 export async function requireBetaSessionFromRequest(request: Request): Promise<BetaSessionView> {
-  const session = await getBetaService().resolveSession(readCookie(request, BETA_SESSION_COOKIE));
+  const session = await getBetaBackend().resolveSession(readCookie(request, BETA_SESSION_COOKIE));
   if (!session) {
     throw new CustomerVisibleError(
       "AUTHENTICATION_REQUIRED",
@@ -45,7 +45,7 @@ export async function requireInternalActorFromRequest(request: Request): Promise
   actorId: string;
   betaSession: BetaSessionView | null;
 }> {
-  const beta = await getBetaService().resolveSession(readCookie(request, BETA_SESSION_COOKIE));
+  const beta = await getBetaBackend().resolveSession(readCookie(request, BETA_SESSION_COOKIE));
   if (beta?.role === "admin" || beta?.role === "developer") {
     return { actorId: beta.userId, betaSession: beta };
   }

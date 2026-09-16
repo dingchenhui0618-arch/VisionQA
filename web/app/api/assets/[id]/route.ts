@@ -1,7 +1,7 @@
 import { requireBetaSessionFromRequest } from "../../../../lib/beta/auth";
 import { verifySignedDownloadUrl } from "../../../../lib/beta/asset-urls";
 import { ASSET_MAX_BYTES, CustomerVisibleError, customerErrorResponse } from "../../../../lib/beta/contracts";
-import { getBetaService } from "../../../../lib/beta/service";
+import { getBetaBackend } from "../../../../lib/beta/backend";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -19,7 +19,7 @@ export async function PUT(request: Request, context: Context) {
       );
     }
     const bytes = new Uint8Array(await request.arrayBuffer());
-    const asset = await getBetaService().putAsset(session, id, bytes);
+    const asset = await getBetaBackend().putAsset(session, id, bytes);
     return Response.json({ asset_id: asset.id, status: asset.uploadStatus }, { headers: { "cache-control": "no-store" } });
   } catch (error) {
     return customerErrorResponse(error);
@@ -30,7 +30,7 @@ export async function GET(request: Request, context: Context) {
   try {
     const session = await requireBetaSessionFromRequest(request);
     const { id } = await context.params;
-    const { asset, bytes } = getBetaService().readAsset(session, id);
+    const { asset, bytes } = await getBetaBackend().readAsset(session, id);
     const url = new URL(request.url);
     const download = url.searchParams.get("download") === "1";
     if (download) await verifySignedDownloadUrl(session, id, url);

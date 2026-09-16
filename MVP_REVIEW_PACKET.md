@@ -45,6 +45,7 @@
 - Mock 映射：`mock-runtime-adapter.ts`；Mock port 使用无网络统一 Runtime。
 - 真实路由：`app/api/repair-attempts/route.ts` 使用同一 Runtime 和一次图片调用上限；客户额度仍由 BetaService 权威结算。
 - 数据库准备：`db/pg/schema.ts`、`drizzle-pg/0003_agent_runtime.sql`、`drizzle-pg/0004_repair_transactions.sql`，以及事务型 `postgres-repair-repository.ts`。后者尚未切入生产 API。
+- 统一组合根：`lib/beta/backend.ts`；客户页面/API 已全部接入，PostgreSQL adapter 尚未实现。迁移边界见 `docs/18_BETA_BACKEND_MIGRATION.md`。
 - 部署：`NOT RUN`；线上未改变。
 
 ## 5. Reproduction guide
@@ -64,7 +65,7 @@ npm run dev -- --port 6300
 
 | Check | Result | Limitation |
 | --- | --- | --- |
-| `npm run test:agent` | 67/67 pass | 零网络；不证明模型质量或真实 PostgreSQL |
+| `npm run test:agent` | 69/69 pass | 零网络；不证明模型质量或真实 PostgreSQL |
 | `npm test` | 页面/Schema 31/31 + runtime/business 143/143 pass | 含构建；不证明真实数据库/Provider |
 | `npm run lint` | exit 0 | 构建依赖仍有既有 direct-eval warning |
 | migration sequence | 0000–0004 pg-mem pass；修图事务定向测试 5/5 | 未在真实 PostgreSQL 执行；API 尚未切换 |
@@ -100,7 +101,7 @@ npm run dev -- --port 6300
 ## 9. Internal review
 
 - `CRITICAL`：独立 QA 发现“外部调用后才记录幂等”可能导致重复 Provider 费用；已修复为调用前 PostgreSQL 原子 claim，重复 runtime 测试确认 executor 仅执行一次。
-- `HIGH`：PostgreSQL 修图 repository 已实现并通过 5 项事务测试，但生产 API 尚未切换；现阶段仍不能声称线上跨实例只冻结/结算一次。
+- `HIGH`：统一 backend seam 与 PostgreSQL 修图 repository 已实现，但完整 PostgreSQL backend 尚未实现；现阶段仍不能声称线上跨实例持久化或只冻结/结算一次。
 - `HIGH`：独立 QA 发现版本树可形成多节点环、数据库可跨租户指向父版本；已补循环检测、商品 identity 参数和复合父链约束。
 - `MEDIUM`：商品上下文/版本树在 Mock 为派生投影，正式 BetaService 尚未写入新表。
 - `MEDIUM`：DeepSeek/Qwen 的真实成本与质量尚未完成本轮受控运行验证；Sol/Luna 不属于产品 Provider。

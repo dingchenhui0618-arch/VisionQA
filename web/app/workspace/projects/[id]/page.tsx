@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CustomerProject } from "../../../customer/customer-project";
 import { getBetaSessionFromPage } from "../../../../lib/beta/auth";
-import { getBetaService } from "../../../../lib/beta/service";
+import { getBetaBackend } from "../../../../lib/beta/backend";
 import { createSignedDownloadUrl } from "../../../../lib/beta/asset-urls";
 
 export const metadata: Metadata = {
@@ -14,14 +14,19 @@ export default async function CustomerProjectPage({ params }: { params: Promise<
   const session = await getBetaSessionFromPage();
   if (!session) redirect("/login");
   const { id } = await params;
-  const service = getBetaService();
-  const repair = service.latestRepairForProject(session, id);
+  const service = getBetaBackend();
+  const [project, credits, batch, repair] = await Promise.all([
+    service.getProject(session, id),
+    service.getCredits(session),
+    service.latestBatchForProject(session, id),
+    service.latestRepairForProject(session, id),
+  ]);
   return (
     <CustomerProject
       session={session}
-      initialProject={service.getProject(session, id)}
-      initialCredits={service.getCredits(session)}
-      initialBatch={service.latestBatchForProject(session, id)}
+      initialProject={project}
+      initialCredits={credits}
+      initialBatch={batch}
       initialRepair={repair}
       initialDownloadUrl={repair?.status === "CAPTURED" && repair.outputAssetId ? await createSignedDownloadUrl(session, repair.outputAssetId) : null}
     />

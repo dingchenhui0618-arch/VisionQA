@@ -1,10 +1,11 @@
 import { after } from "next/server";
 import { requireBetaSessionFromRequest } from "../../../lib/beta/auth";
 import { createSignedDownloadUrl } from "../../../lib/beta/asset-urls";
+import { getBetaBackend } from "../../../lib/beta/backend";
 import { authorizeModelDispatch } from "../../../lib/beta/budget";
 import { CustomerVisibleError, customerErrorResponse, type BetaSessionView, type RepairAttempt } from "../../../lib/beta/contracts";
 import { runServerRepairGate } from "../../../lib/beta/repair-gate";
-import { getBetaService, type RepairStartInput } from "../../../lib/beta/service";
+import type { RepairStartInput } from "../../../lib/beta/service";
 import {
   createQwenImage3Provider,
   getQwenImage3Readiness,
@@ -21,13 +22,13 @@ import type { ProviderResult } from "../../../lib/agent/provider-runtime";
 type Region = RepairStartInput["issueRegion"];
 
 export async function POST(request: Request) {
-  const service = getBetaService();
+  const service = getBetaBackend();
   try {
     const session = await requireBetaSessionFromRequest(request);
     const input = (await request.json()) as Record<string, unknown>;
     const region = parseRegion(input.issue_region) ?? { x: 0.25, y: 0.25, width: 0.5, height: 0.5 };
     const lockedRegions = parseRegions(input.locked_regions);
-    const attempt = service.beginRepair(session, {
+    const attempt = await service.beginRepair(session, {
       projectId: String(input.project_id ?? ""),
       screeningItemId: String(input.screening_item_id ?? ""),
       sourceAssetId: typeof input.source_asset_id === "string" ? input.source_asset_id : undefined,
@@ -39,13 +40,13 @@ export async function POST(request: Request) {
     if (attempt.status === "CAPTURED") {
       return Response.json(await completedPayload(session, attempt));
     }
-    if (attempt.status === "RUNNING") return Response.json(runningPayload(session, attempt), { status: 202 });
-    if (attempt.status === "RELEASED") return Response.json({ state: "FAILED", attempt, credits: service.getCredits(session), error: { message: attempt.failureReason ?? "本轮未完成，额度已退回。", next_action: "请开始新一轮。" } });
-    const running = service.markRepairRunning(session, attempt.id);
+    if (attempt.status === "RUNNING") return Response.json(await runningPayload(session, attempt), { status: 202 });
+    if (attempt.status === "RELEASED") return Response.json({ state: "FAILED", attempt, credits: await service.getCredits(session), error: { message: attempt.failureReason ?? "本轮未完成，额度已退回。", next_action: "请开始新一轮。" } });
+    const running = await service.markRepairRunning(session, attempt.id);
     after(async () => {
       await executeRepairAttempt(session, running.id);
     });
-    return Response.json(runningPayload(session, running), {
+    return Response.json(await runningPayload(session, running), {
       status: 202,
       headers: { "cache-control": "no-store" },
     });
@@ -66,21 +67,21 @@ export async function GET(request: Request) {
   try {
     const session = await requireBetaSessionFromRequest(request);
     const attemptId = new URL(request.url).searchParams.get("attempt_id") ?? "";
-    const service = getBetaService();
-    const attempt = service.getRepairAttempt(session, attemptId);
+    const service = getBetaBackend();
+    const attempt = await service.getRepairAttempt(session, attemptId);
     if (attempt.status === "CAPTURED") return Response.json(await completedPayload(session, attempt));
     if (attempt.status === "RELEASED") {
       return Response.json({
         state: "FAILED",
         attempt,
-        credits: service.getCredits(session),
+        credits: await service.getCredits(session),
         error: {
           message: attempt.failureReason ?? "本次修图没有完成，且没有扣除内测额度。",
           next_action: "图片、问题描述和框选区域已保留，你可以再次提交。",
         },
       }, { headers: { "cache-control": "no-store" } });
     }
-    return Response.json(runningPayload(session, attempt), {
+    return Response.json(await runningPayload(session, attempt), {
       headers: { "cache-control": "no-store" },
     });
   } catch (error) {
@@ -95,13 +96,13 @@ export async function GET(request: Request) {
 }
 
 async function executeRepairAttempt(session: BetaSessionView, attemptId: string) {
-  const service = getBetaService();
+  const service = getBetaBackend();
   try {
-    const attempt = service.getRepairAttempt(session, attemptId);
-    const source = service.readAsset(session, attempt.sourceAssetId);
-    const batch = service.getRepairReferenceBatch(session, attempt.id);
+    const attempt = await service.getRepairAttempt(session, attemptId);
+    const source = await service.readAsset(session, attempt.sourceAssetId);
+    const batch = await service.getRepairReferenceBatch(session, attempt.id);
     if (!batch) throw new Error("Repair batch is unavailable");
-    const references = batch.truthAssetIds.slice(0, 2).map((id) => service.readAsset(session, id));
+    const references = await Promise.all(batch.truthAssetIds.slice(0, 2).map((id) => service.readAsset(session, id)));
 
     let providerResult: QwenImage3EditResult | null = null;
     let output: { bytes: Uint8Array; mimeType: "image/png" | "image/jpeg" | "image/webp"; width: number | null; height: number | null };
@@ -115,7 +116,7 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
           "图片、问题描述和框选区域都已保留，请稍后再次提交。",
         );
       }
-      const episode = service.getRepairEvolution(session, attempt.id);
+      const episode = await service.getRepairEvolution(session, attempt.id);
       if (!episode) throw new Error("Repair evolution episode is unavailable");
       const planningStarted = Date.now();
       const planning = await planCustomerRepair({
@@ -147,7 +148,7 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
           ...(planning.plannerFailureCode ? { errorCode: planning.plannerFailureCode } : {}),
         });
       }
-      const plannedEpisode = service.applyRepairPlannerDecision(
+      const plannedEpisode = await service.applyRepairPlannerDecision(
         session,
         attempt.id,
         planning.decision,
@@ -242,7 +243,7 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
       lockedRegions: attempt.lockedRegions,
     });
     if (!gate.passed || !gate.outputDimensions) {
-      service.releaseRepair(session, attempt.id, "修正版未通过基础文件与画幅检查，额度已自动释放。", true);
+      await service.releaseRepair(session, attempt.id, "修正版未通过基础文件与画幅检查，额度已自动释放。", true);
       throw new CustomerVisibleError(
         "GATE_BLOCKED",
         "修正版没有通过基础检查，本次没有扣除内测额度。",
@@ -258,7 +259,7 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
       width: gate.outputDimensions.width,
       height: gate.outputDimensions.height,
     });
-    const captured = service.captureRepair(session, attempt.id, outputAsset.id);
+    const captured = await service.captureRepair(session, attempt.id, outputAsset.id);
     return captured;
   } catch (error) {
     let reason = "修图任务未形成可用结果，额度已自动释放。";
@@ -272,9 +273,9 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
       });
     }
     try {
-      const attempt = service.getRepairAttempt(session, attemptId);
+      const attempt = await service.getRepairAttempt(session, attemptId);
       if (attempt.status !== "RELEASED" && attempt.status !== "CAPTURED") {
-        service.releaseRepair(session, attemptId, reason, error instanceof CustomerVisibleError && error.code === "GATE_BLOCKED");
+        await service.releaseRepair(session, attemptId, reason, error instanceof CustomerVisibleError && error.code === "GATE_BLOCKED");
       }
     } catch {
       // Preserve the original failure while ensuring the background task settles.
@@ -282,11 +283,11 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
   }
 }
 
-function runningPayload(session: BetaSessionView, attempt: RepairAttempt) {
+async function runningPayload(session: BetaSessionView, attempt: RepairAttempt) {
   return {
     state: "RUNNING",
     attempt,
-    credits: getBetaService().getCredits(session),
+    credits: await getBetaBackend().getCredits(session),
     poll_url: `/api/repair-attempts?attempt_id=${encodeURIComponent(attempt.id)}`,
     message: "正在修正图片，通常需要 1–3 分钟。你可以停留在页面，也可以稍后刷新回来查看。",
   };
@@ -296,7 +297,7 @@ async function completedPayload(session: BetaSessionView, attempt: RepairAttempt
   return {
     state: "COMPLETED",
     attempt,
-    credits: getBetaService().getCredits(session),
+    credits: await getBetaBackend().getCredits(session),
     output_url: `/api/assets/${attempt.outputAssetId}`,
     download_url: await createSignedDownloadUrl(session, attempt.outputAssetId!),
     gate: { message: "修正版已通过基础检查；仍需你人工确认。", human_confirmation_required: true },

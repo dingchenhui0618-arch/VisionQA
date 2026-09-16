@@ -1,5 +1,14 @@
 # VisionQA 项目状态
 
+## 2026-09-16 Customer Beta 统一组合根
+
+- 新增 `web/lib/beta/backend.ts`：客户页面、认证和全部客户/内部 Beta API 统一通过异步兼容的 `BetaBackend` 访问状态，不再由路由直接依赖内存 `BetaService`。
+- 12 组客户链入口已完成组合根替换，包括邀请、项目、素材、筛查、修图、额度、本地 Agent 材料/任务和内部邀请/补次；服务端页面也使用同一 backend。
+- 新增源码守卫与异步适配器测试，防止后续页面/API 绕过组合根。Agent 回归由 67 增至 69 项。
+- 这一步只建立原子切换 seam；默认适配器仍是本机/内存服务，PostgreSQL backend 尚未实现，`0004` 修图 repository 也尚未接入 API。不得宣称双事实源已经消除或生产持久化完成。
+- 独立只读审查确认生产切换必须同时处理 session、project/conversation、asset+对象存储、screening、repair+credits 和 output+version；详见 `docs/18_BETA_BACKEND_MIGRATION.md`。
+- 本轮未改线上、未调用真实模型、未读取或变更密钥。
+
 ## 2026-09-16 PostgreSQL 修图事务第一批
 
 - 新增 `web/drizzle-pg/0004_repair_transactions.sql` 与 `web/lib/beta/postgres-repair-repository.ts`，把修图任务、额度冻结、执行权获取、成功扣次、失败退回和中断恢复纳入同一 PostgreSQL 事务边界。

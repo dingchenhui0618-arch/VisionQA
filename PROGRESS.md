@@ -1,10 +1,18 @@
 # VisionQA 当前产品与项目进度
 
+## 2026-09-16 当前交接：Customer Beta Backend Port
+
+- 页面与 API 已统一依赖 `BetaBackend`，未来 PostgreSQL 实现可以一次性替换；`app/` 已没有 `getBetaService()` 直连。
+- 当前 backend 仍由原本的本地/内存 `BetaService` 提供，产品行为不变；这是迁移 seam，不是生产数据库接入完成。
+- Agent 测试增加到 69 项，覆盖异步 backend 注入与禁止页面/API 绕过组合根。
+- 下一步：先补 `0005` schema seam 与 session/project/screening repository，再成对接入私有对象存储；最后把修图事务接入同一 backend。
+- 迁移路线见 `docs/18_BETA_BACKEND_MIGRATION.md`。线上与真实 Provider 均未改变。
+
 ## 2026-09-16 当前交接：修图事务持久化
 
 - PostgreSQL 迁移已从 `0003` 扩展到 `0004_repair_transactions.sql`，新增请求指纹、执行 owner/started、输出资产到 repair attempt 的绑定、活动修图唯一约束与额度结算唯一约束。
 - 新 repository 已覆盖 begin → claim → capture/release → restart recovery；数据库事务测试 5/5 通过，包含幂等重放、租户隔离、余额不足零残留和失败只退一次。
-- 当前仍是“repository 已实现、API 尚未切换”的中间状态。下一步必须让 `/api/repair-attempts` 在 production/staging 使用 PostgreSQL repository，并保留本地 Mock/受限开发回退；不能长期保留双权威状态。
+- 当前仍是“repository 与统一 backend seam 已实现、PostgreSQL adapter 尚未实现”的中间状态。必须整条客户链一次性切换，不能让 `/api/repair-attempts` 单独使用 PostgreSQL 而其他状态仍留在内存。
 - 迁移未在真实 PostgreSQL 应用，线上未动，真实模型未调用。产品运行只使用 DeepSeek/Qwen，研发与压力测试才可使用 Sol/Luna。
 - 回归结果：Agent 67/67、页面/Schema/生产守卫 31/31、原业务/runtime 143/143、生产构建与 ESLint 均通过。
 

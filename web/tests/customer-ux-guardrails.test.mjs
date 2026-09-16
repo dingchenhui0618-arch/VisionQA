@@ -163,7 +163,7 @@ test("customer repair runs as a resumable async task instead of a long browser r
   const route = new URL("../app/api/repair-attempts/route.ts", import.meta.url);
   const [projectSource, routeSource] = await Promise.all([read(project), read(route)]);
   assert.match(routeSource, /after\(async \(\) => \{/);
-  assert.match(routeSource, /return Response\.json\(runningPayload\(session, running\), \{[\s\S]*status: 202/);
+  assert.match(routeSource, /return Response\.json\((?:await )?runningPayload\(session, running\), \{[\s\S]*status: 202/);
   assert.doesNotMatch(routeSource, /signal: request\.signal/);
   assert.match(routeSource, /AbortSignal\.timeout\(180_000\)/);
   assert.match(projectSource, /waitForRepair\(payload\.poll_url\)/);

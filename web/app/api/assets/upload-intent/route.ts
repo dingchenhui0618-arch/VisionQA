@@ -1,12 +1,12 @@
 import { requireBetaSessionFromRequest } from "../../../../lib/beta/auth";
 import { customerErrorResponse, DOWNLOAD_URL_TTL_SECONDS } from "../../../../lib/beta/contracts";
-import { getBetaService } from "../../../../lib/beta/service";
+import { getBetaBackend } from "../../../../lib/beta/backend";
 
 export async function POST(request: Request) {
   try {
     const session = await requireBetaSessionFromRequest(request);
     const input = (await request.json()) as Record<string, unknown>;
-    const asset = getBetaService().createUploadIntent(session, {
+    const asset = await getBetaBackend().createUploadIntent(session, {
       projectId: String(input.project_id ?? ""),
       role: input.role === "TRUTH" ? "TRUTH" : "CANDIDATE",
       fileName: String(input.file_name ?? ""),

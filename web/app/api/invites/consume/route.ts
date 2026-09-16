@@ -1,5 +1,5 @@
 import { betaSessionCookie, customerErrorResponse } from "../../../../lib/beta/contracts";
-import { getBetaService } from "../../../../lib/beta/service";
+import { getBetaBackend } from "../../../../lib/beta/backend";
 
 export async function POST(request: Request) {
   try {
@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     }
     const input = (await request.json()) as { token?: unknown };
     const token = typeof input.token === "string" ? input.token.trim() : "";
-    const result = await getBetaService().consumeInvite(token);
+    const result = await getBetaBackend().consumeInvite(token);
     return Response.json(
       { session: result.session, redirect_to: "/workspace" },
       {

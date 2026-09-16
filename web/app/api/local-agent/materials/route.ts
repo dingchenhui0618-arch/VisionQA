@@ -1,5 +1,5 @@
 import { requireBetaSessionFromRequest } from "../../../../lib/beta/auth";
-import { getBetaService } from "../../../../lib/beta/service";
+import { getBetaBackend } from "../../../../lib/beta/backend";
 import { customerErrorResponse } from "../../../../lib/beta/contracts";
 
 export async function GET(request: Request) {
@@ -9,8 +9,8 @@ export async function GET(request: Request) {
   }
   try {
     const session = await requireBetaSessionFromRequest(request);
-    const service = getBetaService();
+    const service = getBetaBackend();
     const id = url.searchParams.get("project") ?? "";
-    return Response.json({ assets: service.listProjectAssets(session, id), batch: service.latestBatchForProject(session, id), items: service.listProjectScreeningItems(session, id), repairs: service.listProjectRepairs(session, id), credits: service.getCredits(session) }, { headers: { "cache-control": "no-store" } });
+    return Response.json({ assets: await service.listProjectAssets(session, id), batch: await service.latestBatchForProject(session, id), items: await service.listProjectScreeningItems(session, id), repairs: await service.listProjectRepairs(session, id), credits: await service.getCredits(session) }, { headers: { "cache-control": "no-store" } });
   } catch (error) { return customerErrorResponse(error); }
 }
