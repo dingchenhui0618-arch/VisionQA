@@ -1,11 +1,28 @@
 # VisionQA 当前产品与项目进度
 
+## 2026-09-16 PostgreSQL 邀请与会话 repository
+
+- 复用 `0002_customer_beta.sql`，实现 `consumeInvitePg` / `resolveSessionPg`；没有增加数据库迁移、依赖或第二套认证框架。
+- 邀请以条件 UPDATE 消费；用户、租户、成员、30 天会话、初始 wallet 和 GRANT 账本在同一事务内写入。数据库只保存 token 哈希，会话解析同时校验成员的用户/租户关系、有效期和撤销状态。
+- 本地 SQL 模拟测试覆盖重复消费不重复赠送、失效邀请、撤销/过期会话、跨租户会话拒绝；故障注入覆盖 ROLLBACK 调用和连接释放。pg-mem 不证明真实事务回滚或并发锁语义，真实 PostgreSQL 验收仍待执行。
+- 尚未切换 BetaBackend：客户页面和线上行为保持原样，避免认证与项目/素材/额度形成混合事实源。下一段为项目聚合与 conversation 映射，然后接素材存储、筛查和修图事务，完整后统一切换。
+- 本轮 Agent 回归 75/75，新增文件 ESLint 与 diff whitespace 检查通过；未调用真实模型，未操作线上或真实云存储。
+
+## 2026-09-16 本地 Mastra 快照恢复接线
+
+- 复用已安装的 Mastra/LibSQL，无新增框架或依赖。任务使用服务端账号 + 计划版本的稳定运行标识；重启后继续原暂停快照，完成结果可重放，改版计划不会误用上一版确认。
+- 本地 tasks API 已接线，项目创建仍复用 conversation → project 幂等映射。停止不会建项目；失败/运行中快照不会自动重试。中途崩溃仍需人工核对，不宣称任意步骤 exactly-once。
+- 独立 Node 进程验证：暂停 → 进程退出 → 恢复确认 → 再次重放，只调用一次建项目工具；覆盖账号/计划版本隔离、输入篡改与停止。测试不调用真实模型。
+- 原随机数据库快照不迁移、不删除；旧待确认记录在首次恢复时建立稳定快照。快照位于 Git 忽略的 `web/work/agent-snapshots`，当前只支持本地单进程，不是生产多实例持久队列。
+- 下一步：沿现有 BetaBackend 接入 PostgreSQL/OSS，补齐商品素材与修图结果的持久恢复。线上没有变动。
+- 验证：Agent 71/71、页面/schema/生产守卫 31/31、业务/runtime 143/143 与生产构建通过。额外全仓 `tsc --noEmit` 未通过，错误位于本轮未修改的二进制数据处理、Cloudflare 类型及测试等模块，不能宣称全仓类型检查通过；浏览器人工点击与真实模型本轮未验。
+
 ## 2026-09-16 当前交接：Customer Beta Backend Port
 
 - 页面与 API 已统一依赖 `BetaBackend`，未来 PostgreSQL 实现可以一次性替换；`app/` 已没有 `getBetaService()` 直连。
 - 当前 backend 仍由原本的本地/内存 `BetaService` 提供，产品行为不变；这是迁移 seam，不是生产数据库接入完成。
 - Agent 测试增加到 69 项，覆盖异步 backend 注入与禁止页面/API 绕过组合根。
-- 下一步：先补 `0005` schema seam 与 session/project/screening repository，再成对接入私有对象存储；最后把修图事务接入同一 backend。
+- 下一步（按用户复用优先修订）：先复用已安装 Mastra 验证本地商品对话重启恢复，再接已有 PostgreSQL 评估仓库、OSS 适配与修图事务；只补确实缺失的数据关系，不预先重做契约或新增 0005。开源候选与许可证见迁移路线中的复用修订。
 - 迁移路线见 `docs/18_BETA_BACKEND_MIGRATION.md`。线上与真实 Provider 均未改变。
 
 ## 2026-09-16 当前交接：修图事务持久化

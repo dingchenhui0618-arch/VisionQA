@@ -5,7 +5,7 @@ type Run = { approve: (approved: boolean) => Promise<{ projectId: string | null;
 type Entry = { owner: string; view: TaskView; history: ConversationInput["history"]; run?: Run; busy: boolean };
 type Dependencies = {
   plan: (input: ConversationInput) => Promise<ConversationPlan>;
-  prepare: (input: { skuName: string; objective: string; conversationId: string }) => Promise<Run>;
+  prepare: (input: { taskId: string; skuName: string; objective: string; conversationId: string }) => Promise<Run>;
 };
 export class TaskSessionError extends Error {
   status: number;
@@ -78,7 +78,7 @@ export class TaskSessions {
       if (plan.decision === "READY") {
         const projectId = entry.view.projectId;
         entry.run = projectId ? { approve: async approved => ({ projectId, stopped: !approved }) }
-          : await deps.prepare({ skuName: parsed.data.skuName, objective: plan.summary, conversationId: entry.view.conversationId });
+          : await deps.prepare({ taskId: entry.view.id, skuName: parsed.data.skuName, objective: plan.summary, conversationId: entry.view.conversationId });
         entry.view.status = "AWAITING_APPROVAL";
       } else entry.view.status = plan.decision === "CLARIFY" ? "NEEDS_INPUT" : "UNSUPPORTED";
     } catch (error) {
@@ -105,7 +105,7 @@ export class TaskSessions {
       if (!entry.run) {
         const projectId = entry.view.projectId;
         if (projectId) entry.run = { approve: async approved => ({ projectId, stopped: !approved }) };
-        else if (prepare && entry.view.plan) entry.run = await prepare({ skuName: entry.view.skuName, objective: entry.view.plan.summary, conversationId: entry.view.conversationId });
+        else if (prepare && entry.view.plan) entry.run = await prepare({ taskId: entry.view.id, skuName: entry.view.skuName, objective: entry.view.plan.summary, conversationId: entry.view.conversationId });
         else throw new Error("Missing workflow restorer");
       }
       const result = await entry.run.approve(action === "approve");

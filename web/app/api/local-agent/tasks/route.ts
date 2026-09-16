@@ -38,17 +38,10 @@ export async function POST(request: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error();
   } catch { return respond({ error: "任务格式不正确。" }, 400); }
   const owner = `${session.tenantId}:${session.userId}`;
-  const prepare = async (input: { skuName: string; objective: string; conversationId: string }) => {
-    const { createVisualTaskWorkflow } = await import("../../../../lib/agent/task-workflow");
-    const { workflow } = await createVisualTaskWorkflow(async name => (await getBetaBackend().createProjectForConversation(session, name, input.conversationId)).id);
-    const run = await workflow.createRun();
-    const result = await run.start({ inputData: { skuName: input.skuName, objective: input.objective } });
-    if (result.status !== "suspended") throw new Error("Workflow did not suspend");
-    return { approve: async (approved: boolean) => {
-      const result = await run.resume({ step: "confirm-project", resumeData: { approved } });
-      if (result.status !== "success") throw new Error("Workflow did not complete");
-      return result.result;
-    } };
+  const prepare = async (input: { taskId: string; skuName: string; objective: string; conversationId: string }) => {
+    const { preparePersistentVisualTask } = await import("../../../../lib/agent/task-workflow");
+    return preparePersistentVisualTask({ ...input, owner }, async name =>
+      (await getBetaBackend().createProjectForConversation(session, name, input.conversationId)).id);
   };
   try {
     if (body.action === "create") {
