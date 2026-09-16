@@ -1,5 +1,14 @@
 # VisionQA 当前产品与项目进度
 
+## 2026-09-16 批次素材、私有存储桥与删除 outbox（并行集成）
+
+- 0006 + screening repository 保存真实真值/候选顺序，服务端生成请求指纹；校验成员、项目、素材归属/角色/READY/保留期、1–4 真值与 1–10 候选。项目锁和 RUNNING 唯一约束控制重复批次；重放读取真实结果项。
+- 项目统计已接新批次关系，RUNNING/FAILED 不再用项目总图片数替代批次候选数。旧无幂等键批次保留兼容回退，未自动编造历史素材关系。
+- PrivateAssetStorage 复用 ObjectStorage：上传校验 bytes/哈希，PUT 后 HEAD 验证；仅 READY 未过期图片可签名下载，TTL 不超过 300 秒及剩余保留时间。只接受现有 staging/visionqa 租户前缀；旧 beta/visionqa 元数据不能直接接入，也未更改旧 OSS 14 天治理配置。客户七天物理清理尚未接调度。
+- 0007 + deletion repository 事务隐藏项目/资产并写删除 outbox；云存储删除失败保留待重试任务，重复删除安全。正在筛查/修图时暂拒绝删除。当前测试只使用 SQL 模拟与 fake storage，未删除真实素材。
+- 尚未完成：完整 PostgreSQL BetaBackend 组合、上传 metadata 落库与对象字节联动、单文件预签名 PUT、筛查完成写入、七天定时清理、真实 PG 并发/恢复和 OSS 实测。没有切换客户页面或线上。
+- 本轮验证：Agent 93/93，变更文件 ESLint、diff whitespace 和生产构建通过。2 个 Luna 子任务并行实现，主代理复查并补充边界测试；无真实 Provider/OSS 网络调用。
+
 ## 2026-09-16 商品项目与对话来源持久化
 
 - 实现 PostgreSQL 项目创建、列表和详情查询，复用 BetaProject/BetaSessionView 契约；校验成员的用户和租户关系。

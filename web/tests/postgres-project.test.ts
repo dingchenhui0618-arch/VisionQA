@@ -9,7 +9,7 @@ const session = (suffix = "1"): BetaSessionView => ({ userId: `u${suffix}`, tena
   role: "customer", displayName: "客户", expiresAt: "2099-01-01" });
 async function fixture() {
   const pool = new (newDb().adapters.createPg().Pool)();
-  for (const file of ["0000_visionqa_baseline.sql", "0001_normalize_storage_provider.sql", "0002_customer_beta.sql", "0003_agent_runtime.sql", "0004_repair_transactions.sql", "0005_project_conversation_origin.sql"]) {
+  for (const file of ["0000_visionqa_baseline.sql", "0001_normalize_storage_provider.sql", "0002_customer_beta.sql", "0003_agent_runtime.sql", "0004_repair_transactions.sql", "0005_project_conversation_origin.sql", "0006_screening_asset_links.sql"]) {
     await pool.query(readFileSync(new URL(`../drizzle-pg/${file}`, import.meta.url), "utf8"));
   }
   for (const n of ["1", "2"]) {
@@ -86,5 +86,11 @@ test("project counts derive from latest screening and captured repairs, not hist
   assert.equal(view.candidateCount, 1);
   assert.equal(view.attentionCount, 0);
   assert.equal(view.repairedCount, 1);
+  await pool.query("INSERT INTO screening_batches(id,tenant_id,project_id,sku_name,status,created_at,idempotency_key) VALUES('running','t1',$1,'SKU','RUNNING','2026-01-03','running-key')", [project.id]);
+  await pool.query("INSERT INTO screening_batch_assets(id,tenant_id,batch_id,asset_id,role,position) VALUES('link','t1','running','candidate','CANDIDATE',0)");
+  await pool.query("UPDATE assets SET upload_status='READY' WHERE id='pending'");
+  assert.equal((await getProjectPg(pool, session(), project.id)).candidateCount, 1);
+  await pool.query("UPDATE screening_batches SET status='FAILED' WHERE id='running'");
+  assert.equal((await getProjectPg(pool, session(), project.id)).candidateCount, 1);
   await pool.end();
 });

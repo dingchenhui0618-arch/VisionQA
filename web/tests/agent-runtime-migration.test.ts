@@ -15,6 +15,8 @@ test("agent runtime migration applies after the customer beta schema", async () 
     "0003_agent_runtime.sql",
     "0004_repair_transactions.sql",
     "0005_project_conversation_origin.sql",
+    "0006_screening_asset_links.sql",
+    "0007_asset_deletion_outbox.sql",
   ]) {
     await pool.query(readFileSync(new URL(`../drizzle-pg/${file}`, import.meta.url), "utf8"));
   }

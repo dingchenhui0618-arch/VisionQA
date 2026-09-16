@@ -19,16 +19,19 @@ async function requireMembership(db: PgQueryable, session: BetaSessionView) {
 async function view(db: PgQueryable, row: Row): Promise<BetaProject> {
   // Counts derive from facts, not a second mutable counter. Screening counts use
   // the latest batch's items; completed repair rounds count only captured output.
-  const batch = await db.query<{ id: string }>(`SELECT id FROM screening_batches WHERE tenant_id=$1 AND project_id=$2
+  const batch = await db.query<{ id: string; idempotency_key: string | null }>(`SELECT id,idempotency_key FROM screening_batches WHERE tenant_id=$1 AND project_id=$2
     ORDER BY created_at DESC,id DESC LIMIT 1`, [row.tenant_id, row.id]);
   const items = batch.rows[0] ? await db.query<{ decision: string }>(
     "SELECT decision FROM screening_items WHERE tenant_id=$1 AND batch_id=$2", [row.tenant_id, batch.rows[0].id]) : { rows: [] };
+  const links = batch.rows[0] ? await db.query<{ count: string | number }>(
+    "SELECT COUNT(*) AS count FROM screening_batch_assets WHERE tenant_id=$1 AND batch_id=$2 AND role='CANDIDATE'", [row.tenant_id, batch.rows[0].id]) : null;
   const candidates = await db.query<{ count: string | number }>(`SELECT COUNT(*) AS count FROM assets
     WHERE tenant_id=$1 AND project_id=$2 AND asset_role='CANDIDATE' AND upload_status='READY' AND deleted_at IS NULL`, [row.tenant_id, row.id]);
   const repairs = await db.query<{ count: string | number }>(`SELECT COUNT(*) AS count FROM repair_attempts
     WHERE tenant_id=$1 AND project_id=$2 AND status='CAPTURED' AND output_asset_id IS NOT NULL`, [row.tenant_id, row.id]);
   return { id: row.id, tenantId: row.tenant_id, name: row.name, status: row.status, isExample: row.is_example,
-    candidateCount: items.rows.length || Number(candidates.rows[0].count),
+    candidateCount: batch.rows[0]?.idempotency_key ? Number(links!.rows[0].count)
+      : items.rows.length || Number(candidates.rows[0].count),
     attentionCount: items.rows.filter(item => item.decision === "NEEDS_ATTENTION").length,
     repairedCount: Number(repairs.rows[0].count), createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(), deletedAt: row.deleted_at ? new Date(row.deleted_at).toISOString() : null };

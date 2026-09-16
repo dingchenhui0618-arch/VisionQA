@@ -29,6 +29,20 @@ export const customerProjects = pgTable("projects", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, table => [uniqueIndex("projects_conversation_origin_idx").on(table.tenantId, table.originUserId, table.originConversationId)]);
 
+// 0006/0007 SQL migrations remain authoritative for FK/check/partial indexes.
+export const screeningBatchAssets = pgTable("screening_batch_assets", {
+  id: text("id").primaryKey(), tenantId: text("tenant_id").notNull(),
+  batchId: text("batch_id").notNull(), assetId: text("asset_id").notNull(),
+  role: text("role").notNull(), position: integer("position").notNull(), createdAt: createdAt(),
+});
+export const assetDeletionJobs = pgTable("asset_deletion_jobs", {
+  id: text("id").primaryKey(), tenantId: text("tenant_id").notNull(),
+  projectId: text("project_id").notNull(), assetId: text("asset_id").notNull(),
+  objectKey: text("object_key").notNull(), status: text("status").notNull().default("PENDING"),
+  attempts: integer("attempts").notNull().default(0), createdAt: createdAt(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+}, table => [uniqueIndex("asset_deletion_jobs_tenant_asset_unique").on(table.tenantId, table.assetId)]);
+
 export const batches = pgTable(
   "batches",
   {
