@@ -1,5 +1,15 @@
 # VisionQA 当前产品与项目进度
 
+## 2026-09-16 商品项目与对话来源持久化
+
+- 实现 PostgreSQL 项目创建、列表和详情查询，复用 BetaProject/BetaSessionView 契约；校验成员的用户和租户关系。
+- 确认现有 context 表 `(tenant, conversation)` 无法表达本地 `(tenant, user, conversation)` 项目来源后，新增最小迁移 `0005_project_conversation_origin.sql`，只补项目来源字段、成对非空约束及唯一索引。没有另建上下文表。
+- 相同来源重复创建返回原项目，不覆盖原名；普通项目仍可独立创建；软删除后的来源保留，旧请求不能复活项目。
+- 统计从素材/最新筛查项/已 CAPTURED 的修图事实读取，不增设计数表。待批次素材关系接线后，仍需补齐 RUNNING/FAILED 批次的精确候选数（当前无结果时回落到项目 READY 候选素材数），不能据此直接切换客户 backend。
+- 新增 5 项零网络 SQL 模拟测试，覆盖重复来源、租户/用户隔离、软删除来源保留、普通项目与最新筛查/修图统计；迁移已加入整体迁移测试。未在真实 PostgreSQL 执行，未验证并发事务或浏览器页面，未动线上/OSS/真实模型。
+- 下一步：补批次素材关系与资产存储适配，并在切换前完成删除项目的资产清理、聚合一致性与完整 backend 验收。
+- 本轮验证：Agent 80/80，变更代码 ESLint、diff 检查与生产构建通过；保留既有 gray-matter eval 构建警告，未宣称全仓类型检查通过。
+
 ## 2026-09-16 PostgreSQL 邀请与会话 repository
 
 - 复用 `0002_customer_beta.sql`，实现 `consumeInvitePg` / `resolveSessionPg`；没有增加数据库迁移、依赖或第二套认证框架。

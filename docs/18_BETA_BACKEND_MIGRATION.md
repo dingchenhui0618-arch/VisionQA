@@ -14,6 +14,8 @@
 - 源码守卫确保 `app/` 不再直接调用 `getBetaService()`。
 - `0004_repair_transactions.sql` 与事务 repository 已准备，但尚未接入 backend。
 - `postgres-auth-repository.ts` 已实现邀请消费与会话解析，复用 0002：条件消费邀请后事务写入用户/租户/成员/session/wallet/GRANT；仅保存 token 哈希。尚未接入 backend，未执行真实 PostgreSQL 并发/回滚验证。
+- `postgres-project-repository.ts` 已实现项目创建、详情和列表。`0005_project_conversation_origin.sql` 针对实际缺失的 tenant/user/conversation 来源补字段和唯一约束；原 context 表的 tenant/conversation 唯一性不能直接替代这一关系。软删除来源保持占用，重放不能新建项目。
+- 项目统计尚待批次素材关系补齐：有结果时取最新筛查项，无结果时取项目 READY 候选数。RUNNING/FAILED 批次精确候选数、聚合一致快照和删除资产清理必须在完整 backend 切换前完成。
 
 ## 不能部分切换的边界
 

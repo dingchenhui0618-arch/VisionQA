@@ -1,5 +1,6 @@
 import {
   bigint,
+  boolean,
   doublePrecision,
   index,
   integer,
@@ -12,6 +13,21 @@ import {
 
 const createdAt = () =>
   timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
+
+// Customer projects from 0002 with conversation-origin identity added by 0005.
+// SQL migrations remain authoritative for foreign keys and paired-null checks.
+export const customerProjects = pgTable("projects", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  name: text("name").notNull(),
+  status: text("status").notNull(),
+  isExample: boolean("is_example").notNull().default(false),
+  originUserId: text("origin_user_id"),
+  originConversationId: text("origin_conversation_id"),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [uniqueIndex("projects_conversation_origin_idx").on(table.tenantId, table.originUserId, table.originConversationId)]);
 
 export const batches = pgTable(
   "batches",
