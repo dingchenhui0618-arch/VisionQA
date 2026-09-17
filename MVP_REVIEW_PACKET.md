@@ -1,5 +1,9 @@
 # VisionQA Agent Runtime MVP Review Packet
 
+## 2026-09-17 最新补充：真实图片链路
+
+旧上传权限阻塞已解除。最新判定 PARTIAL / MODEL QUALITY NOT ACCEPTED。浏览器实际完成上传、筛查、V1/V2、刷新、版本切换和一次待复验文件下载；模型误判与非目标漂移使人工交付仍不通过。完整证据、未验证项、成本及下一步见 [真实闭环 QA](docs/LOCAL_REAL_LOOP_QA_2026-09-17.md)。独立评审检查图片映射代码；主线程核对图片及哈希，不接受评审中反读图像事实的结论。模拟客户发现本轮 NOT RUN，沿用历史报告但不作为市场证据。外部评审应先复现同一素材的错误诊断与漂移，判断局部保护方案是否足以支持交付，再讨论上线。
+
 ## 2026-09-17 当前验收覆盖旧结论
 
 Verdict：`PARTIAL / BROWSER UPLOAD PERMISSION REQUIRED`，用户要求的完整本地链路尚未完成。以下历史记录不代表本轮真实端到端通过。

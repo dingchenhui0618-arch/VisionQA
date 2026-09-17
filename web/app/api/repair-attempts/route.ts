@@ -176,19 +176,37 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
       const budget = authorizeModelDispatch(50);
       try {
         const provider = createQwenImage3Provider(process.env);
+        const inputBytes = source.bytes.byteLength + references.reduce((total, entry) => total + entry.bytes.byteLength, 0);
+        const inputMimeTypes = [source.asset.mimeType, ...references.map((entry) => entry.asset.mimeType)];
         const runtime = createTrackedRealProvider({
           tenantId: session.tenantId,
           provider: QWEN_IMAGE_3_PROVIDER_ID,
           model: QWEN_IMAGE_3_MODEL,
-          executor: () => provider.edit({
-            source: { bytes: source.bytes, mimeType: source.asset.mimeType },
-            references: references.map((entry) => ({ bytes: entry.bytes, mimeType: entry.asset.mimeType })),
-            prompt: buildCustomerRepairPrompt(attempt.issue, attempt.issueRegion),
-            negativePrompt: "禁止改变人物身份、姿势、脸、手脚、背景、镜头、构图和画幅；禁止新增文字、水印、促销信息或未提供的商品细节；禁止修改框选区域以外的商品结构。",
-            sourceWidth: source.asset.width,
-            sourceHeight: source.asset.height,
-            signal: AbortSignal.timeout(180_000),
-          }),
+          executor: async () => {
+            const result = await provider.edit({
+              source: { bytes: source.bytes, mimeType: source.asset.mimeType },
+              references: references.map((entry) => ({ bytes: entry.bytes, mimeType: entry.asset.mimeType })),
+              prompt: buildCustomerRepairPrompt(attempt.issue, attempt.issueRegion),
+              negativePrompt: "禁止改变人物身份、姿势、脸、手脚、背景、镜头、构图和画幅；禁止新增文字、水印、促销信息或未提供的商品细节；禁止修改框选区域以外的商品结构。",
+              sourceWidth: source.asset.width,
+              sourceHeight: source.asset.height,
+              signal: AbortSignal.timeout(180_000),
+            });
+            return {
+              output: result,
+              usage: {
+                image: {
+                  inputCount: 1 + references.length,
+                  outputCount: 1,
+                  inputBytes,
+                  outputBytes: result.outputBytes.byteLength,
+                  mimeTypes: inputMimeTypes,
+                  width: result.outputWidth ?? source.asset.width,
+                  height: result.outputHeight ?? source.asset.height,
+                },
+              },
+            };
+          },
         });
         const request = {
           request: `repair-image:${attempt.id}`,
@@ -200,8 +218,8 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
           image: {
             inputCount: 1 + references.length,
             outputCount: 1,
-            inputBytes: source.bytes.byteLength + references.reduce((total, entry) => total + entry.bytes.byteLength, 0),
-            mimeTypes: [source.asset.mimeType, ...references.map((entry) => entry.asset.mimeType)],
+            inputBytes,
+            mimeTypes: inputMimeTypes,
             width: source.asset.width,
             height: source.asset.height,
           },

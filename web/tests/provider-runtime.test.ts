@@ -62,3 +62,20 @@ test("a shared dispatch claim blocks a second runtime before external execution"
   assert.equal(duplicate.ok, false);
   assert.equal(calls, 1);
 });
+
+test("image executor usage preserves generated output byte count in the ledger", async () => {
+  const ledger = new ModelCallLedger();
+  const output = new Uint8Array(17);
+  const runtime = createRealProviderRuntime({
+    provider: "qwen-image-3",
+    model: "qwen-image-3-pro-edit",
+    ledger,
+    executor: async () => ({
+      output: { outputBytes: output, outputWidth: 120, outputHeight: 160 },
+      usage: { image: { inputCount: 2, outputCount: 1, inputBytes: 31, outputBytes: output.byteLength, mimeTypes: ["image/png"], width: 120, height: 160 } },
+    }),
+  });
+  const result = await runtime.dispatch({ ...request, operation: "IMAGE", provider: "qwen-image-3", model: "qwen-image-3-pro-edit", idempotency: "image-usage", confirmed: true });
+  assert.equal(result.ok, true);
+  assert.equal(ledger.list()[0]?.image?.outputBytes, 17);
+});
