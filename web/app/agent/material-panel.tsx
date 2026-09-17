@@ -14,6 +14,7 @@ export function MaterialPanel({ projectId, skuName, onDiscuss }: { projectId: st
   const [error, setError] = useState("");
   const [consent, setConsent] = useState(false);
   const [repairItem, setRepairItem] = useState<string | undefined>();
+  const [view, setView] = useState<"materials" | "results" | "repair" | null>(null);
   const lock = useRef(false);
   const alive = useRef(true);
   const applySnapshot = (next: Snapshot) => {
@@ -85,7 +86,10 @@ export function MaterialPanel({ projectId, skuName, onDiscuss }: { projectId: st
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ project_id: projectId, sku_name: skuName, truth_asset_ids: ids("TRUTH"), candidate_asset_ids: ids("CANDIDATE") }),
       }));
-      if (alive.current) setSnapshot(previous => previous ? { ...previous, batch: payload.batch } : previous);
+      if (alive.current) {
+        setSnapshot(previous => previous ? { ...previous, batch: payload.batch } : previous);
+        if (payload.batch.status === "COMPLETED") setView("results");
+      }
     } catch (cause) { if (alive.current) setError(cause instanceof Error ? cause.message : "连接中断，请先查看任务状态，不要重复提交。"); }
     finally {
       try { await reload(); } catch { /* Keep the original outcome; the next read will recover status. */ }
@@ -94,18 +98,20 @@ export function MaterialPanel({ projectId, skuName, onDiscuss }: { projectId: st
   }
   const running = Boolean(busy) || snapshot?.batch?.status === "RUNNING";
   const problem = snapshot ? selectionProblem(snapshot.assets, selected) : "正在读取当前商品的素材…";
+  const activeView = view ?? (snapshot?.batch?.status === "COMPLETED" ? "results" : "materials");
+  const readyResults = snapshot?.batch?.status === "COMPLETED";
   const discuss = (item: ScreeningItem) => {
     const name = snapshot?.assets.find(a => a.id === item.assetId)?.fileName ?? "这张图";
     onDiscuss(`关于图片「${name}」：${item.primaryIssue ?? "请帮我确认是否需要修改"}。可见证据：${item.visibleEvidence}。请先整理修改范围与需要保留的部分，不要直接执行修图。`);
   };
   return <section className="agent-materials" aria-label="当前商品素材与筛查" aria-busy={running}>
-    <ol className="agent-materials__steps" aria-label="图片处理进度">
-      <li aria-current={!snapshot?.batch ? "step" : undefined}>1 添加图片</li>
-      <li aria-current={snapshot?.batch && snapshot.batch.status !== "COMPLETED" ? "step" : undefined}>2 检查问题</li>
-      <li aria-current={snapshot?.batch?.status === "COMPLETED" ? "step" : undefined}>3 修正与选版</li>
-    </ol>
-    <details className="agent-materials__library" key={snapshot?.batch?.status === "COMPLETED" ? "screened" : "input"} open={snapshot?.batch?.status !== "COMPLETED"}>
-    <summary>商品素材<small>{snapshot ? `${snapshot.assets.filter(a => a.role === "TRUTH").length} 张参考 · ${snapshot.assets.filter(a => a.role === "CANDIDATE").length} 张待检查` : "正在读取…"} · 点击展开或收起</small></summary>
+    <header className="agent-materials__heading"><h2>商品工作区</h2><small>{snapshot ? `${snapshot.assets.filter(a => a.role === "TRUTH").length} 张参考 · ${snapshot.assets.filter(a => a.role === "CANDIDATE").length} 张待检查` : "正在读取素材…"}</small></header>
+    <div className="agent-materials__views" role="group" aria-label="切换商品工作区视图">
+      {([{ id: "materials", label: "素材" }, { id: "results", label: "检查结果" }, { id: "repair", label: "修图与版本" }] as const).map(option => <button key={option.id} className="secondary" aria-pressed={activeView === option.id} aria-controls={`agent-view-${option.id}`} onClick={() => setView(option.id)}>{option.label}</button>)}
+    </div>
+    <p className="agent-materials__guidance" role="status">{running ? busy || "图片正在检查，结果会自动更新。" : activeView === "materials" ? "先选商品参考与待检查图，再确认发送。切换视图不会清空选择。" : activeView === "results" ? readyResults ? "逐张核对证据，选择要修正的图片；也可以先在对话中讨论。" : "还没有完成的检查结果，请先到素材视图添加图片并开始检查。" : "框选要修改的区域，再对比版本。只有你确认后才提交修图。"}</p>
+    {error && <p className="agent-lab__error" role="alert">{error}</p>}
+    <div id="agent-view-materials" hidden={activeView !== "materials"}>
     <h2>把图片放进这个商品对话</h2>
     <p>参考图说明商品真实长什么样；待检查图是你想审核的版本。上传只保存到本地，不会自动筛查。</p>
     <div className="agent-materials__upload-grid">
@@ -122,12 +128,13 @@ export function MaterialPanel({ projectId, skuName, onDiscuss }: { projectId: st
       </label>)}</div>
     </div>)}
     </div>
-    {error && <p className="agent-lab__error" role="alert">{error}</p>}
     <p role="status">{busy || (snapshot?.batch?.status === "RUNNING" ? "这个商品正在筛查，请等待结果，不要重复提交。" : problem ?? "图片已齐。下一步：确认图片发送范围，然后开始筛查。")}</p>
     {!problem && <label className="agent-materials__consent"><input type="checkbox" checked={consent} disabled={running} onChange={event => setConsent(event.target.checked)} />我有权使用所选图片，同意发送给已配置的筛查服务。筛查不扣修图额度，但会产生模型接口费用。</label>}
     <button disabled={running || Boolean(problem) || !consent} onClick={() => void screen()}>{snapshot?.batch ? "重新筛查所选图片" : "开始筛查所选图片"}</button>
     {snapshot?.batch?.status === "FAILED" && <p role="status">上次筛查未完成，已保存的素材仍在；确认选择后可重新筛查。</p>}
-    </details>
+    </div>
+    <div id="agent-view-results" hidden={activeView !== "results"}>
+    {!readyResults && <div className="agent-materials__empty"><h3>{snapshot?.batch?.status === "RUNNING" ? "正在检查图片" : "检查结果会留在这里"}</h3><p>{snapshot?.batch?.status === "FAILED" ? "上次检查未完成，素材已保留；回到素材视图确认后重试。" : "上传商品参考图和待检查图，确认发送后开始。不会自动调用模型。"}</p><button className="secondary" onClick={() => setView("materials")}>查看商品素材</button></div>}
     {snapshot?.batch?.status === "COMPLETED" && <div className="agent-materials__results"><h3>检查结果 · {snapshot.batch.items.length} 张</h3><p>选择要修正的图片，或先在对话中讨论。结果仅对应上次提交的素材。</p>{snapshot.batch.items.map(item => <article className="agent-materials__result" key={item.id}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/api/assets/${item.assetId}`} alt={`检查结果：${snapshot.assets.find(a => a.id === item.assetId)?.fileName ?? "待检查图"}`} loading="lazy" />
@@ -135,14 +142,17 @@ export function MaterialPanel({ projectId, skuName, onDiscuss }: { projectId: st
       <strong>{decisionLabels[item.decision]}</strong><small>{snapshot.assets.find(a => a.id === item.assetId)?.fileName ?? "原图已过期"}</small>
       <p>{item.primaryIssue ?? (item.decision === "NO_OBVIOUS_ISSUE" ? "未见明显问题，仍需要人工复验。" : "信息不足，暂不能形成可靠结论，请人工核对。")}</p><p>{item.visibleEvidence}</p>
       <div className="agent-lab__actions"><button disabled={running} onClick={() => {
+        setView("repair");
         if (repairItem === item.id) {
-          const panel = document.querySelector<HTMLElement>(".agent-repair");
-          panel?.scrollIntoView({ block: "start" }); panel?.focus({ preventScroll: true });
+          requestAnimationFrame(() => { const panel = document.querySelector<HTMLElement>(".agent-repair"); panel?.scrollIntoView({ block: "start" }); panel?.focus({ preventScroll: true }); });
         } else setRepairItem(item.id);
       }}>修这张</button>
       {item.decision !== "NO_OBVIOUS_ISSUE" && <button className="secondary" onClick={() => discuss(item)}>先讨论问题</button>}</div>
       </div>
     </article>)}</div>}
+    </div>
+    <div id="agent-view-repair" hidden={activeView !== "repair"}>
     {snapshot && <RepairPanel key={`${projectId}:${repairItem ?? "restore"}`} projectId={projectId} initialItemId={repairItem} />}
+    </div>
   </section>;
 }

@@ -36,3 +36,12 @@ test("task sessions persist lifecycle timestamps without fabricating answer time
   assert.equal(approved.answeredAt, answeredAt);
   assert.ok(approved.updatedAt && approved.updatedAt >= approved.answeredAt!);
 });
+
+test("workspace views keep material selection and repair drafts mounted", () => {
+  const ui = readFileSync(new URL("../app/agent/material-panel.tsx", import.meta.url), "utf8");
+  for (const view of ["materials", "results", "repair"]) {
+    assert.ok(ui.includes(`id="agent-view-${view}" hidden={activeView !== "${view}"}`));
+  }
+  assert.match(ui, /aria-pressed=\{activeView === option.id\}/);
+  assert.match(ui, /if \(payload.batch.status === "COMPLETED"\) setView\("results"\)/);
+});
