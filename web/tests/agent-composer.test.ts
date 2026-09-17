@@ -18,6 +18,10 @@ test("composer reserves space and renders optional server timestamps", () => {
   assert.match(ui, /ref=\{composerRef\}/);
   assert.match(css, /--agent-composer-height/);
   assert.match(css, /overflow:auto/);
+  assert.match(css, /\.has-conversation \.agent-lab__composer \{ position:fixed/);
+  assert.match(css, /\.agent-lab__composer \{ position:relative/);
+  assert.match(css, /\.is-empty \.agent-lab__stage \{ flex:1; display:flex; flex-direction:column; justify-content:center/);
+  assert.match(ui, /const hasConversation = continuing \|\| busy/);
 });
 
 test("task sessions persist lifecycle timestamps without fabricating answer time", async () => {

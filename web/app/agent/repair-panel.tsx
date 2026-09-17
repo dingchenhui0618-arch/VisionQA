@@ -23,6 +23,8 @@ export function RepairPanel({ projectId, initialItemId }: { projectId: string; i
   const lock = useRef(false);
   const live = useRef(true);
   const initialized = useRef(false);
+  const panelRef = useRef<HTMLElement>(null);
+  const positioned = useRef(false);
   const drag = useRef<{ x: number; y: number } | null>(null);
   function chooseItem(item: ScreeningItem, attempt?: RepairAttempt) {
     setItemId(item.id); setSourceId(attempt?.sourceAssetId ?? item.assetId);
@@ -61,6 +63,16 @@ export function RepairPanel({ projectId, initialItemId }: { projectId: string; i
   }, [projectId]);
 
   const item = data?.items.find(i => i.id === itemId);
+  useEffect(() => {
+    if (!initialItemId || item?.id !== initialItemId || positioned.current) return;
+    const frame = requestAnimationFrame(() => {
+      if (!panelRef.current) return;
+      positioned.current = true;
+      panelRef.current.scrollIntoView({ block: "start" });
+      panelRef.current.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [initialItemId, item?.id]);
   const attempts = data?.repairs.filter(a => a.screeningItemId === itemId) ?? [];
   const versions = attempts.filter(a => a.status === "CAPTURED" && a.outputAssetId);
   const version = versions.find(a => a.id === selectedVersion) ?? versions.at(-1);
@@ -115,7 +127,7 @@ export function RepairPanel({ projectId, initialItemId }: { projectId: string; i
     finally { lock.current = false; if (live.current) setBusy(false); }
   }
   if (!data?.items.length || !item) return <p role="status">完成图片筛查后，可在这里选择问题图并开始修正。</p>;
-  return <section className="agent-repair" aria-label="对话内修图与版本" aria-busy={Boolean(running) || busy}>
+  return <section ref={panelRef} tabIndex={-1} className="agent-repair" aria-label="对话内修图与版本" aria-busy={Boolean(running) || busy}>
     <h2>修这张，保留其他部分</h2>
     <label>待修图片<select value={itemId} disabled={disabled} onChange={e => { const next = data.items.find(i => i.id === e.target.value); if (next) chooseItem(next); }}>
       {data.items.map((i, index) => <option value={i.id} key={i.id}>{index + 1}. {name(i.assetId)} · {i.primaryIssue ?? "人工指定问题"}</option>)}
@@ -137,7 +149,7 @@ export function RepairPanel({ projectId, initialItemId }: { projectId: string; i
       <span className="agent-repair__box" style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} />
     </div>
     <p>拖动框选问题，或输入百分比。新修图只把框内内容合回母版，框外保留原图像素；请留出自然衔接的范围，并复验框内细节。</p>
-    <div className="agent-repair__coordinates">{(["x", "y", "width", "height"] as const).map((key, index) => <label key={key}>{["左边距", "上边距", "宽度", "高度"][index]} %<input type="number" min="0" max="100" step="1" disabled={disabled} value={Math.round(region[key] * 100)} onChange={e => { setRegion(r => ({ ...r, [key]: Number(e.target.value) / 100 })); setConsent(false); }} /></label>)}</div>
+    <details className="agent-repair__precision"><summary>精确调整框选范围 · 百分比</summary><div className="agent-repair__coordinates">{(["x", "y", "width", "height"] as const).map((key, index) => <label key={key}>{["左边距", "上边距", "宽度", "高度"][index]} %<input type="number" min="0" max="100" step="1" disabled={disabled} value={Math.round(region[key] * 100)} onChange={e => { setRegion(r => ({ ...r, [key]: Number(e.target.value) / 100 })); setConsent(false); }} /></label>)}</div></details>
     <label>只修改什么<textarea value={issue} rows={3} maxLength={500} disabled={disabled} onChange={e => { setIssue(e.target.value); setConsent(false); }} /></label>
     {problem && <p role="status">{problem}</p>}
     <p>内测额度：可用 {data.credits.available} 次，冻结 {data.credits.held} 次。成功返回并通过基础检查后扣 1 次，预计 1–3 分钟；技术失败或基础检查拦截时退回。</p>
@@ -154,7 +166,8 @@ export function RepairPanel({ projectId, initialItemId }: { projectId: string; i
       {available(part.id) ? <img src={`/api/assets/${part.id}`} alt={part.label} /> : <p>图片已过期，无法预览。</p>}
     </figure>)}</div>
       {["商品颜色、结构与参考一致", "人物、构图及非目标区域未异常变化", "目标问题已解决，可以交付"].map((text, i) => <label className="agent-materials__consent" key={text}><input type="checkbox" checked={checkedVersion === version.id && checks[i]} onChange={e => { setCheckedVersion(version.id); setChecks(old => old.map((v, j) => j === i ? e.target.checked : checkedVersion === version.id && v)); }} />{text}</label>)}
-      <div className="agent-lab__actions"><button disabled={busy || !available(version.outputAssetId!)} onClick={() => void download(false, "待复验稿")}>下载待复验稿</button><button disabled={busy || !fullyReviewed || !available(version.outputAssetId!)} onClick={() => void download(true, "已确认版本")}>下载已确认版本</button><button className="secondary" disabled={disabled || !available(version.outputAssetId!)} onClick={() => { setSourceId(version.outputAssetId!); setIssue(""); setConsent(false); pending.current = null; }}>以此版本继续修正</button></div>
+      <div className="agent-lab__actions"><button className="secondary" disabled={busy || !available(version.outputAssetId!)} onClick={() => void download(false, "待复验稿")}>下载待复验稿</button><button disabled={busy || !fullyReviewed || !available(version.outputAssetId!)} onClick={() => void download(true, "已确认版本")}>下载已确认版本</button><button className="secondary" disabled={disabled || !available(version.outputAssetId!)} onClick={() => { setSourceId(version.outputAssetId!); setIssue(""); setConsent(false); pending.current = null; document.querySelector<HTMLTextAreaElement>(".agent-repair textarea")?.focus(); }}>以此版本继续修正</button></div>
+      {!fullyReviewed && <p>下载已确认版本前，请完成上方三项复验；也可以先下载待复验稿。</p>}
       <p>待复验稿仅供人工复核，不代表商品已通过或可交付。继续修正会创建新一轮，保留旧版本；基础检查通过不代表商品绝对正确。</p>
     </div>}
   </section>;

@@ -15,6 +15,7 @@ export function AgentWorkspace() {
   const [skuName, setSkuName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -47,13 +48,16 @@ export function AgentWorkspace() {
     return () => observer.disconnect();
   }, [current?.id]);
   const continuing = Boolean(current);
+  const hasConversation = continuing || busy;
   function selectConversation(id: string | null) {
+    setHistoryOpen(false);
     drafts.current[selected ?? "new"] = objective;
     setSelected(id); setObjective(drafts.current[id ?? "new"] ?? "");
     pendingId.current = null; pendingRequest.current = null; setError("");
     const url = new URL(window.location.href);
     if (id) url.searchParams.set("conversation", id); else url.searchParams.delete("conversation");
     window.history.replaceState(null, "", url);
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
   const working = busy || current?.status === "STARTING";
   useEffect(() => {
@@ -109,7 +113,8 @@ export function AgentWorkspace() {
       <Link className="agent-lab__brand" href="/">VisionQA</Link>
       <button className="agent-lab__new" disabled={busy} onClick={() => selectConversation(null)}><span aria-hidden="true">＋</span> 新商品对话</button>
       <details className="agent-lab__capabilities"><summary>◇ 能力范围</summary><p>已接入：商品图需求规划、素材与筛查、修图对比和多轮版本选择。</p><p>信息流脚本修正、视觉方向：尚待接入。</p></details>
-      <div className="agent-lab__products"><h2>商品对话历史</h2>
+      <button className="agent-lab__history-toggle secondary" aria-expanded={historyOpen} aria-controls="agent-conversations" onClick={() => setHistoryOpen(value => !value)}>商品记录 · {conversations.length} {historyOpen ? "收起" : "展开"}</button>
+      <div id="agent-conversations" className={`agent-lab__products ${historyOpen ? "is-expanded" : ""}`}><h2>商品对话历史</h2>
         {!conversations.length && <p>从你的第一个商品开始</p>}
         {conversations.map(t => <button key={t.id} aria-current={selected === t.conversationId ? "page" : undefined} disabled={busy} onClick={() => selectConversation(t.conversationId)}>{t.skuName}<small>{tasks.filter(item => item.conversationId === t.conversationId).length} 轮对话</small></button>)}
       </div>
@@ -119,10 +124,12 @@ export function AgentWorkspace() {
         <a href="/login" target="_blank" rel="noreferrer">{needsLogin ? "登录本地体验账号 ↗" : "账号入口 ↗"}</a>
       </div>
     </nav>
-    <section className={`agent-lab__main ${current ? "has-conversation" : "is-empty"}`} aria-label="商品任务对话">
+    <section className={`agent-lab__main ${hasConversation ? "has-conversation" : "is-empty"}`} aria-label="商品任务对话">
       <div className="agent-lab__topline"><span>{current?.skuName ?? "新商品对话"}</span><button className="secondary" onClick={toggleTheme} aria-label="切换黑白主题" aria-pressed={theme === "light"}>{theme === "dark" ? "◐ 切换白色" : "◑ 切换黑色"}</button></div>
       <div className="agent-lab__stage">
-        <div className="agent-lab__identity"><div className="agent-lab__mark" aria-hidden="true">VQ</div><div><h1>{current?.skuName ?? "你的电商视觉助手"}</h1><p>{current ? "一个商品，一段持续协作的对话" : "从一件商品出发，把视觉想法变成可交付的内容。"}</p></div><span className="agent-lab__mode">商品图评审 · 规划</span></div>
+        <div className="agent-lab__identity"><div className="agent-lab__mark" aria-hidden="true">VQ</div><div><h1>{current?.skuName ?? "今天，想完善哪件商品？"}</h1><p>{current ? "需求、素材和每一版修改，都留在这个商品里。" : "告诉我你的需求，一起检查图片、修正细节、对比选版。"}</p></div></div>
+        {current && !current.projectId && <p className="agent-lab__next" role="status">{current.status === "AWAITING_APPROVAL" ? "下一步：确认下面的计划，再添加商品图片。" : current.status === "NEEDS_INPUT" ? "下一步：在下方输入框补充信息，再发送。" : labels[current.status]}</p>}
+        {busy && !current && <p className="agent-lab__next" role="status">正在整理你的需求，请稍候。请勿重复发送。</p>}
         {visibleTasks.length > 0 && <div className="agent-lab__history" aria-live="polite">
           {visibleTasks.map(task => { const created = formatMessageTime(task.createdAt); const answered = formatMessageTime(task.answeredAt); return <article key={task.id}><div className="agent-lab__user"><small>你{created && <time dateTime={created.dateTime}>{created.label}</time>}</small><p>{task.objective}</p></div><div className="agent-lab__answer"><small>VisionQA · {labels[task.status]}{answered && <time dateTime={answered.dateTime}>{answered.label}</time>}</small>{task.plan && <><p>{task.plan.summary}</p>{task.plan.question && <p><strong>{task.plan.question}</strong></p>}</>}{task.error && <p role="status">{task.error}</p>}{task.status === "STARTING" && <p>正在整理你的需求…</p>}</div></article>; })}
         </div>}
@@ -144,13 +151,14 @@ export function AgentWorkspace() {
           <label className="agent-lab__sr-only" htmlFor="agent-goal">告诉我你想为这个商品完成什么</label>
           <textarea id="agent-goal" required disabled={working} maxLength={2000} value={objective} onChange={e => { setObjective(e.target.value); pendingId.current = null; pendingRequest.current = null; }} placeholder={continuing ? "继续补充要求，或告诉我这版计划哪里需要调整…" : "想为你的商品做些什么？例如，检查模特图，修正多余图案，保持颜色和纽扣不变。"} />
           <div className="agent-lab__composer-bar"><span>◇ {current ? "仅当前商品上下文" : "一个对话 · 一个商品"}</span><button className="agent-lab__send" disabled={working || needsLogin} type="submit" aria-label={working ? "正在处理" : "发送需求"} title={working ? "正在处理" : "发送需求"}>{working ? "…" : "↑"}</button></div>
+          <small className="agent-lab__composer-hint">{continuing ? "文字发送会产生规划费用；不会自动开始修图。" : "先聊需求，再上传图片。发送会产生规划费用，不扣修图额度。"}</small>
         </form>
         {!current && <div className="agent-lab__starters" aria-label="快速填写需求">
           <button disabled={working} onClick={() => suggest("帮我检查这组商品图是否与商品参考一致，先指出最需要处理的问题。")}>▧ 检查商品图</button>
           <button disabled={working} onClick={() => suggest("帮我规划这张图的局部修正，只修改问题区域，保持商品颜色、结构和构图不变。")}>⌖ 定向修图</button>
           <button disabled={working} onClick={() => suggest("帮我检查这组商品图的颜色、图案和配件数量是否一致，信息不足时请明确指出。")}>◇ 一致性评审</button>
         </div>}
-        <p className="agent-lab__notice">发送文字会调用规划模型并产生接口费用，不扣修图额度。图片仅在你确认并点击筛查时发送，请勿填写密钥或个人隐私。</p>
+        {!hasConversation && <p className="agent-lab__notice">图片只在你确认后发送。请勿填写密钥或个人隐私。</p>}
       </div>
       <footer>AI 建议需要你的确认。商品事实与最终交付，请以真实资料和人工复验为准。</footer>
     </section>
