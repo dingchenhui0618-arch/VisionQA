@@ -18,6 +18,7 @@ import { planCustomerRepair } from "../../../lib/visionqa/agents/repair-planning
 import { createTrackedRealProvider, getModelCallLedger } from "../../../lib/agent/runtime-registry";
 import { runBoundedAgentLoop } from "../../../lib/agent/bounded-agent-loop";
 import type { ProviderResult } from "../../../lib/agent/provider-runtime";
+import { localMockEnabled } from "../../../lib/agent/mock-mode";
 
 type Region = RepairStartInput["issueRegion"];
 
@@ -107,6 +108,16 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
     let providerResult: QwenImage3EditResult | null = null;
     let output: { bytes: Uint8Array; mimeType: "image/png" | "image/jpeg" | "image/webp"; width: number | null; height: number | null };
     {
+      if (localMockEnabled()) {
+        // Explicit demo path: persist a real downloadable copy of the source
+        // bytes, but never claim that pixels were changed or a model ran.
+        output = {
+          bytes: source.bytes,
+          mimeType: source.asset.mimeType,
+          width: source.asset.width,
+          height: source.asset.height,
+        };
+      } else {
       const readiness = getQwenImage3Readiness(process.env);
       if (!readiness.liveReady) {
         throw new CustomerVisibleError(
@@ -224,6 +235,7 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
         width: providerResult.outputWidth,
         height: providerResult.outputHeight,
       };
+      }
     }
 
     const gate = runServerRepairGate({
@@ -300,7 +312,8 @@ async function completedPayload(session: BetaSessionView, attempt: RepairAttempt
     credits: await getBetaBackend().getCredits(session),
     output_url: `/api/assets/${attempt.outputAssetId}`,
     download_url: await createSignedDownloadUrl(session, attempt.outputAssetId!),
-    gate: { message: "修正版已通过基础检查；仍需你人工确认。", human_confirmation_required: true },
+    mode: localMockEnabled() ? "MOCK_ONLY" : "REAL_PROVIDER",
+    gate: { message: localMockEnabled() ? "模拟版本已保存并通过文件检查；像素未修改，仍需你人工确认。" : "修正版已通过基础检查；仍需你人工确认。", human_confirmation_required: true },
     next_step: "对比修正前后，并确认商品、人物和非目标区域后再下载。",
   };
 }

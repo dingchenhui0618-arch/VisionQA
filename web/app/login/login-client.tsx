@@ -9,9 +9,11 @@ type InviteError = { message: string; next_action?: string };
 export function LoginClient({
   initialInvite,
   allowLocalInvite,
+  redirectTo = "/workspace",
 }: {
   initialInvite: string;
   allowLocalInvite: boolean;
+  redirectTo?: string;
 }) {
   const [token, setToken] = useState(initialInvite);
   const [status, setStatus] = useState<"idle" | "submitting">("idle");
@@ -32,7 +34,7 @@ export function LoginClient({
         error?: InviteError;
       };
       if (!response.ok) throw payload.error ?? { message: "邀请没有生效。" };
-      window.location.assign(payload.redirect_to ?? "/workspace");
+      window.location.assign(redirectTo === "/workspace" ? (payload.redirect_to ?? redirectTo) : redirectTo);
     } catch (cause) {
       setError(
         cause && typeof cause === "object" && "message" in cause

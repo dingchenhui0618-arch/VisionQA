@@ -41,7 +41,7 @@ export default defineConfig(async () => {
     return {
       plugins: [vinext()],
       server: { host: "localhost", port: 6300, strictPort: true, forwardConsole: false },
-      optimizeDeps: { exclude: ["@mastra/core", "@mastra/libsql", "libsql"] },
+      optimizeDeps: { exclude: ["@mastra/core", "@mastra/libsql", "libsql", "cloudflare:workers"] },
       ssr: { external: nodeOnlyDependencies },
       // Vinext has separate RSC/SSR environments. Root ssr.external alone does
       // not stop the RSC runner from transforming native SDKs and all Zod locales.

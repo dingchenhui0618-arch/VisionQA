@@ -97,7 +97,6 @@ export function AgentWorkspace() {
     <nav className="agent-lab__sidebar" aria-label="商品对话">
       <Link className="agent-lab__brand" href="/">VisionQA</Link>
       <button className="agent-lab__new" disabled={busy} onClick={() => selectConversation(null)}><span aria-hidden="true">＋</span> 新商品对话</button>
-      <a className="agent-lab__navlink" href="/workspace"><span aria-hidden="true">▧</span> 素材工作台</a>
       <details className="agent-lab__capabilities"><summary>◇ 能力范围</summary><p>已接入：商品图需求规划、素材与筛查、修图对比和多轮版本选择。</p><p>信息流脚本修正、视觉方向：尚待接入。</p></details>
       <div className="agent-lab__products"><h2>商品对话历史</h2>
         {!conversations.length && <p>从你的第一个商品开始</p>}
@@ -123,7 +122,7 @@ export function AgentWorkspace() {
           <p>{current.projectId ? "沿用已有商品项目；确认计划不会自动修图。" : "确认只建立商品项目，不发送图片、不扣修图额度。"}</p>
           {current.status === "AWAITING_APPROVAL" && <div className="agent-lab__actions"><button disabled={working || Boolean(objective.trim())} onClick={() => void send("approve")}>{current.projectId ? "确认本轮计划" : "确认，建立商品项目"}</button><button className="secondary" disabled={working} onClick={() => void send("stop")}>暂不执行</button>{objective.trim() && <p>已有补充要求，请先发送后再确认。</p>}</div>}
         </details>}
-        {current?.projectId && <><MaterialPanel key={current.projectId} projectId={current.projectId} skuName={current.skuName} onDiscuss={suggest} /><a className="agent-lab__project" href={`/workspace/projects/${current.projectId}`}>打开传统工作区 ↗</a></>}
+        {current?.projectId && <MaterialPanel key={current.projectId} projectId={current.projectId} skuName={current.skuName} onDiscuss={suggest} />}
         {current && ["NEEDS_INPUT", "UNSUPPORTED", "FAILED"].includes(current.status) && <div className="agent-lab__actions">
           {current.status === "FAILED" && <button disabled={working || Boolean(objective.trim())} onClick={() => { pendingId.current = null; pendingRequest.current = null; void send("create", true); }}>重新生成计划</button>}
           <button className="secondary" disabled={working} onClick={() => void send("stop")}>结束本轮任务</button>

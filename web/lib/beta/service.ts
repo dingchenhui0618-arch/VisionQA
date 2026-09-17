@@ -122,6 +122,9 @@ export class BetaService {
     if (snapshot) {
       if (snapshot.version !== 1 || !snapshot.maps || !Array.isArray(snapshot.ledger)) throw new Error("Incompatible local beta snapshot");
       for (const [key, map] of Object.entries(this.stateMaps())) {
+        // Older local v1 snapshots predate conversation-origin tracking. This
+        // additive map can start empty; never discard existing project/assets.
+        if (key === "projectByConversation" && snapshot.maps[key] === undefined) continue;
         if (!Array.isArray(snapshot.maps[key])) throw new Error("Invalid local beta snapshot");
         for (const [id, value] of snapshot.maps[key]) map.set(id, value);
       }

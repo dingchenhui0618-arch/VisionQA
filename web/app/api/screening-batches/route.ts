@@ -3,6 +3,8 @@ import { requireBetaSessionFromRequest } from "../../../lib/beta/auth";
 import { authorizeModelDispatch } from "../../../lib/beta/budget";
 import { CustomerVisibleError, customerErrorResponse } from "../../../lib/beta/contracts";
 import { mapEvaluationToCustomerScreening } from "../../../lib/beta/screening";
+import { localMockEnabled } from "../../../lib/agent/mock-mode";
+import { localMockScreeningResult } from "../../../lib/beta/screening";
 import { getBetaBackend } from "../../../lib/beta/backend";
 
 export async function POST(request: Request) {
@@ -21,8 +23,12 @@ export async function POST(request: Request) {
     batchId = batch.id;
     const references = await Promise.all(batch.truthAssetIds.map((id) => service.readAsset(session!, id)));
     const results = [];
-    for (const candidateId of batch.candidateAssetIds) {
+    for (const [index, candidateId] of batch.candidateAssetIds.entries()) {
       const candidate = await service.readAsset(session, candidateId);
+      if (localMockEnabled()) {
+        results.push(localMockScreeningResult(candidate.asset.id, index));
+        continue;
+      }
       const budget = authorizeModelDispatch(10);
       const form = new FormData();
       form.set(
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
     }
     const completed = await service.completeScreeningBatch(session, batch.id, results);
     return Response.json(
-      { batch: completed, credits: await service.getCredits(session) },
+      { batch: completed, mode: localMockEnabled() ? "MOCK_ONLY" : "REAL_PROVIDER", credits: await service.getCredits(session) },
       { status: 201, headers: { "cache-control": "no-store" } },
     );
   } catch (error) {

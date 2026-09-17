@@ -34,7 +34,10 @@ test("mock cannot exceed asset limits or cross conversation version boundaries",
 });
 test("mock mode is explicit local-only; UI port contains no provider fetch or old workbench link", () => {
   assert.equal(localMockEnabled({ NODE_ENV: "production", VISIONQA_AGENT_LOCAL: "true" }), false);
-  assert.equal(localMockEnabled({ NODE_ENV: "development", VISIONQA_AGENT_LOCAL: "true" }), true);
+  assert.equal(localMockEnabled({ NODE_ENV: "development", VISIONQA_AGENT_LOCAL: "true" }), false);
+  assert.equal(localMockEnabled({ NODE_ENV: "development", VISIONQA_AGENT_LOCAL: "true", VISIONQA_AGENT_MOCK: "true" }), true);
+  assert.equal(localMockEnabled({ NODE_ENV: "production", VISIONQA_AGENT_LOCAL: "true", VISIONQA_AGENT_MOCK: "true" }), false);
+  assert.equal(localMockEnabled({ NODE_ENV: "development", VISIONQA_AGENT_MOCK: "true" }), false);
   assert.equal(localMockEnabled({ NODE_ENV: "development" }), false);
   const ui = readFileSync(new URL("../app/agent/mock-workspace.tsx", import.meta.url), "utf8");
   const adapter = readFileSync(new URL("../lib/agent/mock-port.ts", import.meta.url), "utf8");

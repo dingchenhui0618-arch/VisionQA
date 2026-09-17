@@ -1,5 +1,20 @@
 # VisionQA Agent Runtime MVP Review Packet
 
+## 2026-09-17 当前验收覆盖旧结论
+
+Verdict：`PARTIAL / BROWSER UPLOAD PERMISSION REQUIRED`，用户要求的完整本地链路尚未完成。以下历史记录不代表本轮真实端到端通过。
+
+- 本轮输入与成功线：用户要求Astra带子智能体，localhost6300能够完整点击上传、真实筛查/修图、对比、多轮与下载；不动线上。
+- 团队：Luna前端拆入口、后端提供显式Mock分支、独立评审输出 docs/LOCAL_LOOP_REVIEW.md；后续子任务额度失败，由主代理接手。未创建额外管理角色，未使用重置券。模拟发现见独立评审，未形成市场/定价证据。
+- 产物与复现：docs/LOCAL_OPERATION.md；`cd D:\VisionQA\web` 后 `npm run dev:local`。LOCAL与MOCK分开；原首页保留，登录进agent，服务端沿用.env.local。数据库迁移暂缓，本地文件持久化。
+- 实测：浏览器登录、真实DeepSeek规划、确认项目通过；1次规划预算预留0.10元，并非实际账单。单个项目在配置引发服务重启后仍可由页面读取。
+- 自动化：npm test通过（Agent94、页面31、业务143）和构建，变更目标lint通过。全仓tsc既有问题未声称消除。
+- 当前CRITICAL未闭合：Kimi扩展拒绝本地文件上传（权限关闭）；上传后真实模型/版本/下载实测NOT RUN。请求用户开启扩展文件访问；不以模拟字节或单测冒充修图效果。
+- 安全/成本：现有预算上限保留，密钥不进前端；未动线上/真实OSS/PostgreSQL；旧快照新增字段采用兼容加载，不清空历史。
+- 内部发现已修：LOCAL强制Mock、登录跳旧workspace、快照兼容500、专用Qwen模型锁定缺失。残留：完整视觉链未验、原Mock复制像素不能当真实输出、生产持久化不完整。
+- 反馈/指标：现有task/attempt记录可计算创建与完成、失败、轮次和版本状态；本轮主验收为一次完整交付，下载成功及真实客户采用指标尚无数据。不新增虚构阈值。
+- 外部审阅：权限开启后从上传开始复验正常链、失败不扣次、刷新恢复、第二轮和下载文件；检查真实输出像素与非目标漂移。最便宜下一步是用已备灰色开衫内部素材完成这一轮，不新增框架或云服务。
+
 日期：2026-09-15。Verdict：`ACCEPT FOR LOCAL ENGINEERING LEARNING / PRODUCTION NOT READY`。
 
 ## 1. Original brief and success definition

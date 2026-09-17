@@ -7,6 +7,8 @@
   },
   "scripts": {
     "dev": "vinext dev",
+    "dev:local": "node scripts/start-local.mjs",
+    "dev:preview": "node scripts/start-local.mjs --preview",
     "build": "vinext build",
     "start": "vinext start",
     "pretest": "npm run test:agent",

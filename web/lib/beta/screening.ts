@@ -151,6 +151,34 @@ export function exampleScreeningResult(assetId: string, fileName: string): Custo
   };
 }
 
+/**
+ * Explicit local-demo result.  This is intentionally deterministic and does
+ * not inspect pixels (or filenames); callers must label the response as
+ * MOCK_ONLY.  Keeping it here lets the local backend exercise the complete
+ * persisted batch contract without implying model evidence.
+ */
+export function localMockScreeningResult(assetId: string, index: number): CustomerScreeningResult {
+  if (index % 3 === 2) {
+    return {
+      assetId,
+      decision: "NO_OBVIOUS_ISSUE",
+      primaryIssue: null,
+      visibleEvidence: "模拟状态：未见明显问题（预设结果，不代表模型判断）。",
+      repairPrompt: null,
+      issueRegion: null,
+    };
+  }
+  const manual = index % 3 === 1;
+  return {
+    assetId,
+    decision: manual ? "NEEDS_MANUAL_CHECK" : "NEEDS_ATTENTION",
+    primaryIssue: manual ? null : "模拟问题：请人工核对商品局部细节",
+    visibleEvidence: manual ? "模拟状态：需要人工补充判断（预设结果）。" : "模拟证据：候选图局部需要人工确认（预设结果）。",
+    repairPrompt: manual ? null : "仅处理选定局部；保持人物、背景、构图和非目标商品细节不变。",
+    issueRegion: manual ? null : { x: 0.25, y: 0.25, width: 0.5, height: 0.5 },
+  };
+}
+
 function cleanSentence(value: unknown): string {
   return typeof value === "string"
     ? value.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 500)

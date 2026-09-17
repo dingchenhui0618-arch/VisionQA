@@ -13,6 +13,20 @@ const directory = () => {
 };
 const plan = { decision: "READY" as const, summary: "检查图片", question: "", preserve: ["纽扣"], changes: ["检查图案"] };
 
+test("legacy v1 snapshot without additive conversation map preserves accounts and projects", async () => {
+  const store = localStateStore("legacy", directory());
+  const first = createPersistentBetaService(store);
+  const invite = await first.createInvite({ label: "历史客户" });
+  const auth = await first.consumeInvite(invite.token);
+  const project = first.createProject(auth.session, "保留的历史 SKU");
+  const snapshot = store.load() as { maps: Record<string, unknown> };
+  delete snapshot.maps.projectByConversation;
+  store.save(snapshot);
+  const restored = createPersistentBetaService(store);
+  assert.equal((await restored.resolveSession(auth.sessionToken))?.tenantId, auth.session.tenantId);
+  assert.equal(restored.getProject(auth.session, project.id).name, "保留的历史 SKU");
+});
+
 test("budget reservations survive process restart and stop at the call limit without network", () => {
   const dir = directory();
   const moduleUrl = new URL("../lib/beta/budget.ts", import.meta.url).href;
