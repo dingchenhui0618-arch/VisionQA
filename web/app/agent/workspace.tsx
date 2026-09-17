@@ -5,6 +5,7 @@ import type { TaskView } from "../../lib/agent/conversation-contract";
 import "./workspace.css";
 import { MaterialPanel } from "./material-panel";
 import { formatMessageTime } from "../../lib/agent/message-time";
+import { PlanCard } from "./plan-card";
 
 type Task = TaskView;
 const labels: Record<Task["status"], string> = { STARTING: "正在理解需求", NEEDS_INPUT: "等你补充", UNSUPPORTED: "暂不支持这项任务", AWAITING_APPROVAL: "等待你确认", PROJECT_READY: "项目已建立", STOPPED: "已停止", SUPERSEDED: "已由新计划替代", FAILED: "任务未完成" };
@@ -133,13 +134,7 @@ export function AgentWorkspace() {
         {visibleTasks.length > 0 && <div className="agent-lab__history" aria-live="polite">
           {visibleTasks.map(task => { const created = formatMessageTime(task.createdAt); const answered = formatMessageTime(task.answeredAt); return <article key={task.id}><div className="agent-lab__user"><small>你{created && <time dateTime={created.dateTime}>{created.label}</time>}</small><p>{task.objective}</p></div><div className="agent-lab__answer"><small>VisionQA · {labels[task.status]}{answered && <time dateTime={answered.dateTime}>{answered.label}</time>}</small>{task.plan && <><p>{task.plan.summary}</p>{task.plan.question && <p><strong>{task.plan.question}</strong></p>}</>}{task.error && <p role="status">{task.error}</p>}{task.status === "STARTING" && <p>正在整理你的需求…</p>}</div></article>; })}
         </div>}
-        {current?.plan && <details className="agent-lab__plan" key={current.id} open={current.status === "AWAITING_APPROVAL"}>
-          <summary>本轮计划 <span>{labels[current.status]}</span></summary>
-          <h3>处理目标</h3><ul>{current.plan.changes.map((text, i) => <li key={i}>{text}</li>)}</ul>
-          <h3>保持不变</h3>{current.plan.preserve.length ? <ul>{current.plan.preserve.map((text, i) => <li key={i}>{text}</li>)}</ul> : <p>尚未指定，需要结合商品资料确认。</p>}
-          <p>{current.projectId ? "沿用已有商品项目；确认计划不会自动修图。" : "确认只建立商品项目，不发送图片、不扣修图额度。"}</p>
-          {current.status === "AWAITING_APPROVAL" && <div className="agent-lab__actions"><button disabled={working || Boolean(objective.trim())} onClick={() => void send("approve")}>{current.projectId ? "确认本轮计划" : "确认，建立商品项目"}</button><button className="secondary" disabled={working} onClick={() => void send("stop")}>暂不执行</button>{objective.trim() && <p>已有补充要求，请先发送后再确认。</p>}</div>}
-        </details>}
+        {current?.plan && <PlanCard key={current.id} task={current} working={working} hasDraft={Boolean(objective.trim())} onApprove={() => void send("approve")} onStop={() => void send("stop")} onRevise={() => document.getElementById("agent-goal")?.focus()} />}
         {current?.projectId && <MaterialPanel key={current.projectId} projectId={current.projectId} skuName={current.skuName} onDiscuss={suggest} />}
         {current && ["NEEDS_INPUT", "UNSUPPORTED", "FAILED"].includes(current.status) && <div className="agent-lab__actions">
           {current.status === "FAILED" && <button disabled={working || Boolean(objective.trim())} onClick={() => { pendingId.current = null; pendingRequest.current = null; void send("create", true); }}>重新生成计划</button>}

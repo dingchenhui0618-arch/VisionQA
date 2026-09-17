@@ -104,7 +104,7 @@ export function MaterialPanel({ projectId, skuName, onDiscuss }: { projectId: st
     const name = snapshot?.assets.find(a => a.id === item.assetId)?.fileName ?? "这张图";
     onDiscuss(`关于图片「${name}」：${item.primaryIssue ?? "请帮我确认是否需要修改"}。可见证据：${item.visibleEvidence}。请先整理修改范围与需要保留的部分，不要直接执行修图。`);
   };
-  return <section className="agent-materials" aria-label="当前商品素材与筛查" aria-busy={running}>
+  return <section id="agent-product-workspace" tabIndex={-1} className="agent-materials" aria-label="当前商品素材与筛查" aria-busy={running}>
     <header className="agent-materials__heading"><h2>商品工作区</h2><small>{snapshot ? `${snapshot.assets.filter(a => a.role === "TRUTH").length} 张参考 · ${snapshot.assets.filter(a => a.role === "CANDIDATE").length} 张待检查` : "正在读取素材…"}</small></header>
     <div className="agent-materials__views" role="group" aria-label="切换商品工作区视图">
       {([{ id: "materials", label: "素材" }, { id: "results", label: "检查结果" }, { id: "repair", label: "修图与版本" }] as const).map(option => <button key={option.id} className="secondary" aria-pressed={activeView === option.id} aria-controls={`agent-view-${option.id}`} onClick={() => setView(option.id)}>{option.label}</button>)}
