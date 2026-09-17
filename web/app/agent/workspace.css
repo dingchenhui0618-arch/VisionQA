@@ -51,6 +51,11 @@
 .agent-lab__stage { width:100%; max-width:800px; margin:0 auto; }
 .agent-lab__main.is-empty .agent-lab__stage { padding-top:clamp(48px,22vh,240px); }
 .agent-lab__main.has-conversation .agent-lab__stage { padding-top:32px; padding-bottom:32px; }
+.agent-lab__main.has-conversation .agent-lab__stage { min-height:calc(100dvh - 64px); display:flex; flex-direction:column; }
+.agent-lab__main.has-conversation .agent-lab__history { min-height:0; }
+.agent-lab__stage { padding-bottom:calc(var(--agent-composer-height, 156px) + 32px); }
+.agent-lab__composer { position:fixed; left:300px; right:40px; bottom:16px; width:min(calc(100% - 340px), 800px); margin:0 auto; z-index:3; }
+.agent-lab time { margin-left:8px; color:var(--lab-muted); font-size:11px; font-weight:400; white-space:nowrap; }
 .agent-lab__identity { display:flex; align-items:center; gap:16px; margin-bottom:24px; }
 .agent-lab__mark { display:grid; place-items:center; width:52px; height:52px; flex:none; border:1px solid var(--lab-line); background:var(--lab-surface); border-radius:12px; font-size:18px; font-weight:700; letter-spacing:-1px; }
 .agent-lab h1 { margin:0 0 4px; font-size:22px; font-weight:600; line-height:1.4; overflow-wrap:anywhere; }
@@ -104,5 +109,9 @@
 .agent-materials__results article { padding:16px 0; border-top:1px solid var(--lab-line); }
 .agent-materials__results small { display:block; margin-top:8px; overflow-wrap:anywhere; }
 @media(max-width:1100px) { .agent-lab { grid-template-columns:220px minmax(0,1fr); } .agent-lab__main { padding:0 24px; } .agent-lab__mode { display:none; } }
-@media(max-width:700px) { .agent-lab { display:block; } .agent-lab__sidebar { position:relative; height:auto; padding:12px 16px; border-right:0; border-bottom:1px solid var(--lab-line); display:grid; grid-template-columns:1fr auto; gap:8px; } .agent-lab__brand { margin:0; font-size:20px; } .agent-lab__navlink,.agent-lab__capabilities,.agent-lab__sidebar-bottom { display:none; } .agent-lab__products { grid-column:1/-1; margin:8px 0 0; max-height:144px; overflow:auto; } .agent-lab__products h2 { margin:0 0 8px; } .agent-lab__products > p { margin:0; padding:0; } .agent-lab__main { min-height:calc(100dvh - 170px); padding:0 20px; } .agent-lab__main.is-empty .agent-lab__stage { padding-top:48px; } .agent-lab__identity { gap:12px; } .agent-lab h1 { font-size:20px; } .agent-lab__mark { width:44px; height:44px; } .agent-lab__composer { border-radius:16px; padding:8px 12px; } .agent-lab__starters { gap:8px; margin-top:20px; } .agent-lab__starters button { padding:8px 12px; } }
+@media(max-width:700px) { .agent-lab { display:block; } .agent-lab__sidebar { position:relative; height:auto; padding:12px 16px; border-right:0; border-bottom:1px solid var(--lab-line); display:grid; grid-template-columns:1fr auto; gap:8px; } .agent-lab__brand { margin:0; font-size:20px; } .agent-lab__navlink,.agent-lab__capabilities,.agent-lab__sidebar-bottom { display:none; } .agent-lab__products { grid-column:1/-1; margin:8px 0 0; max-height:144px; overflow:auto; } .agent-lab__products h2 { margin:0 0 8px; } .agent-lab__products > p { margin:0; padding:0; } .agent-lab__main { min-height:calc(100dvh - 170px); padding:0 20px; } .agent-lab__main.is-empty .agent-lab__stage { padding-top:48px; } .agent-lab__identity { gap:12px; } .agent-lab h1 { font-size:20px; } .agent-lab__mark { width:44px; height:44px; } .agent-lab__composer { left:12px; right:12px; bottom:12px; width:auto; border-radius:16px; padding:8px 12px; } .agent-lab__starters { gap:8px; margin-top:20px; } .agent-lab__starters button { padding:8px 12px; } }
 @media(prefers-reduced-motion:reduce) { .agent-lab button:not(:disabled):active { transform:none; } }
+.agent-lab__main .agent-lab__stage { padding-bottom:calc(var(--agent-composer-height, 156px) + 40px); }
+.agent-lab__main .agent-lab__composer { margin:0 auto; border-radius:12px; }
+.agent-lab__composer textarea { min-height:64px; max-height:24dvh; }
+@media(min-width:701px) and (max-width:1100px) { .agent-lab__composer { left:244px; right:24px; width:calc(100% - 268px); } }

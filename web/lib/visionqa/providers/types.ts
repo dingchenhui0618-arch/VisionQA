@@ -166,6 +166,18 @@ export function assertProviderObservationDraft(
       "Provider draft observations must be an array.",
     );
   }
+  for (const observation of value.observations) {
+    if (!isObject(observation)) throw new VisionProviderError("INVALID_OUTPUT", "Provider observation must be an object.");
+    for (const key of ["candidateEvidence", "referenceEvidence", "candidateImageIndex", "referenceImageIndex", "candidateCount", "referenceCount", "changeType"] as const) {
+      if (!(key in observation) || observation[key] === undefined) continue;
+      const valid = key === "changeType"
+        ? ["ADDED", "MISSING", "CHANGED"].includes(String(observation[key]))
+        : key.endsWith("Index") || key.endsWith("Count")
+          ? Number.isInteger(observation[key]) && Number(observation[key]) > 0
+          : typeof observation[key] === "string" && Boolean(String(observation[key]).trim());
+      if (!valid) throw new VisionProviderError("INVALID_OUTPUT", `Provider observation ${key} is invalid.`);
+    }
+  }
   if (!isObject(value.skillAssessments)) {
     throw new VisionProviderError(
       "INVALID_OUTPUT",

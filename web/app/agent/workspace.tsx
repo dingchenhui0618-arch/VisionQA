@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { TaskView } from "../../lib/agent/conversation-contract";
 import "./workspace.css";
 import { MaterialPanel } from "./material-panel";
+import { formatMessageTime } from "../../lib/agent/message-time";
 
 type Task = TaskView;
 const labels: Record<Task["status"], string> = { STARTING: "正在理解需求", NEEDS_INPUT: "等你补充", UNSUPPORTED: "暂不支持这项任务", AWAITING_APPROVAL: "等待你确认", PROJECT_READY: "项目已建立", STOPPED: "已停止", SUPERSEDED: "已由新计划替代", FAILED: "任务未完成" };
@@ -29,12 +30,22 @@ export function AgentWorkspace() {
   const [needsLogin, setNeedsLogin] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const drafts = useRef<Record<string, string>>({});
+  const composerRef = useRef<HTMLFormElement>(null);
   const lock = useRef(false);
   const pendingId = useRef<string | null>(null);
   const pendingRequest = useRef<object | null>(null);
   const conversations = tasks.filter(t => !t.parentId);
   const visibleTasks = tasks.filter(t => t.conversationId === selected);
   const current = visibleTasks.at(-1);
+  useEffect(() => {
+    const composer = composerRef.current;
+    if (!composer) return;
+    const update = () => composer.parentElement?.style.setProperty("--agent-composer-height", `${composer.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(composer);
+    return () => observer.disconnect();
+  }, [current?.id]);
   const continuing = Boolean(current);
   function selectConversation(id: string | null) {
     drafts.current[selected ?? "new"] = objective;
@@ -113,7 +124,7 @@ export function AgentWorkspace() {
       <div className="agent-lab__stage">
         <div className="agent-lab__identity"><div className="agent-lab__mark" aria-hidden="true">VQ</div><div><h1>{current?.skuName ?? "你的电商视觉助手"}</h1><p>{current ? "一个商品，一段持续协作的对话" : "从一件商品出发，把视觉想法变成可交付的内容。"}</p></div><span className="agent-lab__mode">商品图评审 · 规划</span></div>
         {visibleTasks.length > 0 && <div className="agent-lab__history" aria-live="polite">
-          {visibleTasks.map(task => <article key={task.id}><div className="agent-lab__user"><small>你</small><p>{task.objective}</p></div><div className="agent-lab__answer"><small>VisionQA · {labels[task.status]}</small>{task.plan && <><p>{task.plan.summary}</p>{task.plan.question && <p><strong>{task.plan.question}</strong></p>}</>}{task.error && <p role="status">{task.error}</p>}{task.status === "STARTING" && <p>正在整理你的需求…</p>}</div></article>)}
+          {visibleTasks.map(task => { const created = formatMessageTime(task.createdAt); const answered = formatMessageTime(task.answeredAt); return <article key={task.id}><div className="agent-lab__user"><small>你{created && <time dateTime={created.dateTime}>{created.label}</time>}</small><p>{task.objective}</p></div><div className="agent-lab__answer"><small>VisionQA · {labels[task.status]}{answered && <time dateTime={answered.dateTime}>{answered.label}</time>}</small>{task.plan && <><p>{task.plan.summary}</p>{task.plan.question && <p><strong>{task.plan.question}</strong></p>}</>}{task.error && <p role="status">{task.error}</p>}{task.status === "STARTING" && <p>正在整理你的需求…</p>}</div></article>; })}
         </div>}
         {current?.plan && <details className="agent-lab__plan" key={current.id} open={current.status === "AWAITING_APPROVAL"}>
           <summary>本轮计划 <span>{labels[current.status]}</span></summary>
@@ -128,7 +139,7 @@ export function AgentWorkspace() {
           <button className="secondary" disabled={working} onClick={() => void send("stop")}>结束本轮任务</button>
         </div>}
         {error && <div className="agent-lab__error" role="alert">{error}{needsLogin && <a href="/login" target="_blank" rel="noreferrer">登录后返回此页 ↗</a>}</div>}
-        <form className="agent-lab__composer" onSubmit={event => { event.preventDefault(); void send("create"); }}>
+        <form ref={composerRef} className="agent-lab__composer" onSubmit={event => { event.preventDefault(); void send("create"); }}>
           {!continuing && <div className="agent-lab__product-input"><label htmlFor="agent-sku">商品</label><input id="agent-sku" required disabled={working} maxLength={100} value={skuName} onChange={e => { setSkuName(e.target.value); pendingId.current = null; pendingRequest.current = null; }} placeholder="给这件商品起个名字" /></div>}
           <label className="agent-lab__sr-only" htmlFor="agent-goal">告诉我你想为这个商品完成什么</label>
           <textarea id="agent-goal" required disabled={working} maxLength={2000} value={objective} onChange={e => { setObjective(e.target.value); pendingId.current = null; pendingRequest.current = null; }} placeholder={continuing ? "继续补充要求，或告诉我这版计划哪里需要调整…" : "想为你的商品做些什么？例如，检查模特图，修正多余图案，保持颜色和纽扣不变。"} />

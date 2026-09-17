@@ -5,6 +5,13 @@ type Observation = {
   status?: string;
   observation?: string;
   impact?: string;
+  candidateEvidence?: string;
+  referenceEvidence?: string;
+  candidateImageIndex?: number;
+  referenceImageIndex?: number;
+  candidateCount?: number;
+  referenceCount?: number;
+  changeType?: "ADDED" | "MISSING" | "CHANGED";
 };
 
 type EvaluationEnvelope = {
@@ -23,15 +30,24 @@ export type CustomerScreeningResult = Omit<
 export function mapEvaluationToCustomerScreening(
   assetId: string,
   envelope: EvaluationEnvelope,
+  options: { requireEvidence?: boolean; referenceImageCount?: number } = {},
 ): CustomerScreeningResult {
   const result = envelope.result;
   const observations = result?.model_evaluation?.observations ?? [];
+  const evidenceInvalid = Boolean(options.requireEvidence) && (observations.length === 0 || observations.some((item) => {
+    const candidateIndexValid = item.candidateImageIndex === 1;
+    const referenceIndexValid = item.referenceImageIndex !== undefined && Number.isInteger(item.referenceImageIndex) && item.referenceImageIndex >= 2 && (options.referenceImageCount === undefined || item.referenceImageIndex <= options.referenceImageCount + 1);
+    const countsValid = item.candidateCount !== undefined && item.referenceCount !== undefined && Number.isInteger(item.candidateCount) && Number.isInteger(item.referenceCount) && item.candidateCount >= 0 && item.referenceCount >= 0;
+    const countDirectionValid = item.changeType === "ADDED" ? countsValid && item.candidateCount! > item.referenceCount! : item.changeType === "MISSING" ? countsValid && item.candidateCount! < item.referenceCount! : true;
+    const evidencePresent = Boolean(item.candidateEvidence?.trim() && item.referenceEvidence?.trim()) && ["ADDED", "MISSING", "CHANGED"].includes(item.changeType ?? "");
+    return !evidencePresent || !candidateIndexValid || !referenceIndexValid || !countDirectionValid || ((item.changeType === "ADDED" || item.changeType === "MISSING") && !countsValid) || item.status === "suspected" || item.status === "not_assessable";
+  }));
   const insufficient =
     !result ||
     result.model_evaluation?.status !== "SUCCEEDED" ||
     observations.some(
       (item) => item.severity === "information_insufficient" || item.status === "not_assessable",
-    );
+    ) || evidenceInvalid;
   if (insufficient) {
     return {
       assetId,
@@ -74,8 +90,10 @@ export function mapEvaluationToCustomerScreening(
     assetId,
     decision: "NEEDS_ATTENTION",
     primaryIssue: cleanSentence(primary.observation) || "商品细节与真值不一致",
-    visibleEvidence: cleanSentence(primary.impact) || "该差异可能影响商品真实性或后续使用。",
-    repairPrompt: cleanSentence(result.action_plan?.repair_prompt?.prompt) || null,
+    visibleEvidence: options.requireEvidence
+      ? [cleanSentence(primary.candidateEvidence), cleanSentence(primary.referenceEvidence)].filter(Boolean).join("；") || "证据不足，需人工复核。"
+      : cleanSentence(primary.impact) || "该差异可能影响商品真实性或后续使用。",
+    repairPrompt: evidenceInvalid || primary.status === "suspected" ? null : cleanSentence(result.action_plan?.repair_prompt?.prompt) || null,
     issueRegion: null,
   };
 }

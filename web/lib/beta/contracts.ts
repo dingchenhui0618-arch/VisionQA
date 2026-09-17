@@ -108,6 +108,7 @@ export type RepairAttempt = {
   holdId: string;
   gateVersion: string;
   gateResult: "PENDING" | "PASSED" | "BLOCKED";
+  protection?: { version: string; sourceSha256: string; rawOutputSha256: string; outsideChangedPixels: number };
   idempotencyKey: string;
   failureReason: string | null;
   createdAt: string;

@@ -5,6 +5,7 @@ import { getBetaBackend } from "../../../lib/beta/backend";
 import { authorizeModelDispatch } from "../../../lib/beta/budget";
 import { CustomerVisibleError, customerErrorResponse, type BetaSessionView, type RepairAttempt } from "../../../lib/beta/contracts";
 import { runServerRepairGate } from "../../../lib/beta/repair-gate";
+import { composeLockedRepair } from "../../../lib/beta/locked-region-composite";
 import type { RepairStartInput } from "../../../lib/beta/service";
 import {
   createQwenImage3Provider,
@@ -106,6 +107,7 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
     const references = await Promise.all(batch.truthAssetIds.slice(0, 2).map((id) => service.readAsset(session, id)));
 
     let providerResult: QwenImage3EditResult | null = null;
+    let protection: Awaited<ReturnType<typeof composeLockedRepair>>["metadata"] | undefined;
     let output: { bytes: Uint8Array; mimeType: "image/png" | "image/jpeg" | "image/webp"; width: number | null; height: number | null };
     {
       if (localMockEnabled()) {
@@ -256,6 +258,16 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
       }
     }
 
+    if (!localMockEnabled()) {
+      try {
+        const protectedOutput = await composeLockedRepair({ sourceBytes: source.bytes, outputBytes: output.bytes, issueRegion: attempt.issueRegion });
+        if (protectedOutput.metadata.outsideChangedPixels !== 0) throw new Error("Locked pixels changed");
+        protection = protectedOutput.metadata;
+        output = { bytes: protectedOutput.outputBytes, mimeType: "image/png", width: protectedOutput.width, height: protectedOutput.height };
+      } catch {
+        throw new CustomerVisibleError("GATE_BLOCKED", "本次修正版无法安全保留框外区域，未扣除内测额度。", 422, "请检查修改范围或更换母版后再试；原图和已有版本已保留。");
+      }
+    }
     const gate = runServerRepairGate({
       source: {
         bytes: source.bytes,
@@ -289,7 +301,7 @@ async function executeRepairAttempt(session: BetaSessionView, attemptId: string)
       width: gate.outputDimensions.width,
       height: gate.outputDimensions.height,
     });
-    const captured = await service.captureRepair(session, attempt.id, outputAsset.id);
+    const captured = await service.captureRepair(session, attempt.id, outputAsset.id, protection);
     return captured;
   } catch (error) {
     let reason = "修图任务未形成可用结果，额度已自动释放。";

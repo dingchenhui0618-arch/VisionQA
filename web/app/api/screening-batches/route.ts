@@ -70,7 +70,7 @@ export async function POST(request: Request) {
           "图片和项目已保留，请稍后点击“重新筛查”；筛查免费，不会扣除内测额度。",
         );
       }
-      results.push(mapEvaluationToCustomerScreening(candidate.asset.id, await response.json()));
+      results.push(mapEvaluationToCustomerScreening(candidate.asset.id, await response.json(), { requireEvidence: true, referenceImageCount: references.length }));
     }
     const completed = await service.completeScreeningBatch(session, batch.id, results);
     return Response.json(

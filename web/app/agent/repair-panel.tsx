@@ -136,7 +136,7 @@ export function RepairPanel({ projectId, initialItemId }: { projectId: string; i
       <img src={`/api/assets/${sourceId}`} alt="本轮修图母版" draggable={false} />
       <span className="agent-repair__box" style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} />
     </div>
-    <p>拖动框选问题，或输入百分比。框外区域将作为保持不变的范围记录；生成后仍需检查是否漂移。</p>
+    <p>拖动框选问题，或输入百分比。新修图只把框内内容合回母版，框外保留原图像素；请留出自然衔接的范围，并复验框内细节。</p>
     <div className="agent-repair__coordinates">{(["x", "y", "width", "height"] as const).map((key, index) => <label key={key}>{["左边距", "上边距", "宽度", "高度"][index]} %<input type="number" min="0" max="100" step="1" disabled={disabled} value={Math.round(region[key] * 100)} onChange={e => { setRegion(r => ({ ...r, [key]: Number(e.target.value) / 100 })); setConsent(false); }} /></label>)}</div>
     <label>只修改什么<textarea value={issue} rows={3} maxLength={500} disabled={disabled} onChange={e => { setIssue(e.target.value); setConsent(false); }} /></label>
     {problem && <p role="status">{problem}</p>}
@@ -147,7 +147,7 @@ export function RepairPanel({ projectId, initialItemId }: { projectId: string; i
     {running && <p role="status">正在修正。不要重复提交；可稍后回到这个商品对话查看。</p>}
     {latest?.status === "RELEASED" && <p role="status">上轮未完成，未扣额度。{latest.failureReason}</p>}
     {error && <p className="agent-lab__error" role="alert">{error}</p>}
-    {version && <div className="agent-repair__delivery"><h3>前后对比与历史版本</h3><label>查看修正版<select value={version.id} disabled={busy} onChange={e => { setSelectedVersion(e.target.value); setChecks([false, false, false]); }}>
+    {version && <div className="agent-repair__delivery"><h3>前后对比与历史版本</h3><p>{version.protection ? "此版本已保留母版框外像素；框内效果及拼接边缘仍需人工复验。" : "此历史版本没有框外像素保护记录，请仔细检查人物、背景与商品是否漂移。"}</p><label>查看修正版<select value={version.id} disabled={busy} onChange={e => { setSelectedVersion(e.target.value); setChecks([false, false, false]); }}>
       {versions.map((v, i) => <option value={v.id} key={v.id}>修正版 {i + 1} · {v.issue}</option>)}
     </select></label><div className="agent-repair__compare">{[{ id: version.sourceAssetId, label: "这一轮修改前" }, { id: version.outputAssetId!, label: "这一轮修改后" }].map(part => <figure key={part.label}><figcaption>{part.label}</figcaption>
       {/* eslint-disable-next-line @next/next/no-img-element */}

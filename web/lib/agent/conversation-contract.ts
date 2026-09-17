@@ -40,4 +40,8 @@ export type TaskView = {
   projectId: string | null;
   plan: ConversationPlan | null;
   error: string | null;
+  /** Server timestamps are optional for compatibility with older snapshots. */
+  createdAt?: string;
+  updatedAt?: string;
+  answeredAt?: string;
 };

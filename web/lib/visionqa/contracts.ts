@@ -45,6 +45,13 @@ export interface ObservationV03 {
   status: "detected" | "suspected" | "not_assessable";
   observation: string;
   impact: string;
+  candidateEvidence?: string;
+  referenceEvidence?: string;
+  candidateImageIndex?: number;
+  referenceImageIndex?: number;
+  candidateCount?: number;
+  referenceCount?: number;
+  changeType?: "ADDED" | "MISSING" | "CHANGED";
 }
 
 export interface RepairPromptV03 {

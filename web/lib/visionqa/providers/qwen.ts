@@ -46,7 +46,7 @@ function buildStrictPrompt(input: ProviderEvaluationInput): string {
     `Assessment scope: ${input.commercialTemplate.assessmentScope}`,
     `Locked attributes: ${input.lockedAttributes.join(", ") || "none"}`,
     ...repairTruthInstructions,
-    "Use only visible evidence from the input image. Do not guess or fabricate evidence. 不得猜测或补造证据。If evidence is insufficient, set score to null and explain the missing evidence in summary or requiredHumanChecks.",
+    "Use only visible evidence from the input image. Do not guess or fabricate evidence. 不得猜测或补造证据。Every observation must cite candidateEvidence and referenceEvidence, candidateImageIndex=1, and referenceImageIndex for the exact reference view (2-based across the complete image list). Treat each reference image as an independent view; a multi-view truth contact sheet is one reference image and the same embroidery seen in multiple panels must not be counted repeatedly. Describe image-left/image-right and wearer-left/wearer-right only when visible. If evidence is insufficient, counts conflict, or the observation is suspected, require human review and do not invent a change type.",
     "Apply this strict calibration scale to every scored field: 90-100 is exceptional and requires concrete visible evidence that the image has almost no meaningful gap for the stated placement; 80-89 is strong professional commercial work with normal improvable gaps; 70-79 is usable but needs clear optimization; below 70 needs substantial rework. A polished or attractive image is not automatically 90+.",
     "The human calibration reference distribution for strong, already-used apparel commercial images is typically 82-91. Do not compress most good images into 90-100. Lifestyle campaign images require the same strict evidence standard for 90+ as product main images.",
     "The JSON object must match this exact shape:",
@@ -150,6 +150,10 @@ function normalizeObservation(value: unknown) {
   const source = asRecord(value);
   const issueCode = String(source.issue_code ?? "unclassified_issue").trim();
   const localized = OBSERVATION_LOCALIZATIONS[issueCode];
+  const positiveInt = (input: unknown) => Number.isInteger(input) && Number(input) > 0 ? Number(input) : undefined;
+  const candidateEvidence = typeof source.candidateEvidence === "string" && source.candidateEvidence.trim() ? source.candidateEvidence.trim() : undefined;
+  const referenceEvidence = typeof source.referenceEvidence === "string" && source.referenceEvidence.trim() ? source.referenceEvidence.trim() : undefined;
+  const changeType = ["ADDED", "MISSING", "CHANGED"].includes(String(source.changeType)) ? source.changeType : undefined;
   return {
     observation_id: String(source.observation_id ?? "obs_unclassified").trim(),
     issue_code: issueCode,
@@ -166,6 +170,13 @@ function normalizeObservation(value: unknown) {
       (typeof source.impact === "string" && source.impact.trim()
         ? source.impact.trim()
         : "当前证据不足，不能直接形成业务结论。"),
+    ...(candidateEvidence ? { candidateEvidence } : {}),
+    ...(referenceEvidence ? { referenceEvidence } : {}),
+    ...(positiveInt(source.candidateImageIndex) ? { candidateImageIndex: positiveInt(source.candidateImageIndex) } : {}),
+    ...(positiveInt(source.referenceImageIndex) ? { referenceImageIndex: positiveInt(source.referenceImageIndex) } : {}),
+    ...(positiveInt(source.candidateCount) ? { candidateCount: positiveInt(source.candidateCount) } : {}),
+    ...(positiveInt(source.referenceCount) ? { referenceCount: positiveInt(source.referenceCount) } : {}),
+    ...(changeType ? { changeType } : {}),
   };
 }
 

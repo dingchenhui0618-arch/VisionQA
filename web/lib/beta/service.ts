@@ -711,7 +711,7 @@ export class BetaService {
     return { ...next };
   }
 
-  captureRepair(session: BetaSessionView, attemptId: string, outputAssetId: string): RepairAttempt {
+  captureRepair(session: BetaSessionView, attemptId: string, outputAssetId: string, protection?: RepairAttempt["protection"]): RepairAttempt {
     const attempt = this.requireAttempt(session, attemptId);
     if (attempt.status === "CAPTURED") return { ...attempt };
     if (!["HELD", "RUNNING"].includes(attempt.status)) throw new Error("Released repair cannot be captured");
@@ -729,6 +729,7 @@ export class BetaService {
       outputAssetId,
       status: "CAPTURED",
       gateResult: "PASSED",
+      ...(protection ? { protection: { ...protection }, gateVersion: `${attempt.gateVersion}+${protection.version}` } : {}),
       updatedAt: this.timestamp(),
     };
     this.attempts.set(attemptId, next);

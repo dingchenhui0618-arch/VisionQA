@@ -410,7 +410,7 @@ export async function POST(request: Request) {
             assessmentScope: `${template.assessmentScope} 客户画像：${profileSummary}。参考图共 ${referenceInputs.length} 张；第一张图片是候选图，${referenceMeaning} SKU 链接仅作为文本上下文，不代表已抓取远程图片。`,
           };
         })(),
-        promptVersion: "vision-observer-0.3.0-calibrated",
+        promptVersion: "vision-observer-0.3.1-evidence",
       },
       request.signal,
       // A paid local canary attempt is never retried automatically. Retrying
