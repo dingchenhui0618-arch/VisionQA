@@ -30,7 +30,7 @@ const manifest = {
   gitBranch: git(["branch", "--show-current"]),
   packageLockSha256: createHash("sha256").update(lock).digest("hex"),
   runtime: { node: process.version, packageManager: "npm ci", start: "npm run start" },
-  build: { command: "npm run build", output: ".next", publicAssets: "public" },
+    build: { command: "npm run build", output: "dist/{client,server}", publicAssets: "public" },
   environments: ["local", "staging", "production"],
   serverOnlyVariables,
   safeguards: {

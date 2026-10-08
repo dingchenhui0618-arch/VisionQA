@@ -20,7 +20,12 @@ run(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "release:prepare"]
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 
-for (const entry of [".next", "public", "package.json", "package-lock.json", ".env.example"]) {
+// vinext serves the production bundle from the top-level `dist/{client,server}` tree.
+await mkdir(path.join(output, "dist"), { recursive: true });
+for (const entry of ["client", "server", ".openai"]) {
+  await cp(path.join(root, "dist", entry), path.join(output, "dist", entry), { recursive: true });
+}
+for (const entry of ["public", "package.json", "package-lock.json", ".env.example"]) {
   await cp(path.join(root, entry), path.join(output, entry), { recursive: true });
 }
 await cp(path.join(root, "dist", "release-manifest.json"), path.join(output, "release-manifest.json"));
