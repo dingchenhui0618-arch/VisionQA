@@ -15,6 +15,8 @@ npm run lint
 
 `npm test` 运行 `scripts/release-check.mjs`，包含构建、核心持久化、页面、契约和业务测试。构建因主机内存失败时最多原样重试一次；任何测试失败都直接终止。
 
+验收通过后执行 `npm run release:manifest`，生成 `dist/release-manifest.json`。该文件只记录 Git 提交、锁文件 SHA-256、运行命令、环境变量名称和安全边界，不包含任何密钥。完整候选命令为 `npm run release:prepare`。
+
 ## 2. 环境分层
 
 | 环境 | 用途 | 数据事实源 | 模型/支付 |
