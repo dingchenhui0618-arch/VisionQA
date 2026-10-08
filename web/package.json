@@ -14,6 +14,7 @@
     "test": "npm run test:release",
     "release:manifest": "node scripts/create-release-manifest.mjs",
     "release:prepare": "npm run test:release && npm run release:manifest",
+    "release:export": "node scripts/export-release.mjs",
     "test:release": "node scripts/release-check.mjs",
     "test:contracts": "node --test tests/schema-examples.test.mjs && node --experimental-strip-types --test tests/contracts-rules.test.ts tests/product-expression.test.ts tests/agent-orchestrator.test.ts tests/l2-agent-runtime.test.ts tests/qwen-marketing-provider.test.ts tests/platform-persistence.test.ts tests/postgres-persistence.test.ts",
     "test:adapters": "node --experimental-strip-types --test tests/model-adapter.test.ts",
