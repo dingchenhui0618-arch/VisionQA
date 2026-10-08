@@ -27,4 +27,6 @@ Because the Alibaba Workbench uploader is unavailable, the same non-secret tarba
 
 ## Next safe action
 
-Enable or repair the Alibaba Workbench OSS-backed file-transfer capability (or provide an approved server-side transfer path), upload the candidate built from `fb802d9`, run `npm ci` in the new release directory, switch the `current` symlink atomically, and require `GET /api/health`, `/api/payment-capability`, `/login`, and `/workspace` to pass before inviting users. Keep the restored release for rollback until those checks pass.
+Enable or repair the Alibaba Workbench OSS-backed file-transfer capability (or provide an approved server-side transfer path), upload the candidate built from `b38d68e`, run `npm ci` in the new release directory, switch the `current` symlink atomically, and require `GET /api/health`, `/api/payment-capability`, `/login`, and `/workspace` to pass before inviting users. Keep the restored release for rollback until those checks pass.
+
+The server-side atomic install sequence is prepared in `deploy/install-release-from-url.sh`; it requires a short-lived `RELEASE_URL` and the published SHA-256, verifies the archive before extraction, installs dependencies before switching `current`, and checks `/api/health` after restart.
