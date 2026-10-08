@@ -21,6 +21,10 @@ The current server-side archive predates the health endpoint and returns `404` f
 - The candidate contains `dist/client`, `dist/server`, `public`, package metadata, and no raw secrets.
 - `npm test`, release checks, lint, build, and production smoke checks passed locally before this staging attempt.
 
+## Transfer path prepared
+
+Because the Alibaba Workbench uploader is unavailable, the same non-secret tarball has been uploaded to the private GitHub repository as release tag `staging-transfer-20261008`. The release is private and is only a transport artifact; the server must download it through a short-lived authenticated redirect, then the tag should not be treated as a runtime dependency.
+
 ## Next safe action
 
 Enable or repair the Alibaba Workbench OSS-backed file-transfer capability (or provide an approved server-side transfer path), upload the candidate built from `fb802d9`, run `npm ci` in the new release directory, switch the `current` symlink atomically, and require `GET /api/health`, `/api/payment-capability`, `/login`, and `/workspace` to pass before inviting users. Keep the restored release for rollback until those checks pass.
