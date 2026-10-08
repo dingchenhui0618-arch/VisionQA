@@ -21,4 +21,4 @@ The current server-side archive predates the health endpoint and returns `404` f
 
 ## Next safe action
 
-Enable or repair the Alibaba Workbench OSS-backed file-transfer capability (or provide an approved server-side transfer path), upload the candidate built from `8a76dfa`, run `npm ci` in the new release directory, switch the `current` symlink atomically, and require `GET /api/health`, `/api/payment-capability`, `/login`, and `/workspace` to pass before inviting users. Keep the restored release for rollback until those checks pass.
+Enable or repair the Alibaba Workbench OSS-backed file-transfer capability (or provide an approved server-side transfer path), upload the candidate built from `fb802d9`, run `npm ci` in the new release directory, switch the `current` symlink atomically, and require `GET /api/health`, `/api/payment-capability`, `/login`, and `/workspace` to pass before inviting users. Keep the restored release for rollback until those checks pass.
