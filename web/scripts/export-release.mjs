@@ -29,6 +29,6 @@ for (const entry of ["public", "package.json", "package-lock.json", ".env.exampl
   await cp(path.join(root, entry), path.join(output, entry), { recursive: true });
 }
 await cp(path.join(root, "dist", "release-manifest.json"), path.join(output, "release-manifest.json"));
-await writeFile(path.join(output, "DEPLOY.md"), `# VisionQA release candidate\n\n1. Copy this directory to the target server.\n2. Keep \.env.example as a template; inject real values through the server secret manager.\n3. Run \`npm ci --omit=dev\` in the candidate directory.\n4. Run \`npm run start\` behind the reverse proxy.\n5. Check \`GET /api/health\` before inviting users.\n\nThis directory intentionally contains no secrets, uploads, logs, local state, or web/artifacts.\n`, "utf8");
+await writeFile(path.join(output, "DEPLOY.md"), `# VisionQA release candidate\n\n1. Copy this directory to the target server.\n2. Keep \.env.example as a template; inject real values through the server secret manager.\n3. Run \`npm ci\` in the candidate directory because the current vinext runtime is packaged as a development dependency.\n4. Run \`npm run start\` behind the reverse proxy.\n5. Check \`GET /api/health\` before inviting users.\n\nThis directory intentionally contains no secrets, uploads, logs, local state, or web/artifacts.\n`, "utf8");
 
 console.log(JSON.stringify({ output: path.relative(root, output), excluded: [".env*", "work", "uploads", "runs", "logs", "web/artifacts"] }));
