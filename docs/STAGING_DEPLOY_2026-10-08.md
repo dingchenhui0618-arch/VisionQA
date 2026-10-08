@@ -11,7 +11,7 @@
 
 ## Important verification boundary
 
-The current server-side archive predates the health endpoint and returns `404` for `GET /api/health`; this is a release-version mismatch, not evidence that the service is healthy. The latest local release candidate is built and tested at commit `8a76dfa` (release packaging fix included), but the Alibaba Workbench file-transfer helper currently reports that uploads are unsupported in the active session. The latest candidate has therefore not been claimed as deployed.
+The current server-side archive predates the health endpoint and returns `404` for `GET /api/health`; this is a release-version mismatch, not evidence that the service is healthy. The latest local release candidate is built and tested at commit `fb802d9` (release packaging fix and deployment evidence included), but the Alibaba Workbench file-transfer helper currently reports that uploads are unsupported in the active session. The latest candidate has therefore not been claimed as deployed.
 
 ## Local release evidence
 
