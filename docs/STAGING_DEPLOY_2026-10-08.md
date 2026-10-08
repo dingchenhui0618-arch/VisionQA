@@ -17,6 +17,7 @@ The current server-side archive predates the health endpoint and returns `404` f
 
 - `npm run release:export` completed successfully after the packaging fix.
 - `npm run test:staging-surface -- https://visionqa.dionysusding.cn` now provides a repeatable public-surface check; the current result is `health=false` (404), `paymentDisabled=true`, `login=true`, `workspace=true` (307 login redirect is expected without a session).
+- The same smoke check against a freshly started local production server on port `3211` returned all four checks true (`health=200`, `paymentDisabled=true`, `login=200`, `workspace=307`), proving the latest build artifact contains the health route and the remaining failure is staging drift.
 - The candidate contains `dist/client`, `dist/server`, `public`, package metadata, and no raw secrets.
 - `npm test`, release checks, lint, build, and production smoke checks passed locally before this staging attempt.
 
