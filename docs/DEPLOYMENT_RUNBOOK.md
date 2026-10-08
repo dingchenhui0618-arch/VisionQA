@@ -19,6 +19,8 @@ npm run lint
 
 验收通过后执行 `npm run release:manifest`，生成 `dist/release-manifest.json`。该文件只记录 Git 提交、锁文件 SHA-256、运行命令、环境变量名称和安全边界，不包含任何密钥。完整候选命令为 `npm run release:prepare`。
 
+反向代理和进程监控使用 `GET /api/health` 作为 liveness 探针。它只证明应用进程能响应，不检查数据库、OSS 或模型 Provider；后者必须由 staging 验收和独立监控完成。
+
 ## 2. 环境分层
 
 | 环境 | 用途 | 数据事实源 | 模型/支付 |

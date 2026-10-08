@@ -91,6 +91,13 @@ test(
         /text\/html/i,
       );
       const html = await htmlResponse.text();
+      const healthResponse = await fetch(`${origin}/api/health`);
+      assert.equal(healthResponse.status, 200);
+      assert.match(healthResponse.headers.get("content-type") || "", /application\/json/i);
+      const health = await healthResponse.json();
+      assert.deepEqual(health.status, "ok");
+      assert.deepEqual(health.probe, "liveness");
+      assert.equal(Object.keys(health).some((key) => /key|secret|token|password/i.test(key)), false);
       const staticAssets = referencedStaticAssets(html);
       assert.ok(
         staticAssets.some((asset) => asset.endsWith(".js")),
