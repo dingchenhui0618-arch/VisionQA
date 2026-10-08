@@ -4,6 +4,8 @@
 
 这份手册只描述可复现的发布边界，不包含任何密钥、客户图片或服务器凭据。当前仓库可以生成 release candidate，但尚未执行正式生产切换。
 
+路由边界：`/agent` 是本地开发对话实验入口，生产环境故意不开放；staging/production 的客户入口是 `/login → /workspace`，开发者入口是 `/internal`。不要把本地 `/agent` 的 404 误判为生产故障，也不要通过放宽 `NODE_ENV` 守卫来绕过客户后端。
+
 ## 1. 发布前本地门槛
 
 ```powershell
