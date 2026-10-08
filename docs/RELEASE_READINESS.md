@@ -15,7 +15,7 @@ npm test
 npm run lint
 ```
 
-`npm test` 现在使用 `test:release`：先构建，再运行核心 Agent/持久化测试、页面/契约/业务测试。这样避免旧的 `pretest → 大量跨进程测试 → build` 顺序在 Windows 内存压力下让构建偶发失败。
+`npm test` 现在使用 `test:release`：由 `scripts/release-check.mjs` 先构建，再运行核心 Agent/持久化测试、页面/契约/业务测试。构建失败只允许原样重试一次；测试失败不重试、不跳过。这避免旧的 `pretest → 大量跨进程测试 → build` 顺序在 Windows 内存压力下让构建偶发失败。
 
 如果 Vinext 在构建第 3 阶段出现 `memory allocation ... failed`，先关闭不相关的开发进程，在干净终端单独重试 `npm run build`；这属于发布主机资源问题，不得改成跳过构建或降低测试。
 
