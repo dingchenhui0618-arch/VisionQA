@@ -9,9 +9,17 @@
 - Payment capability: `GET /api/payment-capability` returned `200` with `provider: disabled`.
 - Current server release: `releases/20261008-707d6d6`, restored from the complete server-side archive so the staging service remains available.
 
+## Latest deployment verification — 2026-10-09
+
+- The release candidate `visionqa-release-b38d68e-20261008.tar.gz` was uploaded through Alibaba Workbench to `/tmp` and its SHA-256 matched `9E9959DFD3EB7268FA5AA86B413371FB4FFA028AA5AF30322137EC45D31B7D2E`.
+- The server switched atomically to `/www/wwwroot/visionqa.dionysusding.cn/releases/20261009-045749` and restarted `visionqa-demo.service`.
+- Server-side health probe returned `{"status":"ok","service":"visionqa","probe":"liveness","releaseMode":"beta","paymentProvider":"disabled"}`.
+- Public smoke check passed all four checks: `health=true`, `paymentDisabled=true`, `login=true`, `workspace=true` (`200/200/200/307`; the unauthenticated workspace redirect is expected).
+- The previous release remains under `releases/` for rollback.
+
 ## Important verification boundary
 
-The current server-side archive predates the health endpoint and returns `404` for `GET /api/health`; this is a release-version mismatch, not evidence that the service is healthy. The latest local release candidate is built and tested at commit `b38d68e` (release packaging, staging smoke check, and deployment evidence included), but the Alibaba Workbench file-transfer helper currently reports that uploads are unsupported in the active session. The latest candidate has therefore not been claimed as deployed.
+The previous server-side archive predates the health endpoint and returned `404` for `GET /api/health`; that was a release-version mismatch, not evidence that the service was healthy. The latest local release candidate is built and tested at commit `b38d68e`, has now been deployed through the repaired Alibaba Workbench transfer path, and passed the server-side and public smoke checks listed above.
 
 ## Local release evidence
 
@@ -23,10 +31,10 @@ The current server-side archive predates the health endpoint and returns `404` f
 
 ## Transfer path prepared
 
-Because the Alibaba Workbench uploader is unavailable, the same non-secret tarball has been uploaded to the private GitHub repository as release tag `staging-transfer-20261008`. The release is private and is only a transport artifact; the server must download it through a short-lived authenticated redirect, then the tag should not be treated as a runtime dependency.
+The same non-secret tarball remains available in the private GitHub release tag `staging-transfer-20261008` as a recovery transport artifact. It is not a runtime dependency.
 
 ## Next safe action
 
-Enable or repair the Alibaba Workbench OSS-backed file-transfer capability (or provide an approved server-side transfer path), upload the candidate built from `b38d68e`, run `npm ci` in the new release directory, switch the `current` symlink atomically, and require `GET /api/health`, `/api/payment-capability`, `/login`, and `/workspace` to pass before inviting users. Keep the restored release for rollback until those checks pass.
+Keep the repaired Workbench path and atomic installer as the staging deployment procedure. Before inviting users to a future release, require `GET /api/health`, `/api/payment-capability`, `/login`, and `/workspace` to pass again. Keep the previous release for rollback until the new release has been observed in use.
 
 The server-side atomic install sequence is prepared in `deploy/install-release-from-url.sh`; it requires a short-lived `RELEASE_URL` and the published SHA-256, verifies the archive before extraction, installs dependencies before switching `current`, and checks `/api/health` after restart.
