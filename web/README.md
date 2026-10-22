@@ -1,6 +1,26 @@
-# VisionQA
+# VisionQA Web
 
-VisionQA 是服饰电商 AI 商品图评审与营销交付工作台。
+VisionQA Web 是可嵌入其他智能体的视觉判断与修正插件原型。它不接管宿主智能体的完整对话，而是在网页、演示页、图片或文档渲染产物出现时，读取任务上下文，给出带证据的视觉判断、需要批准的修正计划和可复验的版本记录。
+
+官网首页位于 `/`，展示插件定位和可移动悬浮评审窗口；当前默认运行在本地 Mock 模式，不伪造真实模型或像素分析结果。旧的 `/login`、`/workspace` 与业务接口仍作为兼容内核保留，但不再由官网首页作为客户入口。
+
+## 插件契约与本地适配器
+
+- `../contracts/visual-review-v0.1.schema.json`：宿主与 VisionQA 之间的通用请求/响应契约。
+- `lib/visionqa/visual-review-contract.ts`：同一份契约的 Zod 解析器与显式 Mock Provider。
+- `scripts/visual-review-cli.ts`：`capabilities`、`validate`、`review` 命令行入口。
+- `scripts/visual-review-mcp.ts`：`get_visual_capabilities`、`review_visual`、`plan_visual_repair` 三个本地 MCP 工具。
+- `examples/visual-review-request.json`：可直接运行的请求样例。
+
+```powershell
+npm run dev:local
+npm run visual:capabilities
+npm run visual:validate -- examples/visual-review-request.json
+npm run visual:review -- examples/visual-review-request.json
+npm run visual:mcp
+```
+
+CLI 与 MCP 共用同一个契约和 Provider 端口。没有产物引用时返回 `NEEDS_CONTEXT`；有产物但尚未接入真实视觉分析时返回 `MANUAL_REVIEW`，并要求人工确认。密钥、Prompt 和原始图片不会由这些本地适配器写入前端或日志。
 
 ## 当前主流程
 

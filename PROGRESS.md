@@ -1,5 +1,14 @@
 # VisionQA 当前产品与项目进度
 
+## 2026-10-22 视觉判断插件原型第一批
+
+- 产品方向已从单一商品图工作台扩展为可嵌入其他智能体的 VisionQA 视觉判断与修正插件；宿主智能体负责创作和权限，VisionQA 负责读取产物/上下文、给出证据、提出需批准的修正并复验版本。
+- 新增 `docs/VISUAL_PLUGIN_PRODUCT_CHARTER.md`、`contracts/visual-review-v0.1.schema.json` 与 `web/lib/visionqa/visual-review-contract.ts`，统一网页、演示页、图片和文档渲染产物的请求/响应边界。
+- 新增本地 CLI/MCP 适配器（`visual:capabilities`、`visual:validate`、`visual:review`、`visual:mcp`）和请求样例；Mock 明确返回 `MANUAL_REVIEW`/`NEEDS_CONTEXT`，不冒充真实像素分析、不保存密钥、Prompt 或图片字节。
+- 官网 `/` 已改为插件产品页，移除旧商品工作台/登录入口文案；加入可拖动、最小化、关闭/恢复、评审/上下文/版本三视图的悬浮插件 GUI。历史 `/login`、`/workspace` 仅作为兼容内核保留。
+- 验证证据：VisualReview 合同测试 3/3；完整 `npm run test:release` 通过（Agent 95、聚焦 UI 18、渲染/客户守卫 31、合同/业务 143）；目标 ESLint 通过；Node 堆内存 4096MB 下生产构建通过；Chrome 本地 1440px 画面实测无横向溢出，悬浮窗最小化/恢复、三视图切换和拖拽均可操作。
+- 当前仍未完成：真实视觉 Provider 接入、真实模型质量/客户采用证据、390px 视觉点击验收，以及 GitHub 远程替换同步。远程目标已核对为 `dingchenhui0618-arch/VisionQA`，默认分支为 `main`；尚未执行清空、强推或删除分支。
+
 ## 2026-09-17 计划确认体验
 
 - 同一对话中的处理计划新增目标/保留项/结果位置/下一步；复用既有状态，避免把“项目已建立”表述为图片已完成。

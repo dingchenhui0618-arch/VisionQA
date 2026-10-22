@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Landing from "./landing/Landing";
 
 export const metadata: Metadata = {
-  title: "VisionQA · AI 模特图修正与交付",
+  title: "VisionQA · Visual judgment plugin",
   description:
-    "以商品白底图为真值，为服饰电商定位并修正 AI 模特图中的商品漂移、人体异常和非目标变化。",
+    "可嵌入其他智能体的视觉判断与修正插件：读取上下文、给出证据、提出修正并复验结果。",
 };
 
 export default function Home() {

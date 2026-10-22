@@ -1,16 +1,16 @@
-# VisionQA（内部项目代号）
+# VisionQA
 
-AI 生成商业视觉内容的发布前质量评估项目。
+可嵌入其他智能体的视觉判断与修正插件。VisionQA 接收宿主智能体的视觉产物、任务上下文和权限边界，输出有证据的评审、可批准的修正计划，以及可复验的版本记录。
 
-当前对外产品名待定。`准镜`与`VisualGate`已经淘汰，`VisionQA`仅作为内部代号。
+当前交付的是本地插件原型：官网、通用 VisualReview Contract、本地 CLI/MCP 适配器和可移动悬浮评审窗口已经落在同一个仓库中；默认 Provider 是显式标记的 Mock，不代表真实模型准确率或商业效果。
 
 > 每次审查项目进度，请先打开 [`PROJECT_STATE.md`](./PROJECT_STATE.md)。它是当前状态、风险、下一步和所需输入的统一入口。
 
 ## 当前阶段
 
-当前处于核心产品逻辑纠偏、UI 原型与评测标准并行验证阶段。首要目标是验证：
+当前处于插件边界、宿主适配和视觉交互原型验证阶段。首要目标是验证：
 
-> 在一个明确的商业场景内，系统能否同时完成硬门禁、0–100 质量评级、商业价值判断，并输出可执行的修复 Prompt。
+> 不同宿主智能体能否用同一份契约，把产物、上下文、证据、修正和复验连成一个可追溯的视觉闭环。
 
 ## 文档入口
 
@@ -19,6 +19,9 @@ AI 生成商业视觉内容的发布前质量评估项目。
 - `AI视觉质量评估系统_策划书_v0.2.md`：执行治理基线，评分部分已被纠偏决定覆盖
 - `docs/08_核心产品纠偏决定_v0.1.md`：当前生效的产品纠偏基线
 - `PROGRESS.md`：当前完成情况与下一步
+- `docs/VISUAL_PLUGIN_PRODUCT_CHARTER.md`：插件产品边界、宿主职责和首轮验收
+- `docs/VISUAL_PLUGIN_LOCAL_ADAPTER.md`：本地 CLI/MCP 适配器运行方式和安全边界
+- `contracts/visual-review-v0.1.schema.json`：通用 VisualReview Contract JSON Schema
 - `BLOCKED.md`：待解决事项及是否阻塞
 - `docs/00_总控与协作规则.md`：多 Agent 职责、交接和质量门禁
 - `docs/01_需要创意总监提供的信息.md`：需要项目负责人补充的输入
@@ -34,6 +37,22 @@ AI 生成商业视觉内容的发布前质量评估项目。
 - `contracts/`：结构化评估输出契约与示例
 - `datasets/`：标注协议与模拟 case manifest
 - `evals/`：baseline 和 Go / No-Go 计划
+
+## 插件原型本地运行
+
+前端源码位于 `D:\VisionQA\web`，启动后访问 `http://localhost:6300/` 查看插件产品首页和可拖动的悬浮评审窗口：
+
+```powershell
+cd D:\VisionQA\web
+npm install
+npm run dev:local
+npm run visual:capabilities
+npm run visual:validate -- examples/visual-review-request.json
+npm run visual:review -- examples/visual-review-request.json
+npm run visual:mcp
+```
+
+CLI 与 MCP 目前都使用同一份契约和透明 Mock Provider；在真实 Provider、图片读写或宿主授权接入前，结果会明确标记为 Mock/人工复核，不会伪造像素结论。历史 `/login`、`/workspace` 与旧业务内核保留为兼容实现，官网首页不再把它们作为客户入口。
 
 ## 当前可运行能力
 

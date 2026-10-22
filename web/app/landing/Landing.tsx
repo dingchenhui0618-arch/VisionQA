@@ -1,226 +1,137 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import "./p1-landing.css";
+import { useEffect, useState } from "react";
+import VisualPluginDemo from "./VisualPluginDemo";
+import "./plugin-landing.css";
 
-const SKILLS = [
-  {
-    no: "01",
-    title: "商品真值",
-    en: "Product Truth",
-    desc: "以白底图、官方确认稿和关键细节作为颜色、版型、图案与 Logo 的唯一依据。",
-    output: "REFERENCE LOCK",
-    emphasis: false,
-  },
-  {
-    no: "02",
-    title: "问题诊断",
-    en: "Diagnosis",
-    desc: "定位商品漂移、人体异常、遮挡、材质失真和非目标区域变化，不因缺少促销文字误判。",
-    output: "EVIDENCE MAP",
-    emphasis: false,
-  },
-  {
-    no: "03",
-    title: "局部修正",
-    en: "Repair",
-    desc: "把可修问题交给图像编辑模型；涉及商品身份或整体结构错误时，明确建议重新生成。",
-    output: "REPAIR JOB",
-    emphasis: false,
-  },
-  {
-    no: "04",
-    title: "复验与 4K",
-    en: "Delivery",
-    desc: "对比修改前后并检查非目标漂移；人工确认后生成本机 4K 尺寸文件与处理凭证。",
-    output: "HUMAN APPROVED",
-    emphasis: true,
-  },
+const FLOW = [
+  { no: "01", title: "读懂当前产物", body: "接收截图、图片、网页结构或演示页对象，并读取宿主智能体已经确认的目标和限制。" },
+  { no: "02", title: "给出有证据的判断", body: "只指出会影响任务结果的视觉问题，标明位置、严重度、置信度和可复核证据。" },
+  { no: "03", title: "修正后再复验", body: "用户批准后才生成修改；重新渲染并对比前后版本，保留原稿和每次修正轨迹。" },
+] as const;
+
+const ARTIFACTS = [
+  ["WEB", "网页", "截图 + DOM / CSS"],
+  ["SLIDE", "演示页", "渲染图 + 对象结构"],
+  ["IMAGE", "视觉素材", "图片 + 参考 + 约束"],
 ] as const;
 
 export default function Landing() {
-  const cardsRef = useRef<HTMLDivElement>(null);
-  const [engine, setEngine] = useState<{
-    state: "checking" | "ready" | "setup-required";
-    model: string;
-    batchLimit: number;
-  }>({ state: "checking", model: "—", batchLimit: 3 });
-
-  useEffect(() => {
-    const root = cardsRef.current;
-    if (!root) return;
-    const cards = root.querySelectorAll<HTMLElement>(".landing-card");
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-in");
-            io.unobserve(entry.target);
-          }
-        }
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -8% 0px" }
-    );
-    cards.forEach((c) => io.observe(c));
-    return () => io.disconnect();
-  }, []);
+  const [ready, setReady] = useState<boolean | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/live-evaluate", {
-      headers: { accept: "application/json" },
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("capability unavailable");
-        return response.json() as Promise<{
-          configured: boolean;
-          model_snapshot: string;
-          max_total_requests: number;
-        }>;
-      })
-      .then((capability) => {
-        setEngine({
-          state: capability.configured ? "ready" : "setup-required",
-          model: capability.configured
-            ? capability.model_snapshot.toUpperCase()
-            : "—",
-          batchLimit: Math.min(3, capability.max_total_requests || 3),
-        });
-      })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setEngine({ state: "setup-required", model: "—", batchLimit: 3 });
-      });
+    fetch("/api/health", { cache: "no-store", signal: controller.signal })
+      .then((response) => setReady(response.ok))
+      .catch(() => setReady(false));
     return () => controller.abort();
   }, []);
 
   return (
-    <main className="landing">
-      <nav className="landing-nav" aria-label="Primary">
-        <a href="/login" className="landing-nav-left">
-          <span className="landing-brand">VisionQA</span>
+    <main className="plugin-landing">
+      <nav className="plugin-nav" aria-label="主导航">
+        <a className="plugin-brand" href="#top" aria-label="VisionQA 首页">
+          <span className="plugin-brand-mark" aria-hidden="true">VQ</span>
+          <span>VisionQA</span>
         </a>
-        <a href="/login" className="landing-nav-right">
-          <span>进入 VisionQA</span>
-          <span aria-hidden>→</span>
-        </a>
+        <div className="plugin-nav-meta">
+          <span className="plugin-nav-status"><i data-ready={ready === true} /> {ready === null ? "本地探针" : ready ? "本地可运行" : "等待宿主"}</span>
+          <a href="#run">开发者入口</a>
+        </div>
       </nav>
 
-      <section className="landing-hero">
-        <div className="landing-hero-light">
-          <div className="landing-hero-spacer" aria-hidden />
-          <h1 className="landing-title">VisionQA</h1>
-          <p className="landing-title-sub">服饰电商 AI 模特图修正与交付</p>
-          <p className="landing-lede">
-            以真实商品白底图为依据，
-            <br />
-            定位并修正 AI 模特图中的商品漂移、人体异常与非目标变化。
+      <section className="plugin-hero" id="top">
+        <div className="plugin-hero-copy">
+          <p className="plugin-eyebrow"><span /> VISUAL JUDGMENT PLUGIN · 0.1</p>
+          <h1>让每个智能体，拥有一双能复盘的眼睛。</h1>
+          <p className="plugin-hero-lede">
+            VisionQA 读取宿主智能体正在制作的网页、演示页或视觉素材，结合任务上下文判断哪里影响结果，并给出可以执行、可以复验的修正方案。
           </p>
-          <div className="landing-hero-spacer" aria-hidden />
-          <div className="landing-cta-row">
-            <a href="/login" className="landing-cta">
-              <span>进入 VisionQA</span>
-              <span aria-hidden>→</span>
-            </a>
+          <div className="plugin-hero-actions">
+            <a className="plugin-button plugin-button-dark" href="#plugin">查看插件能力 <span aria-hidden="true">↓</span></a>
+            <a className="plugin-button plugin-button-light" href="#run">本地运行方式 <span aria-hidden="true">→</span></a>
           </div>
+          <p className="plugin-hero-note">开源协议与 Provider 由宿主决定。当前本地版本使用透明 Mock，不伪造真实视觉结论。</p>
         </div>
-
-        <div className="landing-hero-dark">
-          <div className="landing-grid" aria-hidden />
-          <div className="landing-reticle" aria-hidden>
-            <span className="landing-reticle-ring r1" />
-            <span className="landing-reticle-ring r2" />
-            <span className="landing-reticle-ring r3" />
-            <span className="landing-reticle-cross" />
-            <span className="landing-reticle-dot" />
-          </div>
-          <div className="landing-readout" role="status" aria-live="polite">
-            <div>
-              <span className={`landing-readout-dot is-${engine.state}`} /> VISION ENGINE · {engine.state === "ready" ? "READY" : engine.state === "checking" ? "CHECKING" : "SETUP REQUIRED"}
-            </div>
-            <div>
-              MODEL <b>{engine.model}</b>
-            </div>
-            <div>
-              MODE <b>REPAIR COPILOT</b> · HUMAN REVIEW <b>ON</b>
-            </div>
-            <div>
-              TASK <b>{engine.batchLimit} IMAGES MAX</b> · PROJECT <b>LOCAL</b>
-            </div>
-          </div>
-          <div className="landing-scanline" aria-hidden />
+        <div className="plugin-hero-stage" aria-label="VisionQA 浮动插件演示">
+          <div className="plugin-stage-grid" aria-hidden="true" />
+          <div className="plugin-stage-crosshair" aria-hidden="true"><span /><span /></div>
+          <div className="plugin-stage-label">HOST CONTEXT / READY TO REVIEW</div>
+          <VisualPluginDemo />
         </div>
       </section>
 
-      <section id="skills" className="landing-skills" ref={cardsRef}>
-        <div className="landing-section-head">
-          <div className="landing-kicker">
-            <span className="landing-dot" aria-hidden /> 02 — 修正链路
-          </div>
-          <h2 className="landing-h2">先修好母图，再进入详情与促销排版</h2>
-          <p className="landing-section-sub">
-            评分只用于内部诊断。工作台围绕一张模特草图完成商品对照、问题定位、局部修正、前后复验和 4K 文件交付。
-          </p>
+      <section className="plugin-section plugin-intro" id="plugin">
+        <div className="plugin-section-heading">
+          <p className="plugin-eyebrow"><span /> 01 — THE PLUGIN</p>
+          <h2>宿主智能体负责创造，VisionQA 负责把关。</h2>
+          <p>它不替用户接管整个对话，也不把审美压缩成一个分数。它只在视觉产物出现时进入，拿到足够上下文后做判断，并把下一步说清楚。</p>
         </div>
-        <div className="landing-cards">
-          {SKILLS.map((s, i) => (
-            <article
-              key={s.no}
-              className={`landing-card${s.emphasis ? " is-emphasis" : ""}`}
-              style={{ "--i": i } as CSSProperties}
-            >
-              <div className="landing-card-no">{s.no}</div>
-              <div className="landing-card-body">
-                <div className="landing-card-en">{s.en}</div>
-                <h3 className="landing-card-title">{s.title}</h3>
-                <p className="landing-card-desc">{s.desc}</p>
-              </div>
-              <div className="landing-card-foot">
-                <span>{s.output}</span>
-                <span aria-hidden>→</span>
-              </div>
+        <div className="plugin-flow">
+          {FLOW.map((item) => (
+            <article key={item.no} className="plugin-flow-item">
+              <span className="plugin-flow-no">{item.no}</span>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="landing-statement">
-        <div className="landing-kicker landing-kicker-center">
-          <span className="landing-dot" aria-hidden /> 03 — A FEW WORDS
+      <section className="plugin-section plugin-context-section">
+        <div className="plugin-section-heading plugin-section-heading-wide">
+          <p className="plugin-eyebrow"><span /> 02 — CONTEXTUAL JUDGMENT</p>
+          <h2>它判断的不是“好不好看”，而是“对这个任务能不能用”。</h2>
+          <p>目标、受众、平台、品牌和必须保留项会进入同一次评审。信息不足时返回需要补充，不用模型的主观猜测冒充事实。</p>
         </div>
-        <blockquote className="landing-quote">
-          AI 模特图真正昂贵的部分，
-          <br />
-          不是生成，而是返工。
-          <span>
-            VisionQA 让每一次修正 <em>有依据</em>。
-          </span>
-        </blockquote>
-      </section>
-
-      <section className="landing-cta-section">
-        <div className="landing-cta-strip">
-          <div>
-            <div className="landing-kicker">
-              <span className="landing-dot" aria-hidden /> 04 — ENTER
+        <div className="plugin-artifact-grid">
+          {ARTIFACTS.map(([code, title, detail]) => (
+            <div className="plugin-artifact" key={code}>
+              <span>{code}</span>
+              <strong>{title}</strong>
+              <small>{detail}</small>
             </div>
-            <h2 className="landing-h2">进入工作台</h2>
-          </div>
-          <a href="/login" className="landing-cta landing-cta-lg">
-            <span>打开 VisionQA</span>
-            <span aria-hidden>→</span>
-          </a>
+          ))}
         </div>
       </section>
 
-      <footer className="landing-footer">
-        <span>VisionQA · AI 模特图修正</span>
-        <span className="landing-foot-sep">·</span>
-        <span>商品真值、修正复验与 4K 交付</span>
-        <span className="landing-foot-sep">·</span>
-        <span>© 2026</span>
+      <section className="plugin-section plugin-contract-section">
+        <div className="plugin-contract-copy">
+          <p className="plugin-eyebrow"><span /> 03 — ONE CONTRACT</p>
+          <h2>一个内核，适配不同智能体。</h2>
+          <p>本地 CLI、MCP、浏览器侧边栏和宿主插件都使用同一份 VisualReview Contract。适配器只负责上下文、权限、渲染和写回。</p>
+          <a className="plugin-inline-link" href="#run">查看本地接口 <span aria-hidden="true">↗</span></a>
+        </div>
+        <pre className="plugin-contract-code" aria-label="VisualReview Contract 示例"><code>{`{
+  "operation": "review",
+  "artifact": "web_page",
+  "intent": "品牌官网首页",
+  "permissions": {
+    "can_write_source": false
+  },
+  "decision": "NEEDS_REVISION",
+  "repair_plan": {
+    "requires_approval": true
+  }
+}`}</code></pre>
+      </section>
+
+      <section className="plugin-section plugin-run-section" id="run">
+        <div>
+          <p className="plugin-eyebrow"><span /> 04 — RUN IT LOCALLY</p>
+          <h2>先在本机验证，再接入你的智能体。</h2>
+          <p>源码位于 <code>D:\\VisionQA\\web</code>。当前适配器默认使用 Mock Provider，清楚标记“未进行真实像素分析”；配置宿主 Provider 后再切换到真实调用。</p>
+        </div>
+        <div className="plugin-command-stack">
+          <div><span>检查能力</span><code>npm run visual:capabilities</code></div>
+          <div><span>校验请求</span><code>npm run visual:validate -- request.json</code></div>
+          <div><span>启动 MCP</span><code>npm run visual:mcp</code></div>
+        </div>
+      </section>
+
+      <footer className="plugin-footer">
+        <span>VisionQA · Visual judgment plugin</span>
+        <span>本地原型 · 证据优先 · 人工确认</span>
       </footer>
     </main>
   );

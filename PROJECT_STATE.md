@@ -1,5 +1,28 @@
 # VisionQA 项目状态
 
+## 2026-10-22 视觉判断插件重构交接
+
+### 已完成
+
+- 插件产品章程：`docs/VISUAL_PLUGIN_PRODUCT_CHARTER.md`。
+- 通用评审契约：`contracts/visual-review-v0.1.schema.json`，TypeScript/Zod 实现位于 `web/lib/visionqa/visual-review-contract.ts`。
+- 本地适配器：`web/scripts/visual-review-cli.ts` 与 `web/scripts/visual-review-mcp.ts`，两者复用同一契约和透明 Mock Provider。
+- 官网与悬浮 GUI：`web/app/landing/Landing.tsx`、`VisualPluginDemo.tsx`、`plugin-landing.css`。首页只呈现插件定位，悬浮窗支持拖拽、最小化、关闭恢复、评审/上下文/版本视图。
+- 发布验证：`npm run test:release` 通过 287 项（95 + 18 + 31 + 143），目标 ESLint 通过，4096MB Node 堆下生产构建通过；Chrome 本地桌面视图已实际验证交互。
+
+### 未完成与边界
+
+- 当前适配器只做本地 Mock/契约验证，未接入真实视觉模型；任何 `MANUAL_REVIEW` 结果都不能解释为模型质量证据。
+- `/login`、`/workspace` 和历史客户/开发者 API 为兼容内核保留，官网首页已不再链接旧入口；如要彻底移除路由需另立迁移任务。
+- 390px 浏览器视觉/触控验收、真实 Provider 质量验收、客户采用/付款证据均未完成。
+- 远程已只读核对为 `https://github.com/dingchenhui0618-arch/VisionQA.git`，HEAD 指向 `main`；当前本地分支 `codex/visionqa-phase3-qwen`，尚未清空远程、强推或删除历史。任何远程替换前必须保留可恢复快照并再次确认目标和替换范围。
+
+### 下一步
+
+1. 先提交本地插件原型和文档，排除 `web/artifacts/` 等机器本地产物，并做 secret/unrelated-change review。
+2. 在远程替换前建立可恢复备份分支/归档，确认是否仅替换 `main` 内容而保留历史与其他分支。
+3. 补 390px 浏览器验收和适配器契约回归；之后才规划第一个真实 Provider 的服务端接入。
+
 ## 2026-09-17 对话计划的交付与执行边界
 
 - 复用 ConversationPlan 与 TaskView，提取计划展示组件和状态文案映射，没有复制新契约或执行内核。

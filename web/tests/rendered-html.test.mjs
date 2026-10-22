@@ -18,10 +18,11 @@ test("server-renders the public VisionQA home page before login", async () => {
   const response = await render("/");
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /服饰电商 AI 模特图修正与交付/);
-  assert.match(html, /href="\/login"/);
-  assert.match(html, /进入 VisionQA/);
-  assert.match(html, /HUMAN REVIEW/);
+  assert.match(html, /让每个智能体，拥有一双能复盘的眼睛/);
+  assert.match(html, /可嵌入其他智能体的视觉判断与修正插件/);
+  assert.match(html, /Visual judgment plugin/);
+  assert.doesNotMatch(html, /服饰电商 AI 模特图修正与交付/);
+  assert.doesNotMatch(html, /href="\/login"/);
 });
 
 test("routes an unauthenticated workspace request to the login page", async () => {
