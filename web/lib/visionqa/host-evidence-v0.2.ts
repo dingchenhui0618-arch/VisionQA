@@ -203,6 +203,7 @@ export function hostEvidencePromptContext(capture: HostEvidenceCapture): string 
   return [
     `宿主页面：${capture.page.title || "未提供"} · ${capture.page.url}`,
     `页面 revision：${capture.page.revision_id}`,
+    `当前视口：${capture.page.viewport?.width ?? "?"}×${capture.page.viewport?.height ?? "?"} · DPR ${capture.page.viewport?.device_scale_factor ?? "?"}`,
     `DOM 文本摘要：${capture.dom.text || "未提供"}`,
     `页面标题层级：${capture.dom.headings.join(" / ") || "未提供"}`,
     `交互摘要：${capture.dom.interactive_summary || "未提供"}`,
@@ -223,7 +224,12 @@ export function legacyVisualReviewToV02Response(
   request: VisualReviewV02Request,
   legacy: VisualReviewResponse,
 ): VisualReviewV02Response {
-  const fallbackAnchor: EvidenceAnchor = request.artifact.evidence_anchors[0] ?? {
+  // A legacy provider only returns free-form evidence text.  It does not say
+  // which DOM selector (if any) supports each issue.  Reusing the request's
+  // anchors here would make every issue look precisely locatable and could
+  // send the user to an unrelated element.  Keep the evidence honest by
+  // using text-only anchors until a provider emits an explicit anchor id.
+  const fallbackAnchor: EvidenceAnchor = {
     id: "host-context",
     kind: "text_range",
     text: "当前宿主页面视觉证据",
@@ -235,6 +241,10 @@ export function legacyVisualReviewToV02Response(
     text: description.slice(0, 2000),
     description: description.slice(0, 1000),
   });
+  const legacyEvidence = (issue: VisualReviewResponse["issues"][number]): EvidenceAnchor[] =>
+    issue.evidence.length
+      ? issue.evidence.map((item, index) => textAnchor(`${issue.id}-${index}`, `${item.location ? `${item.location} · ` : ""}${item.description}`)).slice(0, 16)
+      : [fallbackAnchor];
   const observations = legacy.issues.length
     ? legacy.issues.map((issue) => ({
         id: `legacy-${issue.id}`,
@@ -243,10 +253,7 @@ export function legacyVisualReviewToV02Response(
         status: (legacy.decision === "MANUAL_REVIEW" || issue.severity === "observation" ? "possible" : "confirmed") as "possible" | "confirmed",
         severity: issue.severity,
         confidence: issue.confidence,
-        evidence: [
-          ...(request.artifact.evidence_anchors.slice(0, 2)),
-          ...(issue.evidence.length ? issue.evidence.map((item, index) => textAnchor(`${issue.id}-${index}`, item.description)) : [fallbackAnchor]),
-        ].slice(0, 16),
+        evidence: legacyEvidence(issue),
         recommendation: issue.suggested_fix,
         profile: request.profile,
       }))
@@ -276,7 +283,9 @@ export function legacyVisualReviewToV02Response(
     },
     issues: legacy.issues.map((issue) => ({
       ...issue,
-      evidence_anchors: request.artifact.evidence_anchors.slice(0, 4),
+      // There is no reliable legacy issue -> DOM anchor mapping.  Do not
+      // expose a locator button for an arbitrary request anchor.
+      evidence_anchors: [],
     })),
     repair_plan: legacy.repair_plan,
     verification: legacy.verification,

@@ -20,3 +20,24 @@ test("browser preview keeps local Provider settings read-only", () => {
   assert.match(source, /返回检查/);
   assert.match(source, /!desktopAvailable \? <div className="plugin-settings-boundary"/);
 });
+
+test("result state keeps one explicit recheck action and truthful preview status", () => {
+  assert.match(source, /onClick=\{\(\) => \{ void runReview\(\); \}\}>用当前作品再次检查/);
+  assert.match(source, /plugin-composer\$\{uiResult \? " is-result-secondary"/);
+  assert.match(source, /输入已确认/);
+  assert.doesNotMatch(source, /这张图片超过 12 MB/);
+  assert.match(source, /10 MB/);
+});
+
+test("result issues preserve the reason and business recovery language", () => {
+  assert.match(source, /plugin-issue-summary/);
+  assert.match(source, /issue\.summary/);
+  assert.match(source, /unsupported_media/);
+  assert.match(source, /quota_exhausted/);
+  assert.match(source, /rate_limited/);
+  assert.match(source, /policy_blocked/);
+  assert.match(source, /视觉模型处理时间较长/);
+  assert.match(source, /真实评审会把当前图片/);
+  assert.match(source, /正在连接本机服务/);
+  assert.match(source, /选择参考图|selectReferences/);
+});

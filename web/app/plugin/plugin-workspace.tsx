@@ -37,23 +37,38 @@ const initialProviderForm: ProviderSettingsForm = {
 };
 
 const newId = () => crypto.randomUUID();
-const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function imageFileError(file: File | undefined): string | null {
   if (!file) return null;
   if (!IMAGE_TYPES.has(file.type)) return "请添加 JPG、PNG 或 WebP 图片。";
-  if (file.size > MAX_IMAGE_BYTES) return "这张图片超过 12 MB，请压缩后再添加。";
+  if (file.size > MAX_IMAGE_BYTES) return "这张图片超过 10 MB，请压缩后再添加。";
   return null;
 }
 
 function humanClientError(error: unknown, payload?: ResultPayload): { message: string; action: "settings" | "retry" } {
   const raw = `${payload?.error?.code || ""} ${payload?.error?.message || ""} ${error instanceof Error ? error.message : ""}`.toLowerCase();
+  if (raw.includes("unsupported_media") || raw.includes("unsupported media") || raw.includes("图片格式") || raw.includes("图片仅支持") || raw.includes("格式不受支持")) {
+    return { message: "图片格式不受支持。请换成 JPG、PNG 或 WebP 后再试。", action: "retry" };
+  }
+  if (raw.includes("quota_exhausted") || raw.includes("额度已达到") || raw.includes("请求上限") || raw.includes("quota")) {
+    return { message: "视觉模型额度已达到上限，本次没有形成判断，也没有修改图片。请打开本机设置检查请求上限，或稍后再试。", action: "settings" };
+  }
+  if (raw.includes("rate_limited") || raw.includes("rate limit") || raw.includes("速率限制") || raw.includes("请求过多")) {
+    return { message: "视觉模型当前请求较多，本次没有形成判断，也没有修改图片。请稍后再试。", action: "retry" };
+  }
+  if (raw.includes("timeout") || raw.includes("timed out") || raw.includes("超时")) {
+    return { message: "视觉模型处理时间较长，本次没有形成判断，也没有修改图片。请稍后再试。", action: "retry" };
+  }
+  if (raw.includes("policy_blocked") || raw.includes("policy blocked") || raw.includes("内容策略") || raw.includes("内容暂时不能")) {
+    return { message: "这份内容暂时不能由当前视觉模型评审。本次没有修改图片；请换一份内容或先人工确认。", action: "retry" };
+  }
   if (raw.includes("provider") || raw.includes("model") || raw.includes("multimodal") || raw.includes("api key") || raw.includes("api_key") || raw.includes("configured")) {
     return { message: "当前还没有可用的视觉模型。请打开本机设置完成配置；图片不会被修改。", action: "settings" };
   }
   if (raw.includes("413") || raw.includes("too large") || raw.includes("payload")) {
-    return { message: "图片太大，暂时无法送检。请压缩图片后再试。", action: "retry" };
+    return { message: "图片太大，暂时无法送检。请压缩到 10 MB 以内后再试。", action: "retry" };
   }
   if (raw.includes("decode") || raw.includes("image") || raw.includes("file")) {
     return { message: "这张图片暂时无法读取。请换一张能正常打开的 JPG、PNG 或 WebP 图片。", action: "retry" };
@@ -64,11 +79,11 @@ function humanClientError(error: unknown, payload?: ResultPayload): { message: s
   return { message: "本次检查没有完成。请确认图片仍然存在后再试。", action: "retry" };
 }
 
-function runtimeStatus(status: DesktopRuntimeStatus | null, state: RunState, providerCheck: ProviderCheck | null): { label: string; tone: "preview" | "ready" | "pending" | "offline" | "running" | "success" | "error" } {
+function runtimeStatus(status: DesktopRuntimeStatus | null, state: RunState, providerCheck: ProviderCheck | null, previewOnly: boolean, desktopAvailable: boolean): { label: string; tone: "preview" | "ready" | "pending" | "offline" | "running" | "success" | "error" } {
   if (state === "running") return { label: "正在评审", tone: "running" };
-  if (state === "success") return { label: "评审完成", tone: "success" };
+  if (state === "success") return previewOnly ? { label: "输入已确认", tone: "preview" } : { label: "评审结果已返回", tone: "success" };
   if (state === "error") return { label: "评审未完成", tone: "error" };
-  if (!status) return { label: "浏览器预览", tone: "preview" };
+  if (!status) return desktopAvailable ? { label: "正在连接本机服务", tone: "pending" } : { label: "浏览器预览", tone: "preview" };
   if (status.provider_mode === "real" && providerCheck?.server?.available) return { label: "本地服务 · 可用", tone: "ready" };
   if (status.provider_mode === "real") return { label: "本地服务 · 待检查", tone: "pending" };
   return { label: "离线预览", tone: "offline" };
@@ -112,6 +127,7 @@ export function PluginWorkspace() {
   const [context, setContext] = useState("网页首屏，面向第一次访问的用户");
   const [mustKeep, setMustKeep] = useState("保留品牌标识\n不改变核心内容");
   const [message, setMessage] = useState("");
+  const [lastSubmittedGoal, setLastSubmittedGoal] = useState("");
   const [conversationId] = useState(newId);
   const [runState, setRunState] = useState<RunState>("idle");
   const [result, setResult] = useState<ResultPayload | null>(null);
@@ -151,18 +167,19 @@ export function PluginWorkspace() {
   }, []);
 
   const isBusy = runState === "running";
-  const runtime = runtimeStatus(desktopStatus, runState, providerCheck);
+  const uiResult = result?.contract ? result.ui_result || toPluginUiResult(result.contract) : null;
+  const runtime = runtimeStatus(desktopStatus, runState, providerCheck, Boolean(uiResult?.preview_only), desktopAvailable);
   // Offline/browser preview must use the existing local Mock contract. Only a
   // desktop session that explicitly owns a real Provider may send `auto`.
   const provider: Provider = desktopStatus?.provider_mode === "real" ? "auto" : "mock";
+  const providerReady = !desktopAvailable || Boolean(desktopStatus);
   const candidatePreviewUrl = useMemo(() => candidate ? URL.createObjectURL(candidate) : null, [candidate]);
   useEffect(() => candidatePreviewUrl ? () => URL.revokeObjectURL(candidatePreviewUrl) : undefined, [candidatePreviewUrl]);
-  const requestPreview = useMemo(() => makeRequest({ conversationId, goal, context, mustKeep, candidate, provider }), [conversationId, goal, context, mustKeep, candidate, provider]);
-  const uiResult = result?.contract ? result.ui_result || toPluginUiResult(result.contract) : null;
+  const requestPreview = useMemo(() => makeRequest({ conversationId, goal: lastSubmittedGoal || goal, context, mustKeep, candidate, provider }), [conversationId, goal, lastSubmittedGoal, context, mustKeep, candidate, provider]);
   function selectCandidate(file: File | undefined) {
     const validationError = imageFileError(file);
     if (validationError) {
-      setAttachmentNotice(validationError);
+      setAttachmentNotice(`${file?.name || "这张图片"}：${validationError}${candidate ? ` 当前仍保留 ${candidate.name}。` : ""}`);
       return;
     }
     setCandidate(file || null);
@@ -171,11 +188,26 @@ export function PluginWorkspace() {
     setRunState("idle");
   }
 
+  function selectReferences(files: File[]) {
+    const invalid = files.map(file => ({ file, error: imageFileError(file) })).find(item => item.error);
+    const valid = files.filter(file => !imageFileError(file));
+    setReferences(valid.slice(0, 4));
+    if (invalid?.error) {
+      setAttachmentNotice(`${invalid.file.name}：${invalid.error} 这张参考图未加入。`);
+    } else if (files.length > 4) {
+      setAttachmentNotice("参考图最多参与 4 张，超出的文件未加入。");
+    } else {
+      setAttachmentNotice("");
+    }
+  }
+
   async function runReview(event?: FormEvent) {
     event?.preventDefault();
     setRunState("running");
     setResult(null);
-    const request = makeRequest({ conversationId, goal: message.trim() || goal, context, mustKeep, candidate, provider });
+    const submittedGoal = message.trim() || goal;
+    setLastSubmittedGoal(submittedGoal);
+    const request = makeRequest({ conversationId, goal: submittedGoal, context, mustKeep, candidate, provider });
     const form = new FormData();
     form.set("request", JSON.stringify(request));
     form.set("provider", provider);
@@ -283,29 +315,30 @@ export function PluginWorkspace() {
 
         {activeTab === "review" && <div id="plugin-panel-review" className="plugin-body" role="tabpanel" aria-labelledby="plugin-tab-review" tabIndex={0}>
           <div className="plugin-statusline"><div className="plugin-session"><span className="plugin-kicker">当前会话</span><span className="plugin-session-value">{candidate ? `1 张待检查图片 · ${candidate.name}` : "等待添加图片"}</span></div><span className={`plugin-evidence-state ${candidate ? "is-ready" : "is-empty"}`}><i /> {candidate ? "已添加图片" : "等待图片"}</span></div>
-          {!result && <div className="plugin-empty"><div className="plugin-empty__identity"><div className="plugin-mark"><img src="/brand/visionqa-favicon.svg" alt="VisionQA" /></div><span className="plugin-kicker">图片检查</span></div><h1>{candidate ? "这张图片已经准备好。" : "先放入一张要检查的图片。"}</h1><p>{candidate ? "你可以直接开始检查；如果要换一张内容，重新添加图片即可。" : "上传截图或导出的图片，VisionQA 会帮你找出最需要处理的地方，并给出下一步建议。要检查正在打开的网页，请从 Chrome 侧边面板发起。"}</p><div className={`plugin-evidence-anchor ${candidate ? "has-file" : "is-empty"}`} aria-label="当前待检查图片"><div className="plugin-evidence-media">{candidatePreviewUrl ? <img src={candidatePreviewUrl} alt="当前待检查图片缩略图" /> : <span aria-hidden="true">—</span>}</div><div className="plugin-evidence-copy"><span className="plugin-kicker">当前图片</span><strong>{candidate ? candidate.name : "尚未添加图片"}</strong><small>{candidate ? `${formatFileSize(candidate)} · 可以开始检查` : "支持截图或导出的 JPG、PNG、WebP · 单张不超过 12 MB"}</small></div><em>{candidate ? "待检查" : "等待添加"}</em></div><div className="plugin-goal-anchor"><span className="plugin-kicker">检查目标</span><strong>{goal || "等待补充检查目标"}</strong></div></div>}
+          {!result && <div className="plugin-empty"><div className="plugin-empty__identity"><div className="plugin-mark"><img src="/brand/visionqa-favicon.svg" alt="VisionQA" /></div><span className="plugin-kicker">图片检查</span></div><h1>{candidate ? "这张图片已经准备好。" : "先放入一张要检查的图片。"}</h1><p>{candidate ? "你可以直接开始检查；如果要换一张内容，重新添加图片即可。" : "上传截图或导出的图片，VisionQA 会帮你找出最需要处理的地方，并给出下一步建议。要检查正在打开的网页，请从 Chrome 侧边面板发起。"}</p><div className={`plugin-evidence-anchor ${candidate ? "has-file" : "is-empty"}`} aria-label="当前待检查图片"><div className="plugin-evidence-media">{candidatePreviewUrl ? <img src={candidatePreviewUrl} alt="当前待检查图片缩略图" /> : <span aria-hidden="true">—</span>}</div><div className="plugin-evidence-copy"><span className="plugin-kicker">当前图片</span><strong>{candidate ? candidate.name : "尚未添加图片"}</strong><small>{candidate ? `${formatFileSize(candidate)} · 可以开始检查` : "支持截图或导出的 JPG、PNG、WebP · 单张不超过 10 MB"}</small></div><em>{candidate ? "待检查" : "等待添加"}</em></div><div className="plugin-goal-anchor"><span className="plugin-kicker">检查目标</span><strong>{goal || "等待补充检查目标"}</strong></div></div>}
           {uiResult && <article className="plugin-result" aria-live="polite">
             {candidatePreviewUrl && <div className="plugin-result-evidence"><div className="plugin-result-evidence__media"><img src={candidatePreviewUrl} alt="本次检查的图片" /></div><div><span className="plugin-kicker">本次检查的图片</span><strong>{candidate.name}</strong><small>{formatFileSize(candidate)} · 结果对应当前文件</small></div></div>}
             <div className="plugin-result__headline"><span className={`plugin-decision decision-${uiResult.decision.toLowerCase()}`} aria-hidden="true" /><div><span className="plugin-kicker">检查结果</span><h2>{uiResult.decision_label}</h2></div><small>{uiResult.preview_only ? "离线预览" : "请结合证据确认"}</small></div>
             <p className="plugin-summary">{uiResult.summary}</p>
-            {uiResult.issues.length > 0 ? <div className="plugin-issues">{uiResult.issues.slice(0, 3).map(issue => <div className="plugin-issue" key={issue.id}><div><strong>{issue.title}</strong><span>{issue.priority}</span></div><p>{issue.nextStep}</p>{issue.evidence[0] && <small>{issue.evidence[0].label} · {issue.evidence[0].description}</small>}</div>)}{uiResult.issues.length > 3 && <p className="plugin-issue-more">还有 {uiResult.issues.length - 3} 项细节，已放入版本记录。</p>}</div> : <p className="plugin-no-issues">当前没有需要单独列出的视觉问题。</p>}
-            <div className="plugin-repair"><span className="plugin-kicker">下一步</span><p>{uiResult.next_step}</p><div className="plugin-checks">{uiResult.verification_checks.map(check => <span key={check}>○ {check}</span>)}</div><div className="plugin-result-actions"><button type="button" onClick={() => { setResult(null); setRunState("idle"); setMessage(""); }}>用当前作品再次检查</button><button type="button" onClick={() => candidateInputRef.current?.click()}>替换这张图片</button><button type="button" onClick={() => setActiveTab("versions")}>查看检查记录</button></div></div>
+            {uiResult.issues.length > 0 ? <div className="plugin-issues">{uiResult.issues.slice(0, 3).map(issue => <div className="plugin-issue" key={issue.id}><div><strong>{issue.title}</strong><span>{issue.priority}</span></div><p className="plugin-issue-summary">{issue.summary}</p><p className="plugin-issue-next-step">下一步：{issue.nextStep}</p>{issue.evidence[0] && <small>{issue.evidence[0].label} · {issue.evidence[0].description}</small>}</div>)}{uiResult.issues.length > 3 && <p className="plugin-issue-more">还有 {uiResult.issues.length - 3} 项细节，已放入版本记录。</p>}</div> : <p className="plugin-no-issues">当前没有需要单独列出的视觉问题。</p>}
+            <div className="plugin-repair"><span className="plugin-kicker">下一步</span><p>{uiResult.next_step}</p><div className="plugin-checks">{uiResult.verification_checks.map(check => <span key={check}>○ {check}</span>)}</div><div className="plugin-result-actions"><button type="button" onClick={() => { void runReview(); }}>用当前作品再次检查</button><button type="button" onClick={() => candidateInputRef.current?.click()}>替换这张图片</button><button type="button" onClick={() => setActiveTab("versions")}>查看检查记录</button></div></div>
           </article>}
           {result?.error && <div className="plugin-error" role="alert"><strong>这次没有完成</strong><p>{result.error.message}</p><button type="button" onClick={() => { if (result.error?.action === "settings") setActiveTab("settings"); else { setResult(null); setRunState("idle"); } }}>{result.error.action === "settings" ? "查看本机设置说明" : "重新试一次"}</button></div>}
-          <form className="plugin-composer" onSubmit={runReview}>
+          <form className={`plugin-composer${uiResult ? " is-result-secondary" : ""}`} onSubmit={runReview}>
             <label htmlFor="plugin-message">这次想重点看什么？</label>
             <textarea id="plugin-message" value={message} onChange={event => setMessage(event.target.value)} placeholder="例如：先看首屏是否清楚，保留现有品牌标识…" maxLength={2000} disabled={isBusy} />
-            <div className="plugin-composer__bar"><label className="plugin-file"><input ref={candidateInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={event => selectCandidate(event.target.files?.[0])} disabled={isBusy} />{candidate ? `图片 · ${candidate.name}` : "添加要检查的图片"}</label><button type="submit" className="plugin-send" disabled={isBusy || !candidate} aria-label={isBusy ? "检查中" : "开始检查"}><span>{isBusy ? "检查中" : "开始检查"}</span><b aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8h9" /><path d="m8.5 4.5 3.5 3.5-3.5 3.5" /></svg></b></button></div>
-            <small className="plugin-composer-hint">{candidate ? "证据已准备好，可以开始检查。" : "请先添加图片；没有图片时不会发起检查。"}</small>
+            <div className="plugin-composer__bar"><label className="plugin-file"><input ref={candidateInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={event => selectCandidate(event.target.files?.[0])} disabled={isBusy} />{candidate ? `图片 · ${candidate.name}` : "添加要检查的图片"}</label><button type="submit" className="plugin-send" disabled={isBusy || !candidate || !providerReady} aria-label={isBusy ? "检查中" : !providerReady ? "正在连接本机服务" : "开始检查"}><span>{isBusy ? "检查中" : !providerReady ? "正在连接" : "开始检查"}</span><b aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8h9" /><path d="m8.5 4.5 3.5 3.5-3.5 3.5" /></svg></b></button></div>
+            <small className="plugin-composer-hint">{!providerReady ? "正在连接本机服务，请稍候。" : candidate ? "证据已准备好，可以开始检查。" : "请先添加图片；没有图片时不会发起检查。"}</small>
+            <small className="plugin-privacy-note">{provider === "auto" ? "真实评审会把当前图片和你填写的说明发送到本机配置的视觉模型；未配置或离线预览不会发送。" : "当前为离线预览，图片不会发送到外部模型。"}</small>
             {attachmentNotice && <small className="plugin-attachment-notice">{attachmentNotice}</small>}
           </form>
         </div>}
 
-        {activeTab === "context" && <div id="plugin-panel-context" className="plugin-body plugin-context" role="tabpanel" aria-labelledby="plugin-tab-context" tabIndex={0}><div className="plugin-section-heading"><span className="plugin-kicker">检查说明</span><h2>告诉我这次想看什么</h2><p>这些说明只用于本次判断，不会写入公开日志。</p></div><div className="plugin-provider-note">图片检查适合截图或导出图片；如果要检查正在打开的网页，请从 Chrome 侧边面板发起。</div><label>这次想确认什么<textarea value={goal} onChange={event => setGoal(event.target.value)} maxLength={2000} /></label><label>面向谁 / 在什么场景<textarea value={context} onChange={event => setContext(event.target.value)} maxLength={500} /></label><label>必须保留（每行一项）<textarea value={mustKeep} onChange={event => setMustKeep(event.target.value)} maxLength={2000} /></label><div className="plugin-reference"><span className="plugin-kicker">参考图（可选，最多 4 张）</span><label className="plugin-file plugin-file--large"><input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={event => { const files = Array.from(event.target.files || []); setReferences(files.slice(0, 4)); setAttachmentNotice(files.length > 4 ? "参考图最多参与 4 张，超出的文件未加入。" : ""); }} disabled={isBusy} />{references.length ? `已选择 ${references.length} 张参考图` : "添加同一上下文里的参考图"}</label></div></div>}
+        {activeTab === "context" && <div id="plugin-panel-context" className="plugin-body plugin-context" role="tabpanel" aria-labelledby="plugin-tab-context" tabIndex={0}><div className="plugin-section-heading"><span className="plugin-kicker">检查说明</span><h2>告诉我这次想看什么</h2><p>这些说明只用于本次判断，不会写入公开日志。</p></div><div className="plugin-provider-note">图片检查适合截图或导出图片；如果要检查正在打开的网页，请从 Chrome 侧边面板发起。</div><label>这次想确认什么<textarea value={goal} onChange={event => setGoal(event.target.value)} maxLength={2000} /></label><label>面向谁 / 在什么场景<textarea value={context} onChange={event => setContext(event.target.value)} maxLength={500} /></label><label>必须保留（每行一项）<textarea value={mustKeep} onChange={event => setMustKeep(event.target.value)} maxLength={2000} /></label><div className="plugin-reference"><span className="plugin-kicker">参考图（可选，最多 4 张）</span><label className="plugin-file plugin-file--large"><input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={event => { selectReferences(Array.from(event.target.files || [])); }} disabled={isBusy} />{references.length ? `已选择 ${references.length} 张参考图` : "添加同一上下文里的参考图"}</label></div></div>}
 
         {activeTab === "versions" && <div id="plugin-panel-versions" className="plugin-body plugin-versions" role="tabpanel" aria-labelledby="plugin-tab-versions" tabIndex={0}><div className="plugin-section-heading"><span className="plugin-kicker">检查记录</span><h2>保留每次判断的依据</h2><p>这里默认只显示人能读懂的记录；不会自动覆盖你的文件。</p></div><div className="plugin-version-row is-current"><span>V0</span><div><strong>当前图片</strong><small>{candidate?.name || "尚未添加图片"}</small></div><em>当前</em></div>{uiResult && <div className="plugin-version-row"><span>V1</span><div><strong>{uiResult.decision_label}</strong><small>{uiResult.revision_id ? `页面 revision · ${uiResult.revision_id}` : "结果等待人工确认"}</small></div><em>待确认</em></div>}<details className="plugin-technical-details"><summary>查看技术详情</summary><pre className="plugin-contract-preview">{JSON.stringify(requestPreview, null, 2)}</pre></details></div>}
 
-        {activeTab === "settings" && <div id="plugin-panel-settings" className="plugin-body plugin-settings" role="tabpanel" aria-labelledby="plugin-tab-settings" tabIndex={0}><div className="plugin-section-heading"><span className="plugin-kicker">{desktopAvailable ? "本机模型设置" : "设置说明"}</span><h2>{desktopAvailable ? "把模型配置留在本机" : "设置只在桌面应用中生效"}</h2><p>{desktopAvailable ? "Key 只写入桌面用户目录的外置配置文件，不会进入网页、localStorage 或导出结果。" : "当前是浏览器预览，不能保存或检查本机模型。请打开 VisionQA 桌面应用后再配置；浏览器不会接触你的 Key。"}</p></div>{!desktopAvailable ? <div className="plugin-settings-boundary" role="status"><span className="plugin-settings-boundary__mark" aria-hidden="true">—</span><strong>浏览器预览只用于检查图片</strong><p>要启用真实视觉判断，请打开 VisionQA 桌面应用。本页面不会保存密钥，也不会连接你的本机模型。</p><button type="button" onClick={() => setActiveTab("review")}>返回检查</button></div> : <><div className="plugin-settings-status"><span className={`plugin-provider-status ${desktopStatus?.provider_mode === "off" ? "is-disabled" : ""}`}><i /> 当前运行：{desktopStatus?.provider_mode === "real" ? "Provider 已开启" : desktopStatus?.provider_mode === "off" ? "Provider 已关闭" : "浏览器预览"}</span>{providerSettings?.api_key_configured && <small>已检测到本机密钥（仅显示状态）</small>}</div><form className="plugin-settings-form" onSubmit={saveProvider}><label>运行模式<select value={providerForm.mode} onChange={event => setProviderForm(form => ({ ...form, mode: event.target.value === "real" ? "real" : "off" }))}><option value="off">关闭真实调用（离线）</option><option value="real">开启真实 Provider</option></select></label><label>Provider ID<input value={providerForm.provider_id} onChange={event => setProviderForm(form => ({ ...form, provider_id: event.target.value }))} placeholder="deepseek / qwen / custom" maxLength={100} /></label><label>Endpoint<input type="url" value={providerForm.endpoint} onChange={event => setProviderForm(form => ({ ...form, endpoint: event.target.value }))} placeholder="https://.../chat/completions" maxLength={500} /></label><label>模型<input value={providerForm.model} onChange={event => setProviderForm(form => ({ ...form, model: event.target.value }))} placeholder="deepseek-flash" maxLength={160} /></label><label>API Key<input type="password" value={providerForm.api_key} onChange={event => setProviderForm(form => ({ ...form, api_key: event.target.value }))} placeholder={providerSettings?.api_key_configured ? "已配置，留空保持当前密钥" : "只在本机输入，不会回显"} autoComplete="new-password" /></label><label>本地请求上限<input type="number" min="1" max="100" value={providerForm.max_total_requests} onChange={event => setProviderForm(form => ({ ...form, max_total_requests: event.target.value }))} /></label><div className="plugin-settings-actions"><button className="plugin-settings-save" type="submit" disabled={providerSaving}>{providerSaving ? "保存中" : "保存配置"}</button><button className="plugin-settings-check" type="button" onClick={checkProvider} disabled={providerSaving}>检查服务端配置</button>{providerSettings?.api_key_configured && <button className="plugin-settings-clear" type="button" onClick={clearProviderKey} disabled={providerSaving}>清除 Key</button>}{providerSettings?.restart_required && <button className="plugin-settings-restart" type="button" onClick={restartDesktop}>立即重启生效</button>}</div>{providerCheck?.server && <p className="plugin-settings-checkline" role="status">服务端：{providerCheck.server.reachable ? providerCheck.server.available ? "已就绪（未发起模型请求）" : `未就绪 · ${providerCheck.server.missing.join("、") || "请检查配置"}` : "未响应"}</p>}{providerMessage && <p className="plugin-settings-message" role="status">{providerMessage}</p>}{providerError && <p className="plugin-settings-error" role="alert">{providerError}</p>}</form><small className="plugin-settings-footnote">配置文件：{providerSettings?.secrets_file || "桌面用户目录 / VisionQA / secrets / provider.env"}</small></>}</div>}
+        {activeTab === "settings" && <div id="plugin-panel-settings" className="plugin-body plugin-settings" role="tabpanel" aria-labelledby="plugin-tab-settings" tabIndex={0}><div className="plugin-section-heading"><span className="plugin-kicker">{desktopAvailable ? "本机模型设置" : "设置说明"}</span><h2>{desktopAvailable ? "把模型配置留在本机" : "设置只在桌面应用中生效"}</h2><p>{desktopAvailable ? "只需选择运行方式并填入自己的多模态模型 Key。配置保存在本机，不会进入网页或导出结果。" : "当前是浏览器预览，不能保存或检查本机模型。请打开 VisionQA 桌面应用后再配置；浏览器不会接触你的 Key。"}</p></div>{!desktopAvailable ? <div className="plugin-settings-boundary" role="status"><span className="plugin-settings-boundary__mark" aria-hidden="true">—</span><strong>浏览器预览只用于检查图片</strong><p>要启用真实视觉判断，请打开 VisionQA 桌面应用。本页面不会保存密钥，也不会连接你的本机模型。</p><button type="button" onClick={() => setActiveTab("review")}>返回检查</button></div> : <><div className="plugin-settings-status"><span className={`plugin-provider-status ${desktopStatus?.provider_mode === "off" ? "is-disabled" : ""}`}><i /> 当前运行：{desktopStatus?.provider_mode === "real" ? "视觉模型已开启" : desktopStatus?.provider_mode === "off" ? "离线预览" : "浏览器预览"}</span>{providerSettings?.api_key_configured && <small>已检测到本机密钥（仅显示状态）</small>}</div><form className="plugin-settings-form" onSubmit={saveProvider}><label>运行方式<select value={providerForm.mode} onChange={event => setProviderForm(form => ({ ...form, mode: event.target.value === "real" ? "real" : "off" }))}><option value="off">只做离线预览</option><option value="real">使用我的视觉模型</option></select></label>{providerForm.mode === "real" && <label>API Key<input type="password" value={providerForm.api_key} onChange={event => setProviderForm(form => ({ ...form, api_key: event.target.value }))} placeholder={providerSettings?.api_key_configured ? "已配置，留空保持当前 Key" : "只在本机输入，不会回显"} autoComplete="new-password" /></label>}<details className="plugin-settings-advanced"><summary>高级连接设置（通常不需要修改）</summary><label>服务名称<input value={providerForm.provider_id} onChange={event => setProviderForm(form => ({ ...form, provider_id: event.target.value }))} placeholder="deepseek / qwen / 其他兼容服务" maxLength={100} /></label><label>服务地址<input type="url" value={providerForm.endpoint} onChange={event => setProviderForm(form => ({ ...form, endpoint: event.target.value }))} placeholder="https://.../chat/completions" maxLength={500} /></label><label>模型名称<input value={providerForm.model} onChange={event => setProviderForm(form => ({ ...form, model: event.target.value }))} placeholder="deepseek-flash" maxLength={160} /></label><label>本地请求上限<input type="number" min="1" max="100" value={providerForm.max_total_requests} onChange={event => setProviderForm(form => ({ ...form, max_total_requests: event.target.value }))} /></label></details><div className="plugin-settings-actions"><button className="plugin-settings-save" type="submit" disabled={providerSaving}>{providerSaving ? "保存中" : "保存配置"}</button><button className="plugin-settings-check" type="button" onClick={checkProvider} disabled={providerSaving}>检查连接</button>{providerSettings?.api_key_configured && <button className="plugin-settings-clear" type="button" onClick={clearProviderKey} disabled={providerSaving}>清除 Key</button>}{providerSettings?.restart_required && <button className="plugin-settings-restart" type="button" onClick={restartDesktop}>重启桌面应用</button>}</div>{providerCheck?.server && <p className="plugin-settings-checkline" role="status">本机服务：{providerCheck.server.reachable ? providerCheck.server.available ? "已就绪（未发起模型请求）" : `未就绪 · ${providerCheck.server.missing.join("、") || "请检查配置"}` : "未响应"}</p>}{providerMessage && <p className="plugin-settings-message" role="status">{providerMessage}</p>}{providerError && <p className="plugin-settings-error" role="alert">{providerError}</p>}</form><small className="plugin-settings-footnote">密钥文件：{providerSettings?.secrets_file || "桌面用户目录 / VisionQA / secrets / provider.env"}</small></>}</div>}
       </section>
       <p className="plugin-disclaimer">VisionQA 视觉评审插件 · 服务端密钥不进入浏览器 · 所有结论仍需人工确认</p>
     </main>

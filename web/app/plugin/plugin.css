@@ -448,6 +448,8 @@ body:has(.plugin-host) {
 .plugin-issue > div { display: flex; justify-content: space-between; gap: 10px; }
 .plugin-issue strong { font-size: 12px; }
 .plugin-issue p { margin: 5px 0 3px; color: #ddd; font-size: 12px; line-height: 1.5; }
+.plugin-issue-summary { color: #e4e4e1; }
+.plugin-issue-next-step { color: #bdbdba !important; }
 .plugin-issue small { display: block; line-height: 1.45; }
 .plugin-issue-more { margin: 10px 0 0; color: var(--plugin-muted); font-size: 11px; }
 .plugin-no-issues { color: var(--plugin-accent); font-size: 12px; }
@@ -470,6 +472,7 @@ body:has(.plugin-host) {
   background: var(--plugin-inset);
   overflow: hidden;
 }
+.plugin-composer.is-result-secondary { display: none; }
 
 .plugin-composer > label { display: block; min-width: 0; padding: 10px 12px 0; color: #8d8d91; font-size: 11px; overflow-wrap: anywhere; }
 .plugin-composer textarea,
@@ -490,6 +493,7 @@ body:has(.plugin-host) {
 .plugin-send:disabled { cursor: not-allowed; opacity: .46; }
 .plugin-attachment-notice { display: block; padding: 0 11px 8px; color: var(--plugin-warning); font-size: 11px; }
 .plugin-composer-hint { display: block; padding: 0 11px 8px; color: var(--plugin-muted); font-size: 10px; line-height: 1.4; }
+.plugin-privacy-note { display: block; padding: 0 11px 8px; color: #858589; font-size: 10px; line-height: 1.4; }
 
 .plugin-context,
 .plugin-versions,
@@ -510,6 +514,9 @@ body:has(.plugin-host) {
 .plugin-settings-form input:focus,
 .plugin-settings-form select:focus { border-color: var(--plugin-line-strong); box-shadow: 0 0 0 2px rgba(244, 244, 240, .12); }
 .plugin-settings-form select { cursor: pointer; }
+.plugin-settings-advanced { display: grid; gap: 11px; margin-top: 2px; padding-top: 10px; border-top: 1px solid var(--plugin-line); }
+.plugin-settings-advanced summary { cursor: pointer; color: var(--plugin-muted-strong); font-size: 11px; }
+.plugin-settings-advanced[open] summary { margin-bottom: 1px; color: var(--plugin-ink); }
 .plugin-settings-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
 .plugin-settings-save,
 .plugin-settings-restart,

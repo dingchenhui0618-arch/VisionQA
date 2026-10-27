@@ -362,12 +362,12 @@ function makeProviderInput(
     lockedAttributes: request.constraints?.must_keep ?? [],
     taxonomyVersion: "visionqa-plugin-taxonomy-0.1.0",
     commercialTemplate: {
-      id: request.artifact.type === "web_page" ? "web_visual_review" : "plugin_visual_review",
+      id: request.artifact.type === "web_page" ? "web_visual_review" : "visual_baseline",
       version: "0.1.0",
       assessmentScope:
         request.artifact.type === "web_page"
           ? "根据截图、DOM 摘要、对话目标和保留约束评估网页或界面的层级、可读性、对齐、对比度、交互可见性和响应式风险；截图本身就是待评视觉产物，参考图可选；证据不足时必须要求人工复核。"
-          : "根据宿主上下文、目标受众、平台和保留约束判断视觉产物是否可用；证据不足时必须要求人工复核，不把审美偏好冒充事实。",
+          : "根据视觉产物、目标受众、平台和保留约束评估层级、构图、留白、对齐、字体、对比、一致性、审美完成度和交互可见性（适用于界面时）；参考图仅作为可选上下文，证据不足时必须要求人工复核，不把审美偏好冒充事实。",
     },
     promptVersion: "visionqa-plugin-observer-0.1.1",
     reviewMode: request.artifact.type === "web_page" ? "web_page" : "asset",
@@ -393,9 +393,10 @@ function mapOutcomeToContract(
   executionMode: "byok" | "managed" = "managed",
 ): VisualReviewResponse {
   const result = outcome.result;
-  const webPageReview =
+  const visualBaselineReview =
     request.artifact.type === "web_page" ||
-    result.score_evaluation.commercial_assessment.template_id === "web_visual_review";
+    result.score_evaluation.commercial_assessment.template_id === "web_visual_review" ||
+    ["visual_baseline", "plugin_visual_review"].includes(result.score_evaluation.commercial_assessment.template_id);
   const observations = result.model_evaluation.observations;
   const issues = observations.slice(0, 16).map((observation) => ({
     id: observation.observation_id,
@@ -417,7 +418,7 @@ function mapOutcomeToContract(
     evidence: toEvidence(observation).length
       ? toEvidence(observation)
       : [{ source: "context" as const, description: "模型标记为证据不足，需人工复核。" }],
-    suggested_fix: webPageReview
+    suggested_fix: visualBaselineReview
       ? "先确认评审范围与目标，再决定是否调整页面结构、间距或交互提示。"
       : result.action_plan.repair_prompt?.prompt || "先核对证据，再决定是否进行局部修正。",
   }));
@@ -448,7 +449,7 @@ function mapOutcomeToContract(
       "已完成视觉评审，但当前证据不足以形成更具体的结论。",
     issues,
     repair_plan: {
-      type: webPageReview
+      type: visualBaselineReview
         ? result.action_plan.repair_prompt
           ? "manual_plan"
           : "none"
@@ -458,7 +459,7 @@ function mapOutcomeToContract(
             : "image_edit"
           : "none",
       requires_approval: true,
-      operations: webPageReview ? [] : operations,
+      operations: visualBaselineReview ? [] : operations,
     },
     verification: {
       required: true,

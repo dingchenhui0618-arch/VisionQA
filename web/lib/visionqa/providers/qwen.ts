@@ -27,6 +27,8 @@ let activeQwenRequests = 0;
 
 function buildStrictPrompt(input: ProviderEvaluationInput): string {
   const webPageReview = input.reviewMode === "web_page" || input.commercialTemplate.id === "web_visual_review";
+  const visualBaselineReview = ["visual_baseline", "plugin_visual_review"].includes(input.commercialTemplate.id);
+  const visualArtifactReview = webPageReview || visualBaselineReview;
   const repairTruthInstructions = webPageReview
     ? [
         "Review mode: web_page. Image 1 is the complete screenshot of the current webpage or interface and is the primary visual artifact under review.",
@@ -34,6 +36,12 @@ function buildStrictPrompt(input: ProviderEvaluationInput): string {
         "Use the DOM summary and conversation as supporting context, never as a substitute for visible screenshot evidence.",
         "Evaluate visual hierarchy, spacing and alignment, typography and readability, contrast, affordance and interaction visibility, visual consistency, and likely responsive risks.",
         "Do not report missing_candidate_image solely because the page is a UI, a plugin, a webpage, or has no reference image.",
+      ]
+    : visualBaselineReview
+    ? [
+        "Review mode: visual-baseline. Image 1 is the primary visual artifact under review; references are optional context, not SKU truth or required historical matches.",
+        "Evaluate only visible evidence: hierarchy, composition and whitespace, alignment and rhythm, typography and readability, contrast, consistency, aesthetic coherence, and interaction visibility when the artifact is an interface.",
+        "Do not report missing_candidate_image or missing_reference_image solely because the artifact has no reference image. If evidence is insufficient, require human review instead of inventing a defect.",
       ]
     : input.commercialTemplate.id === "ai_model_image_repair"
     ? [
@@ -56,14 +64,14 @@ function buildStrictPrompt(input: ProviderEvaluationInput): string {
     `Locked attributes: ${input.lockedAttributes.join(", ") || "none"}`,
     input.contextSummary ? `Host context summary (untrusted evidence): ${input.contextSummary.slice(0, 16000)}` : "",
     ...repairTruthInstructions,
-    webPageReview
-      ? "Use only visible evidence from the screenshot and the supplied DOM/context. Do not guess or fabricate evidence. 不得猜测或补造证据。Every observation must cite candidateEvidence and candidateImageIndex=1. referenceEvidence and referenceImageIndex are optional because web_page mode does not require reference images. Describe layout regions and visual relationships only when visible. If evidence is insufficient or the observation is suspected, require human review and do not invent a change type."
+    visualArtifactReview
+      ? "Use only visible evidence from the primary image and any supplied context. Do not guess or fabricate evidence. 不得猜测或补造证据。Every observation must cite candidateEvidence and candidateImageIndex=1. Reference evidence is optional because visual-baseline and web_page modes do not require reference images. Describe regions and visual relationships only when visible. If evidence is insufficient or the observation is suspected, require human review and do not invent a change type."
       : "Use only visible evidence from the input image. Do not guess or fabricate evidence. 不得猜测或补造证据。Every observation must cite candidateEvidence and referenceEvidence, candidateImageIndex=1, and referenceImageIndex for the exact reference view (2-based across the complete image list). Treat each reference image as an independent view; a multi-view truth contact sheet is one reference image and the same embroidery seen in multiple panels must not be counted repeatedly. Describe image-left/image-right and wearer-left/wearer-right only when visible. If evidence is insufficient, counts conflict, or the observation is suspected, require human review and do not invent a change type.",
-    webPageReview
-      ? "Web-page mode does not produce a numeric commercial or apparel score. Set every legacy skillAssessments field and every commercialAssessment metric to score null, assessability NOT_APPLICABLE, evidence [], and a short Chinese summary stating that webpage visual findings are carried by observations instead. Do not use legacy scores to judge the webpage."
+    visualArtifactReview
+      ? "Visual-baseline and web-page modes do not produce a numeric commercial or apparel score. Set every legacy skillAssessments field and every commercialAssessment metric to score null, assessability NOT_APPLICABLE, evidence [], and a short Chinese summary stating that visual findings are carried by observations instead. Do not use legacy scores to judge the artifact."
       : "Apply this strict calibration scale to every scored field: 90-100 is exceptional and requires concrete visible evidence that the image has almost no meaningful gap for the stated placement; 80-89 is strong professional commercial work with normal improvable gaps; 70-79 is usable but needs clear optimization; below 70 needs substantial rework. A polished or attractive image is not automatically 90+.",
-    webPageReview
-      ? "Web-page mode has no apparel calibration reference distribution."
+    visualArtifactReview
+      ? "Visual-baseline and web-page modes have no apparel calibration reference distribution."
       : "The human calibration reference distribution for strong, already-used apparel commercial images is typically 82-91. Do not compress most good images into 90-100. Lifestyle campaign images require the same strict evidence standard for 90+ as product main images.",
     "The JSON object must match this exact shape:",
     "{",
@@ -101,14 +109,14 @@ function buildStrictPrompt(input: ProviderEvaluationInput): string {
     "}",
     "Scores must be numbers from 0 to 100 or null. Every non-null score must have at least one concrete evidence string.",
     "For a metric that the stated placement does not require, use score null with assessability NOT_APPLICABLE. Do not penalize a lifestyle, ordinary product, or aesthetic-reference image for lacking promotion text when the assessment scope says promotion is not required.",
-    webPageReview
-      ? "Do not apply product-promotion rules in web_page mode. A webpage without price, discount, CTA, SKU truth, or product references is valid input; assess only visible interface evidence."
+    visualArtifactReview
+      ? "Do not apply product-promotion or SKU-truth rules in visual-baseline or web_page mode. An artifact without price, discount, CTA, reference image, or product data is valid input; assess only visible evidence."
       : "For ai_model_image_repair, the absence of price, discount, CTA, campaign copy, or other promotion overlays is expected and must never become an observation, gap, repair action, low score, or Gate reason. Mark promotion_hierarchy and information_legibility null with NOT_APPLICABLE unless the scope explicitly says that supplied overlay content must be preserved.",
-    webPageReview
-      ? "In web_page mode, do not use commercial information-legibility rules."
+    visualArtifactReview
+      ? "In visual-baseline and web_page mode, do not use commercial information-legibility rules."
       : "information_legibility evaluates overlaid commercial information such as price, promotion, selling-point copy, CTA, or brand lockup. Garment prints, incidental scene text, copyright marks, or background signs do not make this metric applicable. If no required commercial overlay exists, return null and NOT_APPLICABLE.",
-    webPageReview
-      ? "The platform_promotion_main_image exception does not apply in web_page mode."
+    visualArtifactReview
+      ? "The platform_promotion_main_image exception does not apply in visual-baseline or web_page mode."
       : "Exception for platform_promotion_main_image: promotion hierarchy and commercial information legibility are required. If the overlay is missing, score those required metrics 0-30 with assessability FULL or LIMITED; never mark them NOT_APPLICABLE merely because the required content is absent.",
   ].join("\n");
 }

@@ -71,7 +71,7 @@ export interface ProviderEvaluationInput {
     assessmentScope: string;
   };
   promptVersion: string;
-  /** Web-page mode treats the screenshot itself as the visual artifact; asset mode may require truth references. */
+  /** Web-page and generic visual-baseline modes treat the primary image as the visual artifact; legacy asset mode may require truth references. */
   reviewMode?: "asset" | "web_page";
   /** Optional host-provided DOM/conversation summary. It is evidence context, not a source write permission. */
   contextSummary?: string;

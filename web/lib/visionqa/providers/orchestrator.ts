@@ -36,9 +36,10 @@ function toResult(
   draft: ProviderObservationDraft,
   input: ProviderEvaluationInput,
 ): EvaluationResultV03 {
-  const webPageReview =
+  const visualArtifactReview =
     input.reviewMode === "web_page" ||
-    input.commercialTemplate.id === "web_visual_review";
+    input.commercialTemplate.id === "web_visual_review" ||
+    ["visual_baseline", "plugin_visual_review"].includes(input.commercialTemplate.id);
   const promotionRequired =
     input.commercialTemplate.id === "platform_promotion_main_image";
   const observed = promotionRequired
@@ -52,7 +53,7 @@ function toResult(
   // The screenshot is the candidate in web-page mode. Keep a legacy model
   // signal for auditability, but never let its missing-reference wording
   // become a confirmed visual blocker.
-  const observations = webPageReview
+  const observations = visualArtifactReview
     ? observed.map((observation) =>
         ["missing_candidate_image", "missing_reference_image"].includes(
           observation.issue_code,
@@ -84,7 +85,7 @@ function toResult(
   const platformPromotionMissingRequiredLayer = Boolean(
     promotionRequired && missingPromotionObservation,
   );
-  const commercialAssessability = webPageReview
+  const commercialAssessability = visualArtifactReview
     ? "NOT_APPLICABLE"
     : platformPromotionMissingRequiredLayer
     ? "LIMITED"
@@ -97,7 +98,7 @@ function toResult(
       >
     ).map(([metricId, weight]) => {
       const source = draft.commercialAssessment.metrics?.[metricId];
-      if (webPageReview) {
+      if (visualArtifactReview) {
         return [
           metricId,
           {
@@ -105,7 +106,7 @@ function toResult(
             weight,
             assessability: "NOT_APPLICABLE",
             evidence: [],
-            summary: "网页模式不使用商品或促销商业评分。",
+            summary: "通用视觉模式不使用商品或促销商业评分。",
           },
         ];
       }
@@ -159,7 +160,7 @@ function toResult(
     fit_level: null,
   };
   if (
-    !webPageReview &&
+    !visualArtifactReview &&
     commercialEvidenceComplete &&
     commercialAssessability !== "NOT_ASSESSABLE" &&
     commercialAssessability !== "NOT_APPLICABLE"
@@ -174,25 +175,25 @@ function toResult(
     }
   }
 
-  const objectiveSkills = webPageReview
+  const objectiveSkills = visualArtifactReview
     ? {
         human_realism: {
           score: null,
           assessability: "NOT_APPLICABLE" as const,
           evidence: [] as string[],
-          summary: "网页模式不使用人物真实性评分。",
+        summary: "通用视觉模式不使用人物真实性评分。",
         },
         photography_realism: {
           score: null,
           assessability: "NOT_APPLICABLE" as const,
           evidence: [] as string[],
-          summary: "网页模式不使用摄影真实性评分。",
+          summary: "通用视觉模式不使用摄影真实性评分。",
         },
         material_realism: {
           score: null,
           assessability: "NOT_APPLICABLE" as const,
           evidence: [] as string[],
-          summary: "网页模式不使用材质真实性评分。",
+          summary: "通用视觉模式不使用材质真实性评分。",
         },
       }
     : {
@@ -285,10 +286,10 @@ function toResult(
         assessability: commercialAssessability,
         metrics,
         ...commercialFit,
-        commercial_strengths: webPageReview ? [] : draft.commercialAssessment.strengths,
-        relative_gaps: webPageReview ? [] : draft.commercialAssessment.gaps,
-        summary: webPageReview
-          ? "网页模式不使用商品或促销评分，视觉结论以 observations 为准。"
+        commercial_strengths: visualArtifactReview ? [] : draft.commercialAssessment.strengths,
+        relative_gaps: visualArtifactReview ? [] : draft.commercialAssessment.gaps,
+        summary: visualArtifactReview
+          ? "通用视觉模式不使用商品或促销评分，视觉结论以 observations 为准。"
           : draft.commercialAssessment.summary,
       },
     },

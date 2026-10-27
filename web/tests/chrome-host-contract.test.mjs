@@ -8,6 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const popup = fs.readFileSync(path.join(root, "host", "chrome", "popup.js"), "utf8");
 const popupHtml = fs.readFileSync(path.join(root, "host", "chrome", "popup.html"), "utf8");
 const readme = fs.readFileSync(path.join(root, "host", "chrome", "README.md"), "utf8");
+const manifest = JSON.parse(fs.readFileSync(path.join(root, "host", "chrome", "manifest.json"), "utf8"));
 
 test("Chrome Host delegates Provider choice to the local server and never hardcodes Mock", () => {
   assert.match(popup, /body: JSON\.stringify\(\{ provider: "auto", capture \}\)/);
@@ -34,4 +35,17 @@ test("Chrome Host first layer stays readable without DOM or revision jargon", ()
   assert.doesNotMatch(popupHtml, /DOM 摘要|对话上下文/);
   assert.doesNotMatch(popup, /revision 未变化|revision 已变化|页面结构摘要|样式摘要/);
   assert.match(popup, /查看检查依据/);
+});
+
+test("Chrome Host issue cards show the observation before the next step", () => {
+  assert.match(popup, /issue\.summary/);
+  assert.match(popup, /class="summary"/);
+  assert.match(popup, /class="next-step"/);
+});
+
+test("Chrome action opens the persistent side panel instead of a one-shot popup", () => {
+  assert.equal(manifest.side_panel.default_path, "popup.html");
+  assert.equal(manifest.action.default_title, "在侧边栏中评审当前页面");
+  assert.equal(Object.hasOwn(manifest.action, "default_popup"), false);
+  assert.match(fs.readFileSync(path.join(root, "host", "chrome", "service-worker.js"), "utf8"), /openPanelOnActionClick: true/);
 });

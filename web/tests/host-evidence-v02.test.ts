@@ -73,7 +73,7 @@ test("M3 host evidence cannot elevate source-write permission", () => {
   assert.throws(() => parseHostEvidenceCapture({ ...capture(), permissions: { can_call_model: false, can_read_source: true, can_write_source: true } }), /write|permissions/i);
 });
 
-test("legacy provider results are lifted to v0.2 without losing revision or DOM anchors", () => {
+test("legacy provider results are lifted to v0.2 without inventing DOM anchors", () => {
   const request = hostEvidenceToVisualReviewV02Request(capture());
   const result = legacyVisualReviewToV02Response(request, {
     schema_version: "visual-review-v0.1",
@@ -94,6 +94,7 @@ test("legacy provider results are lifted to v0.2 without losing revision or DOM 
   });
   assert.equal(result.schema_version, "visual-review-v0.2");
   assert.equal(result.revision_id, "rev-123");
-  assert.equal(result.issues[0]?.evidence_anchors[0]?.selector, "main h1");
-  assert.equal(result.observations.observations[0]?.evidence[0]?.kind, "dom_selector");
+  assert.deepEqual(result.issues[0]?.evidence_anchors, []);
+  assert.equal(result.observations.observations[0]?.evidence[0]?.kind, "text_range");
+  assert.equal("selector" in (result.observations.observations[0]?.evidence[0] || {}), false);
 });

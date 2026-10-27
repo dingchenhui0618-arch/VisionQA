@@ -29,6 +29,12 @@ function escapeHtml(value) {
   return String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 }
 
+async function digestText(value) {
+  if (!globalThis.crypto?.subtle || typeof TextEncoder === "undefined") return "unknown";
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value)));
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 32);
+}
+
 function humanErrorMessage(message) {
   const text = String(message || "");
   if (text.includes("真实宿主评审") || text.includes("localhost 模型调用门控") || text.includes("视觉模型尚未开启") || text.includes("local Qwen") || text.includes("local canary") || text.includes("服务端配置")) {
@@ -83,8 +89,10 @@ async function focusEvidence(selector) {
 
 function describeRevision(currentSnapshot) {
   if (!lastCaptureSnapshot) return "首次检查";
-  if (lastCaptureSnapshot.revision_id === currentSnapshot.revision_id) return "页面内容和布局看起来没有变化";
+  if (lastCaptureSnapshot.revision_id === currentSnapshot.revision_id) return "当前可见区域的截图和结构摘要未变化";
   const changes = [];
+  if (lastCaptureSnapshot.screenshot_digest && currentSnapshot.screenshot_digest && lastCaptureSnapshot.screenshot_digest !== currentSnapshot.screenshot_digest) changes.push("当前可见截图有变化");
+  if (lastCaptureSnapshot.viewport && currentSnapshot.viewport && (lastCaptureSnapshot.viewport.width !== currentSnapshot.viewport.width || lastCaptureSnapshot.viewport.height !== currentSnapshot.viewport.height || lastCaptureSnapshot.viewport.device_scale_factor !== currentSnapshot.viewport.device_scale_factor)) changes.push("当前视口尺寸有变化");
   if (lastCaptureSnapshot.headings.join(" / ") !== currentSnapshot.headings.join(" / ")) changes.push("标题有变化");
   const elementDelta = currentSnapshot.elements.length - lastCaptureSnapshot.elements.length;
   if (elementDelta) changes.push("页面布局有变化");
@@ -102,7 +110,7 @@ function describeRevision(currentSnapshot) {
     return JSON.stringify(element.computed_style || {}) !== JSON.stringify(previous.computed_style || {});
   }).length;
   if (styleChanged) changes.push(`${styleChanged} 个元素的样式发生变化`);
-  return `页面内容或布局有变化${changes.length ? `：${changes.join("、")}` : ""}`;
+  return `当前可见区域或页面结构有变化${changes.length ? `：${changes.join("、")}` : ""}`;
 }
 
 function renderResult(payload, capturedRevisionId, currentSnapshot, screenshotDataUrl) {
@@ -113,13 +121,13 @@ function renderResult(payload, capturedRevisionId, currentSnapshot, screenshotDa
     return;
   }
   const ui = payload.ui_result;
-  const issues = Array.isArray(ui?.issues) ? ui.issues.slice(0, 3) : Array.isArray(contract.issues) ? contract.issues.slice(0, 3).map((issue) => ({ title: categoryLabels[issue.category] || "有一处视觉问题需要看一下", nextStep: issue.suggested_fix, evidence: issue.evidence?.slice(0, 1).map((item) => ({ description: item.description })) || [] })) : [];
+  const issues = Array.isArray(ui?.issues) ? ui.issues.slice(0, 3) : Array.isArray(contract.issues) ? contract.issues.slice(0, 3).map((issue) => ({ title: categoryLabels[issue.category] || "有一处视觉问题需要看一下", summary: issue.evidence?.[0]?.description || "当前证据指出这里需要进一步确认。", nextStep: issue.suggested_fix, evidence: issue.evidence?.slice(0, 1).map((item) => ({ description: item.description })) || [] })) : [];
   const revision = capturedRevisionId || ui?.revision_id || payload.host_capture?.page_revision_id || contract.revision_id || "当前页面";
   const revisionMessage = describeRevision(currentSnapshot);
   const issueHtml = issues.map((issue) => {
     const evidence = issue.evidence?.[0];
     const locateButton = evidence?.selector ? `<button class="evidence-link" type="button" data-selector="${escapeHtml(evidence.selector)}">定位页面位置</button>` : "";
-    return `<div class="issue"><strong>${escapeHtml(issue.title || "有一处视觉问题需要看一下")}</strong><p>${escapeHtml(issue.nextStep || "先确认这处问题，再决定下一步。")}</p>${evidence ? `<small>${escapeHtml(evidence.label || "证据")} · ${escapeHtml(evidence.description)}</small>` : ""}${locateButton}</div>`;
+    return `<div class="issue"><strong>${escapeHtml(issue.title || "有一处视觉问题需要看一下")}</strong>${issue.summary ? `<p class="summary">${escapeHtml(issue.summary)}</p>` : ""}<p class="next-step">下一步：${escapeHtml(issue.nextStep || "先确认这处问题，再决定下一步。")}</p>${evidence ? `<small>${escapeHtml(evidence.label || "证据")} · ${escapeHtml(evidence.description)}</small>` : ""}${locateButton}</div>`;
   }).join("");
   const previewOnly = ui?.preview_only || payload.provider?.warnings?.some((warning) => String(warning).includes("FIXTURE"));
   resultNode.className = `result${previewOnly ? " is-preview" : ""}`;
@@ -276,13 +284,20 @@ async function reviewCurrentTab() {
     const [dom] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: collectDomContext });
     const rawScreenshot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
     const screenshot = await compressScreenshot(rawScreenshot);
+    const screenshotDigest = await digestText(screenshot);
+    const combinedRevisionId = await digestText(JSON.stringify({
+      dom_revision_id: dom.result.revision_id,
+      viewport: dom.result.viewport,
+      screenshot_digest: screenshotDigest,
+    }));
+    const revisionSource = combinedRevisionId === "unknown" ? "unknown" : "url-dom-summary+viewport+image-digest";
     const screenshotMime = screenshot.startsWith("data:image/jpeg") ? "image/jpeg" : "image/png";
     const capture = {
       schema_version: "visionqa-host-capture-v0.2",
       capture_id: crypto.randomUUID(),
       conversation_id: `chrome-${tab.id}`,
       host: { type: "chrome-extension", adapter_version: "0.2.0" },
-      page: { url: dom.result.url, title: dom.result.title, revision_id: dom.result.revision_id, revision_source: dom.result.revision_source, viewport: dom.result.viewport },
+      page: { url: dom.result.url, title: dom.result.title, revision_id: combinedRevisionId, revision_source: revisionSource, viewport: dom.result.viewport },
       dom: { text: dom.result.text, headings: dom.result.headings, landmarks: dom.result.landmarks, interactive_summary: dom.result.interactive_summary, elements: dom.result.elements, selected_element: dom.result.selected_element },
       conversation: dom.result.conversation,
       intent: { goal: goalNode.value.trim() || "检查当前页面的视觉完成度", must_keep: [] },
@@ -310,7 +325,7 @@ async function reviewCurrentTab() {
     if (!response) throw lastError || new Error("本地服务没有响应，请确认 VisionQA 已启动。");
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error?.message || "本次宿主评审没有完成。");
-    renderResult(payload, dom.result.revision_id, { title: dom.result.title, revision_id: dom.result.revision_id, headings: dom.result.headings, elements: dom.result.elements, interactive_summary: dom.result.interactive_summary }, screenshot);
+    renderResult(payload, combinedRevisionId, { title: dom.result.title, revision_id: combinedRevisionId, headings: dom.result.headings, elements: dom.result.elements, interactive_summary: dom.result.interactive_summary, viewport: dom.result.viewport, screenshot_digest: screenshotDigest }, screenshot);
   } catch (error) {
     const message = error instanceof Error ? error.message : "本次宿主评审没有完成。";
     resultNode.className = "result is-error";

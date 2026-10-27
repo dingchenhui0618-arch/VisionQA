@@ -65,12 +65,15 @@ test("generic multimodal adapter sends images and never puts the API key in the 
   const body = JSON.parse(seenBody) as {
     enable_thinking?: boolean;
     response_format?: { type?: string };
-    messages?: Array<{ content?: Array<{ type?: string; image_url?: { url?: string } }> }>;
+    messages?: Array<{ content?: Array<{ type?: string; text?: string; image_url?: { url?: string } }> }>;
   };
   assert.equal(body.enable_thinking, false);
   assert.equal(body.response_format?.type, "json_object");
   const imagePart = body.messages?.[0]?.content?.find((part) => part.type === "image_url");
   assert.equal(imagePart?.image_url?.url, "data:image/png;base64,ZmFrZQ==");
+  const promptText = body.messages?.[0]?.content?.find((part) => part.type === "text")?.text || "";
+  assert.doesNotMatch(promptText, /customer-approved historical references|apparel commercial images|strong, already-used apparel/i);
+  assert.match(promptText, /visual-baseline|视觉产物|hierarchy/i);
   assert.equal(result.providerId, "user-multimodal");
   assert.equal(result.modelSnapshot, "test-vision-model");
 });

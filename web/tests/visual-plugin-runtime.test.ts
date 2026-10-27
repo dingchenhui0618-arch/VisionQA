@@ -60,7 +60,11 @@ test("Mock and real-shaped adapters return the same VisualReview Contract", asyn
   assert.equal(realShaped.contract.usage.mode, "managed");
   assert.equal(realShaped.contract.usage.input_images, 2);
   assert.equal(realShaped.provider.providerId, "test-qwen");
-  assert.equal(parseVisualReviewResponse(realShaped.contract).request_id, baseRequest.request_id);
+  const genericContract = parseVisualReviewResponse(realShaped.contract);
+  assert.equal(genericContract.request_id, baseRequest.request_id);
+  assert.equal(genericContract.usage.mode, "managed");
+  assert.equal(genericContract.repair_plan.type, "manual_plan");
+  assert.match(genericContract.summary, /视觉|证据|人工/);
 });
 
 test("Qwen path rejects governed image limits before a provider call", async () => {

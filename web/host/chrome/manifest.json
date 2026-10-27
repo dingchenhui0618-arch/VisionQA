@@ -8,7 +8,6 @@
   "background": { "service_worker": "service-worker.js" },
   "side_panel": { "default_path": "popup.html" },
   "action": {
-    "default_title": "用 VisionQA 评审当前页面",
-    "default_popup": "popup.html"
+    "default_title": "在侧边栏中评审当前页面"
   }
 }
