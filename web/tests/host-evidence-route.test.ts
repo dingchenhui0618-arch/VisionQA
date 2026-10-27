@@ -56,12 +56,16 @@ test("localhost Host route accepts real-shaped v0.2 Chrome evidence and runs off
     assert.equal(response.status, 200);
     const body = await response.json() as {
       contract?: { schema_version?: string; decision?: string; observations?: { review_mode?: string } };
+      ui_result?: { schema_version?: string; revision_id?: string; preview_only?: boolean };
       provider?: { providerId?: string; warnings?: string[] };
       host_capture?: { schema_version?: string; dom_elements_received?: number; selected_element_received?: boolean; page_revision_id?: string };
     };
     assert.equal(body.contract?.schema_version, "visual-review-v0.2");
     assert.equal(body.contract?.decision, "NOT_ASSESSABLE");
     assert.equal(body.contract?.observations?.review_mode, "visual");
+    assert.equal(body.ui_result?.schema_version, "visionqa-ui-v0.1");
+    assert.equal(body.ui_result?.revision_id, "route-rev-1");
+    assert.equal(body.ui_result?.preview_only, true);
     assert.equal(body.provider?.providerId, "fixture");
     assert.equal(body.host_capture?.schema_version, hostEvidenceSchemaVersion);
     assert.equal(body.host_capture?.dom_elements_received, 1);

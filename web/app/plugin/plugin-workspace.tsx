@@ -6,10 +6,11 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { VisualReviewRequest, VisualReviewResponse } from "../../lib/visionqa/visual-review-contract";
+import { toPluginUiResult, type PluginUiResult } from "../../lib/visionqa/review-ui-adapter";
 
 type Provider = "mock" | "auto";
 type RunState = "idle" | "running" | "success" | "error";
-type ResultPayload = { contract?: VisualReviewResponse; provider?: { providerId: string; modelSnapshot: string; latencyMs: number; warnings: string[] }; error?: { code: string; message: string; request_id?: string } };
+type ResultPayload = { contract?: VisualReviewResponse; provider?: { providerId: string; modelSnapshot: string; latencyMs: number; warnings: string[] }; ui_result?: PluginUiResult; error?: { code: string; message: string; request_id?: string } };
 type DesktopRuntimeStatus = { provider_mode?: "off" | "real"; provider_calls?: boolean; provider_config_source?: string };
 type ProviderSettings = { mode: "off" | "real"; provider_id: string; endpoint: string; model: string; max_total_requests: number; api_key_configured: boolean; secrets_file?: string | null; settings_file?: string | null; source?: string; restart_required?: boolean };
 type ProviderCheck = ProviderSettings & { server?: { reachable: boolean; mode: "off" | "real" | null; available: boolean; missing: string[] } };
@@ -29,35 +30,6 @@ const initialProviderForm: ProviderSettingsForm = {
 };
 
 const newId = () => crypto.randomUUID();
-
-function decisionLabel(decision: VisualReviewResponse["decision"]): string {
-  return {
-    PASS: "可以继续",
-    NEEDS_REVISION: "建议修正",
-    MANUAL_REVIEW: "需要人工判断",
-    BLOCKED: "暂时阻止",
-    NEEDS_CONTEXT: "需要更多上下文",
-    NOT_ASSESSABLE: "暂不可评估",
-  }[decision];
-}
-
-function issueLabel(category: string): string {
-  const labels: Record<string, string> = {
-    hierarchy: "层级不够清楚",
-    readability: "阅读不够顺畅",
-    alignment: "对齐关系需要调整",
-    contrast: "对比度需要确认",
-    spacing: "间距关系需要调整",
-    interaction: "交互提示不够明显",
-    responsive: "不同屏幕下需要确认",
-    provider: "当前还缺少可判断的证据",
-  };
-  return labels[category] || "有一处视觉问题需要看一下";
-}
-
-function issuePriority(severity: VisualReviewResponse["issues"][number]["severity"]): string {
-  return severity === "blocker" || severity === "high" ? "优先处理" : severity === "medium" ? "建议处理" : "可以顺手确认";
-}
 
 function runtimeStatus(status: DesktopRuntimeStatus | null, state: RunState, providerCheck: ProviderCheck | null): { label: string; tone: "preview" | "ready" | "pending" | "offline" | "running" | "success" | "error" } {
   if (state === "running") return { label: "正在评审", tone: "running" };
@@ -146,6 +118,7 @@ export function PluginWorkspace() {
   const candidatePreviewUrl = useMemo(() => candidate ? URL.createObjectURL(candidate) : null, [candidate]);
   useEffect(() => candidatePreviewUrl ? () => URL.revokeObjectURL(candidatePreviewUrl) : undefined, [candidatePreviewUrl]);
   const requestPreview = useMemo(() => makeRequest({ conversationId, goal, context, mustKeep, candidate, provider }), [conversationId, goal, context, mustKeep, candidate, provider]);
+  const uiResult = result?.contract ? result.ui_result || toPluginUiResult(result.contract) : null;
 
   async function runReview(event?: FormEvent) {
     event?.preventDefault();
@@ -256,12 +229,12 @@ export function PluginWorkspace() {
         {activeTab === "review" && <div id="plugin-panel-review" className="plugin-body" role="tabpanel" aria-labelledby="plugin-tab-review" tabIndex={0}>
           <div className="plugin-statusline"><div className="plugin-session"><span className="plugin-kicker">当前会话</span><span className="plugin-session-value">{candidate ? `1 件待检查作品 · ${candidate.name}` : "等待添加作品"}</span></div><span className={`plugin-evidence-state ${candidate ? "is-ready" : "is-empty"}`}><i /> {candidate ? "已添加作品" : "等待作品"}</span></div>
           {!result && <div className="plugin-empty"><div className="plugin-empty__identity"><div className="plugin-mark"><img src="/brand/visionqa-favicon.svg" alt="VisionQA" /></div><span className="plugin-kicker">视觉检查</span></div><h1>先放入一件要检查的作品。</h1><p>上传截图或导出的图片，VisionQA 会帮你找出最需要处理的地方，并给出下一步建议。</p><div className={`plugin-evidence-anchor ${candidate ? "has-file" : "is-empty"}`} aria-label="当前待检查作品"><div className="plugin-evidence-media">{candidatePreviewUrl ? <img src={candidatePreviewUrl} alt="当前待检查作品缩略图" /> : <span aria-hidden="true">—</span>}</div><div className="plugin-evidence-copy"><span className="plugin-kicker">当前作品</span><strong>{candidate ? candidate.name : "尚未添加作品"}</strong><small>{candidate ? `${formatFileSize(candidate)} · 可以开始检查` : "支持截图或导出的 JPG、PNG、WebP"}</small></div><em>{candidate ? "待检查" : "等待添加"}</em></div><div className="plugin-goal-anchor"><span className="plugin-kicker">检查目标</span><strong>{goal || "等待补充检查目标"}</strong></div></div>}
-          {result?.contract && <article className="plugin-result" aria-live="polite">
+          {uiResult && <article className="plugin-result" aria-live="polite">
             {candidatePreviewUrl && <div className="plugin-result-evidence"><div className="plugin-result-evidence__media"><img src={candidatePreviewUrl} alt="本次检查的作品" /></div><div><span className="plugin-kicker">本次检查的作品</span><strong>{candidate.name}</strong><small>{formatFileSize(candidate)} · 结果对应当前文件</small></div></div>}
-            <div className="plugin-result__headline"><span className={`plugin-decision decision-${result.contract.decision.toLowerCase()}`} aria-hidden="true" /><div><span className="plugin-kicker">检查结果</span><h2>{decisionLabel(result.contract.decision)}</h2></div><small>请结合证据确认</small></div>
-            <p className="plugin-summary">{result.contract.summary}</p>
-            {result.contract.issues.length > 0 ? <div className="plugin-issues">{result.contract.issues.slice(0, 3).map(issue => <div className="plugin-issue" key={issue.id}><div><strong>{issueLabel(issue.category)}</strong><span>{issuePriority(issue.severity)}</span></div><p>{issue.suggested_fix}</p>{issue.evidence[0] && <small>证据 · {issue.evidence[0].description}</small>}</div>)}{result.contract.issues.length > 3 && <p className="plugin-issue-more">还有 {result.contract.issues.length - 3} 项细节，已放入版本记录。</p>}</div> : <p className="plugin-no-issues">当前没有需要单独列出的视觉问题。</p>}
-            <div className="plugin-repair"><span className="plugin-kicker">下一步</span><p>{result.contract.repair_plan.operations[0]?.action || "人工确认当前结果，再决定是否继续修改。"}</p><div className="plugin-checks">{result.contract.verification.checks.slice(0, 3).map(check => <span key={check}>○ {check}</span>)}</div><div className="plugin-result-actions"><button type="button" onClick={() => { setResult(null); setRunState("idle"); setMessage(""); }}>用当前作品再次检查</button><button type="button" onClick={() => setActiveTab("versions")}>查看检查记录</button></div></div>
+            <div className="plugin-result__headline"><span className={`plugin-decision decision-${uiResult.decision.toLowerCase()}`} aria-hidden="true" /><div><span className="plugin-kicker">检查结果</span><h2>{uiResult.decision_label}</h2></div><small>{uiResult.preview_only ? "离线预览" : "请结合证据确认"}</small></div>
+            <p className="plugin-summary">{uiResult.summary}</p>
+            {uiResult.issues.length > 0 ? <div className="plugin-issues">{uiResult.issues.slice(0, 3).map(issue => <div className="plugin-issue" key={issue.id}><div><strong>{issue.title}</strong><span>{issue.priority}</span></div><p>{issue.nextStep}</p>{issue.evidence[0] && <small>{issue.evidence[0].label} · {issue.evidence[0].description}</small>}</div>)}{uiResult.issues.length > 3 && <p className="plugin-issue-more">还有 {uiResult.issues.length - 3} 项细节，已放入版本记录。</p>}</div> : <p className="plugin-no-issues">当前没有需要单独列出的视觉问题。</p>}
+            <div className="plugin-repair"><span className="plugin-kicker">下一步</span><p>{uiResult.next_step}</p><div className="plugin-checks">{uiResult.verification_checks.map(check => <span key={check}>○ {check}</span>)}</div><div className="plugin-result-actions"><button type="button" onClick={() => { setResult(null); setRunState("idle"); setMessage(""); }}>用当前作品再次检查</button><button type="button" onClick={() => setActiveTab("versions")}>查看检查记录</button></div></div>
           </article>}
           {result?.error && <div className="plugin-error" role="alert"><strong>这次没有完成</strong><p>{result.error.message}</p><small>{result.error.code}</small></div>}
           <form className="plugin-composer" onSubmit={runReview}>

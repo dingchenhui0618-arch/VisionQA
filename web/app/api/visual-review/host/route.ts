@@ -23,6 +23,7 @@ import {
   type PluginImage,
 } from "../../../../lib/visionqa/plugin-runtime.ts";
 import { VisionProviderError } from "../../../../lib/visionqa/providers/types.ts";
+import { toPluginUiResult } from "../../../../lib/visionqa/review-ui-adapter.ts";
 
 export const config = { api: { bodyParser: { sizeLimit: "16mb" } } };
 
@@ -107,6 +108,7 @@ export async function POST(request: Request) {
           }));
       const responsePayload = {
         ...result,
+        ui_result: toPluginUiResult(result.contract),
         host_capture: {
           capture_id: capture.capture_id,
           schema_version: capture.schema_version,
@@ -145,7 +147,7 @@ export async function POST(request: Request) {
       env: process.env,
       signal: request.signal,
     });
-    const responsePayload = { ...result, host_capture: { capture_id: capture.capture_id, dom_summary_received: true, conversation_messages_received: capture.conversation.length } } as unknown as Record<string, unknown>;
+    const responsePayload = { ...result, ui_result: toPluginUiResult(result.contract), host_capture: { capture_id: capture.capture_id, dom_summary_received: true, conversation_messages_received: capture.conversation.length } } as unknown as Record<string, unknown>;
     hostResultCache.set(cacheKey, { expiresAt: Date.now() + HOST_RESULT_CACHE_TTL_MS, value: responsePayload });
     return Response.json(responsePayload, { headers: corsHeaders(request) });
   } catch (error) {

@@ -11,6 +11,7 @@ import { parseVisualReviewRequest } from "../../../lib/visionqa/visual-review-co
 import { getLocalCanaryReadiness } from "../../../lib/visionqa/providers/local-canary";
 import { getMultimodalReadiness } from "../../../lib/visionqa/providers/multimodal.ts";
 import { VisionProviderError } from "../../../lib/visionqa/providers/types";
+import { toPluginUiResult } from "../../../lib/visionqa/review-ui-adapter";
 
 const requestEnvelopeSchema = z.object({
   schema_version: z.literal("visual-review-v0.1"),
@@ -183,7 +184,7 @@ export async function POST(request: Request) {
       signal: request.signal,
     });
     return Response.json(
-      { ...result, request_id: parsedEnvelope.request_id },
+      { ...result, request_id: parsedEnvelope.request_id, ui_result: toPluginUiResult(result.contract) },
       { headers: { "cache-control": "no-store" } },
     );
   } catch (error) {
