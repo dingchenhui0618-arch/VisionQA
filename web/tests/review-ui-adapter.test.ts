@@ -28,6 +28,39 @@ test("UI adapter keeps legacy results human-readable and hides provider details"
   assert.equal(result.preview_only, false);
 });
 
+test("UI adapter keeps preview results free of implementation jargon", () => {
+  const result = toPluginUiResult({
+    schema_version: "visual-review-v0.1",
+    request_id: "legacy-ui-3",
+    decision: "MANUAL_REVIEW",
+    summary: "Mock 适配器已收到图片，但没有调用真实 Provider。",
+    issues: [],
+    repair_plan: { type: "manual_plan", requires_approval: true, operations: [{ action: "connect_authorized_visual_provider" }] },
+    verification: { required: true, checks: ["确认已使用真实视觉 Provider", "确认输入产物与当前 revision 一致"] },
+    usage: { mode: "mock", provider: "fixture", model: "fixture" },
+  });
+  assert.equal(result.summary.includes("Mock"), false);
+  assert.equal(result.summary.includes("Provider"), false);
+  assert.equal(result.issues.every((issue) => !JSON.stringify(issue).includes("Provider")), true);
+  assert.equal(result.verification_checks[0], "确认这次结果来自可用的视觉模型");
+  assert.equal(result.verification_checks[1], "确认结果对应当前这张图片或当前页面");
+});
+
+test("UI adapter translates internal operation identifiers into an actionable next step", () => {
+  const result = toPluginUiResult({
+    schema_version: "visual-review-v0.1",
+    request_id: "legacy-ui-2",
+    decision: "MANUAL_REVIEW",
+    summary: "当前只能确认输入已收到。",
+    issues: [],
+    repair_plan: { type: "manual_plan", requires_approval: true, operations: [{ action: "connect_authorized_visual_provider" }] },
+    verification: { required: true, checks: ["人工确认"] },
+    usage: { mode: "mock", provider: "fixture", model: "fixture" },
+  });
+  assert.equal(result.next_step, "接入可用的视觉模型后再检查，或先由人工确认这份结果。");
+  assert.equal(result.next_step.includes("connect_authorized_visual_provider"), false);
+});
+
 test("UI adapter exposes v0.2 DOM anchor and revision without exposing contract jargon", () => {
   const result = toPluginUiResult({
     schema_version: "visual-review-v0.2",

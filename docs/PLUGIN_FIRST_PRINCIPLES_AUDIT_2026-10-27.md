@@ -220,3 +220,40 @@ VisionQA 当前不应该继续堆 Provider、模型、版本树或更多评审�
 1. Chrome/MCP Host 与网页上传使用同一份 UI-facing v0.2 结果适配器；
 2. 结果页默认显示真实证据缩略图、最多三个问题的定位和下一步；
 3. 用户可以从当前结果一键重新采集并看到 revision 是否变化。
+
+### 已完成：证据预览与非技术结果语言收敛（2026-10-27）
+
+本轮没有增加 Provider、模型、Profile 或新的业务功能，而是修正了“用户是否真的看到了插件所检查的对象”这一核心信任问题：
+
+- Chrome Side Panel 结果卡现在先展示本次实际采集的当前页面截图，再展示判断、问题和下一步；图片不是装饰缩略图，而是本次评审的证据入口。
+- 首层不再展示 revision 哈希；页面版本标识收进“查看页面识别信息”，避免用户把内部标识误读成视觉结论。
+- revision 变化提示增加了有限的“页面位置发生变化”和“元素样式摘要发生变化”，仍明确它是页面结构摘要，不冒充像素差异。
+- UI adapter 对预览结果、问题证据、验证清单和 repair operation 做统一人话化：首层不出现 `Mock`、`Provider`、`revision` 或 `connect_authorized_visual_provider` 等实现术语；这些只允许留在开发者侧原始契约或设置边界。
+- 新增回归测试，保证预览结果和内部操作标识不会重新泄漏到普通用户首层。
+
+自问：**一个没有代码基础的人看到一张检查结果时，能否先确认“检查的是哪一张图”，知道“现在能不能判断”，并知道“下一步怎么做”，而不需要理解模型、接口或版本哈希？**
+
+答案：**本地网页入口的首屏和结果卡已经达到；一次本地点击验收实际上传了 `visionqa-app-icon.png`，结果显示了对应缩略图，并且首层术语扫描中 `Mock / Provider / revision / connect_authorized_visual_provider` 均为 `false`。这只证明交互表达和工程路径达到，不证明真实模型质量。**
+
+### 第一性原理阶段结论：暂停功能堆叠，优先收敛 UI 与证据闭环
+
+对比真实插件的共同范式后，当前最有价值的结构不是更多设置，而是“持续伴随宿主、证据可回看、问题可定位、修改后可复验”：VisBug 把操作放在当前页面上下文里，Stark 把检查结果组织为可过滤、可定位的问题，Chrome Side Panel 则提供与网页并行存在的持续容器（参考：[VisBug](https://chromewebstore.google.com/detail/visbug/cdockenadnadldjbbgcallicgledbeoc)、[Stark release notes](https://www.getstark.co/release-notes/)、[Chrome Side Panel API](https://developer.chrome.com/docs/extensions/reference/api/sidePanel)）。
+
+因此当前决策是：**不再继续堆 Provider、模型、评分、版本树或领域插件；先把已有的“证据 → 判断 → 下一步 → 新版本 → 复验”做成一条没有工程术语的主路径。**
+
+当前能力边界必须保持诚实：
+
+1. v0.2 Contract、Host screenshot/DOM/revision、统一 `ui_result`、页面定位和有限 revision 摘要已经形成工程闭环；
+2. 本地网页入口已可由非技术用户完成“添加图片 → 开始检查 → 读结果”的 Mock 路径；
+3. Mock 仍明确不产生真实视觉判断；真实 Provider 仍需要本地服务端配置，Host route 对 `auto` 的 v0.2 Provider 仍 fail-closed；
+4. Chrome 用户已加载扩展实例的真实点击仍未由当前 CUA 能力验证，不能用 IAB 的本地页面结果替代；
+5. revision 目前是有限 DOM/结构摘要，不是像素级 diff，也没有目标区域漂移的确定性 Gate。
+
+### 本轮证据
+
+- `npm run test:plugin`：39/39 通过；
+- `npm run lint`：通过；
+- `node --check host/chrome/popup.js`：通过；
+- `npm run build`：通过（仅有现有 bundle size warning）；
+- localhost `/plugin`：真实上传并点击一次，结果缩略图与“当前文件”一致；结果首层术语扫描 `Mock=false`、`Provider=false`、`revision=false`、`connect_authorized_visual_provider=false`；
+- 本轮仍未宣称真实 Provider 质量、真实 Chrome 扩展点击通过或客户可用性通过。

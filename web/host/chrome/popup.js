@@ -67,10 +67,23 @@ function describeRevision(currentSnapshot) {
   const elementDelta = currentSnapshot.elements.length - lastCaptureSnapshot.elements.length;
   if (elementDelta) changes.push(`页面结构摘要 ${elementDelta > 0 ? "增加" : "减少"} ${Math.abs(elementDelta)} 项`);
   if (lastCaptureSnapshot.interactive_summary !== currentSnapshot.interactive_summary) changes.push("交互元素摘要有变化");
+  const previousBySelector = new Map(lastCaptureSnapshot.elements.map((element) => [element.selector, element]));
+  const moved = currentSnapshot.elements.filter((element) => {
+    const previous = previousBySelector.get(element.selector);
+    if (!previous) return false;
+    return ["x", "y", "width", "height"].some((key) => Math.abs(Number(element.rect?.[key] || 0) - Number(previous.rect?.[key] || 0)) > 1);
+  }).length;
+  if (moved) changes.push(`${moved} 个页面位置发生变化`);
+  const styleChanged = currentSnapshot.elements.filter((element) => {
+    const previous = previousBySelector.get(element.selector);
+    if (!previous) return false;
+    return JSON.stringify(element.computed_style || {}) !== JSON.stringify(previous.computed_style || {});
+  }).length;
+  if (styleChanged) changes.push(`${styleChanged} 个元素的样式摘要发生变化`);
   return `revision 已变化：${changes.join("、") || "页面内容或布局摘要有变化"}`;
 }
 
-function renderResult(payload, capturedRevisionId, currentSnapshot) {
+function renderResult(payload, capturedRevisionId, currentSnapshot, screenshotDataUrl) {
   const contract = payload?.contract;
   if (!contract) {
     resultNode.className = "result is-error";
@@ -88,7 +101,9 @@ function renderResult(payload, capturedRevisionId, currentSnapshot) {
   }).join("");
   const previewOnly = ui?.preview_only || payload.provider?.warnings?.some((warning) => String(warning).includes("FIXTURE"));
   resultNode.className = `result${previewOnly ? " is-preview" : ""}`;
-  resultNode.innerHTML = `<h2>${escapeHtml(decisionLabels[ui?.decision] || decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(ui?.summary || contract.summary)}</p><div class="meta">已读取当前页面截图、DOM 摘要 · ${escapeHtml(revision)} · ${revisionMessage}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(ui?.next_step || contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前为离线预览，不是模型视觉结论。" : ""}</div>`;
+  resultNode.innerHTML = `<figure class="capture-preview"><img alt="本次检查的当前页面截图" /><figcaption>${escapeHtml(currentSnapshot.title || "当前页面")}</figcaption></figure><h2>${escapeHtml(decisionLabels[ui?.decision] || decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(ui?.summary || contract.summary)}</p><div class="meta">已读取当前页面截图和页面摘要 · ${escapeHtml(revisionMessage)}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(ui?.next_step || contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前为离线预览，不是模型视觉结论。" : ""}</div><details class="technical-details"><summary>查看页面识别信息</summary><small>页面版本标识：${escapeHtml(revision)}<br />评审依据：截图、有限页面结构摘要和当前对话上下文</small></details>`;
+  const previewImage = resultNode.querySelector(".capture-preview img");
+  if (previewImage && screenshotDataUrl) previewImage.src = screenshotDataUrl;
   resultNode.querySelectorAll("[data-selector]").forEach((button) => button.addEventListener("click", () => focusEvidence(button.dataset.selector)));
   lastCaptureSnapshot = currentSnapshot;
 }
@@ -272,7 +287,7 @@ async function reviewCurrentTab() {
     if (!response) throw lastError || new Error("本地服务没有响应，请确认 VisionQA 已启动。");
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error?.message || "本次宿主评审没有完成。");
-    renderResult(payload, dom.result.revision_id, { revision_id: dom.result.revision_id, headings: dom.result.headings, elements: dom.result.elements, interactive_summary: dom.result.interactive_summary });
+    renderResult(payload, dom.result.revision_id, { title: dom.result.title, revision_id: dom.result.revision_id, headings: dom.result.headings, elements: dom.result.elements, interactive_summary: dom.result.interactive_summary }, screenshot);
   } catch (error) {
     const message = error instanceof Error ? error.message : "本次宿主评审没有完成。";
     resultNode.className = "result is-error";
