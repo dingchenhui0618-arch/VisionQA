@@ -285,3 +285,13 @@ VisionQA 当前不应该继续堆 Provider、模型、版本树或更多评审�
 - `npm run build`：通过（仅保留现有 bundle size warning）；
 - 新增无网络 Host `auto` 端到端测试：截图以 `image_url` 进入服务端适配器，返回 v0.2 Contract，`preview_only=false`，且密钥不进入 body；
 - 新增 DeepSeek 请求归一化测试；没有进行真实网络请求，没有宣称模型判断质量。
+
+### 已完成：portable 首次启动不再要求手动进入终端（2026-10-27）
+
+发现当前“桌面可下载”形态仍要求用户先进入 bundle 的 `web/` 目录手动执行 `npm ci`，这不符合无代码用户的第一步体验。本轮没有改变 Electron 安全边界或运行时能力，只让 `launch.ps1` 在首次双击时自动检查依赖并执行一次受限的 `npm ci --no-audit --no-fund`；依赖已经存在时直接启动桌面端，准备失败时给出可理解的恢复提示。
+
+本地重新生成了 `web/dist/visionqa-desktop-alpha-portable/`，并确认生成的 README 和 `launch.ps1` 与新行为一致。需要明确：这个仍是开发者 portable bundle，仍要求机器先安装 Node.js 22+，也不是已经签名的终端用户安装包。
+
+自问：**一个没有代码基础的人拿到 portable bundle，是否知道只需要安装一次运行环境，然后双击启动，不需要先打开终端或理解 npm？**
+
+答案：**在“已有 Node.js 22+”这个前提下，首次启动路径已达到；但“完全不需要安装运行时”的终端用户体验仍未达到，因此目标不能结束。下一步应是把 Node/Vinext 运行时随 Electron 安装包交付，或改成真正自包含的本地服务启动器。**

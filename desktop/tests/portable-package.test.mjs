@@ -12,6 +12,9 @@ test("portable bundle script refuses non-generated paths and excludes secrets", 
   assert.match(source, /must stay under/);
   assert.match(source, /\.env files/);
   assert.match(source, /dependencies_bundled: false/);
+  assert.match(source, /automatically runs npm ci on first start/);
+  assert.match(source, /首次启动：正在准备 VisionQA 运行环境/);
+  assert.match(source, /ci --no-audit --no-fund/);
   assert.match(source, /provider_calls: false/);
   assert.match(source, /desktop-provider-config\.mjs/);
   assert.match(source, /desktop\/provider-settings\.mjs/);
