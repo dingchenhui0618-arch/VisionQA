@@ -59,12 +59,12 @@ function issuePriority(severity: VisualReviewResponse["issues"][number]["severit
   return severity === "blocker" || severity === "high" ? "优先处理" : severity === "medium" ? "建议处理" : "可以顺手确认";
 }
 
-function runtimeStatus(status: DesktopRuntimeStatus | null, state: RunState): { label: string; tone: "preview" | "ready" | "pending" | "offline" | "running" | "success" | "error" } {
+function runtimeStatus(status: DesktopRuntimeStatus | null, state: RunState, providerCheck: ProviderCheck | null): { label: string; tone: "preview" | "ready" | "pending" | "offline" | "running" | "success" | "error" } {
   if (state === "running") return { label: "正在评审", tone: "running" };
   if (state === "success") return { label: "评审完成", tone: "success" };
   if (state === "error") return { label: "评审未完成", tone: "error" };
   if (!status) return { label: "浏览器预览", tone: "preview" };
-  if (status.provider_mode === "real" && status.provider_calls !== false) return { label: "本地服务 · 可用", tone: "ready" };
+  if (status.provider_mode === "real" && providerCheck?.server?.available) return { label: "本地服务 · 可用", tone: "ready" };
   if (status.provider_mode === "real") return { label: "本地服务 · 待检查", tone: "pending" };
   return { label: "离线预览", tone: "offline" };
 }
@@ -139,7 +139,7 @@ export function PluginWorkspace() {
   }, []);
 
   const isBusy = runState === "running";
-  const runtime = runtimeStatus(desktopStatus, runState);
+  const runtime = runtimeStatus(desktopStatus, runState, providerCheck);
   // Offline/browser preview must use the existing local Mock contract. Only a
   // desktop session that explicitly owns a real Provider may send `auto`.
   const provider: Provider = desktopStatus?.provider_mode === "real" ? "auto" : "mock";
