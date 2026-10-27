@@ -66,6 +66,13 @@ test("desktop packaging has a standalone Electron entrypoint", async () => {
   assert.equal(webPackageJson.scripts["desktop:mac:bundle"], "node ../desktop/scripts/create-mac-bundle.mjs");
 });
 
+test("desktop documentation does not require a manual npm bootstrap", async () => {
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  assert.match(readme, /first double-click of `launch\.ps1`/);
+  assert.match(readme, /npm ci --no-audit --no-fund/);
+  assert.match(readme, /self-contained end-user installer/);
+});
+
 test("macOS developer bundle is explicit about its unverified installer boundary", async () => {
   const source = await readFile(new URL("../scripts/create-mac-bundle.mjs", import.meta.url), "utf8");
   assert.match(source, /visionqa-desktop-alpha-macos-bundle/);

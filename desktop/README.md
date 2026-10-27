@@ -56,7 +56,10 @@ plugin-only developer bundle: it keeps `/plugin`, `/api/health`,
 `/api/visual-review` and their VisionQA runtime closure, while excluding the
 historical workbench routes and sample image paths. It also excludes
 `node_modules`, Electron binaries, `.env` files, secrets, uploads and user
-assets. Run `npm ci` inside its `web/` directory before launching.
+assets. On first double-click of `launch.ps1`, the bundle automatically runs
+`npm ci --no-audit --no-fund` and then opens the desktop shell; no manual
+terminal command is needed. Node.js 22+ is still required, so this is not yet
+a self-contained end-user installer.
 
 The Windows x64 builder command is:
 
