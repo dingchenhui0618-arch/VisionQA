@@ -130,7 +130,7 @@ function assertConfigured(options: MultimodalAdapterOptions): void {
 
 class OpenAICompatibleMultimodalAdapter implements VisionProviderAdapter {
   readonly providerId: string;
-  readonly adapterVersion = "openai-compatible-multimodal-0.1.0";
+  readonly adapterVersion = "openai-compatible-multimodal-0.1.1";
   private readonly options: MultimodalAdapterOptions;
   private readonly fetchImpl: typeof fetch;
 
@@ -147,8 +147,11 @@ class OpenAICompatibleMultimodalAdapter implements VisionProviderAdapter {
     activeRequests += 1;
     dispatchedRequests += 1;
     const startedAt = Date.now();
-    const body = buildQwenCompatibleRequestBody(input);
-    body.model = this.options.model;
+    const body = buildMultimodalRequestBody(
+      input,
+      this.providerId,
+      this.options.model,
+    );
     let response: Response;
     try {
       response = await this.fetchImpl(this.options.endpoint, {
@@ -187,6 +190,27 @@ class OpenAICompatibleMultimodalAdapter implements VisionProviderAdapter {
       observationDraft: parseQwenObservationDraft(outputText),
     };
   }
+}
+
+/**
+ * Keep the shared visual prompt/body compatible with the existing Qwen
+ * adapter, but normalize fields that are Provider-specific before dispatch.
+ * In particular, DeepSeek's current Chat Completions contract uses the
+ * `thinking` object; `enable_thinking` is a Qwen-only field and must not be
+ * sent to a DeepSeek endpoint.
+ */
+export function buildMultimodalRequestBody(
+  input: ProviderEvaluationInput,
+  providerId: string,
+  model: string,
+): Record<string, unknown> {
+  const body = buildQwenCompatibleRequestBody(input);
+  body.model = model;
+  if (providerId.trim().toLowerCase() === "deepseek") {
+    delete body.enable_thinking;
+    body.thinking = { type: "disabled" };
+  }
+  return body;
 }
 
 export function createMultimodalAdapterFromEnv(env: Environment, options: { fetchImpl?: typeof fetch } = {}): VisionProviderAdapter {

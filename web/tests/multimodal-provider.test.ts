@@ -62,7 +62,52 @@ test("generic multimodal adapter sends images and never puts the API key in the 
   assert.equal(seenUrl, env.VISION_MULTIMODAL_ENDPOINT);
   assert.equal(seenHeaders?.get("authorization"), "Bearer test-only-key");
   assert.equal(seenBody.includes("test-only-key"), false);
-  assert.match(seenBody, /data:image\/png;base64,ZmFrZQ==/);
+  const body = JSON.parse(seenBody) as {
+    enable_thinking?: boolean;
+    response_format?: { type?: string };
+    messages?: Array<{ content?: Array<{ type?: string; image_url?: { url?: string } }> }>;
+  };
+  assert.equal(body.enable_thinking, false);
+  assert.equal(body.response_format?.type, "json_object");
+  const imagePart = body.messages?.[0]?.content?.find((part) => part.type === "image_url");
+  assert.equal(imagePart?.image_url?.url, "data:image/png;base64,ZmFrZQ==");
   assert.equal(result.providerId, "user-multimodal");
   assert.equal(result.modelSnapshot, "test-vision-model");
+});
+
+test("DeepSeek normalization uses its thinking contract without exposing the server key", async () => {
+  const deepSeekEnv = {
+    VISION_MULTIMODAL_ENABLED: "true",
+    VISION_MULTIMODAL_ENDPOINT: "https://api.deepseek.com/chat/completions",
+    VISION_MULTIMODAL_MODEL: "deepseek-flash",
+    VISION_MULTIMODAL_PROVIDER_ID: "deepseek",
+    DEEPSEEK_API_KEY: "test-deepseek-key",
+  };
+  let seenHeaders: Headers | undefined;
+  let seenBody = "";
+  const adapter = createMultimodalAdapterFromEnv(deepSeekEnv, {
+    fetchImpl: async (_url, init) => {
+      seenHeaders = new Headers(init?.headers);
+      seenBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({
+        id: "deepseek-provider-1",
+        model: "deepseek-flash",
+        choices: [{ message: { content: JSON.stringify(createFixtureDraft()) } }],
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    },
+  });
+  await adapter.evaluate(input, new AbortController().signal);
+  const body = JSON.parse(seenBody) as {
+    enable_thinking?: unknown;
+    thinking?: { type?: string };
+    response_format?: { type?: string };
+    messages?: Array<{ content?: Array<{ type?: string; image_url?: { url?: string } }> }>;
+  };
+  assert.equal(seenHeaders?.get("authorization"), "Bearer test-deepseek-key");
+  assert.equal(seenBody.includes("test-deepseek-key"), false);
+  assert.equal(Object.hasOwn(body, "enable_thinking"), false);
+  assert.deepEqual(body.thinking, { type: "disabled" });
+  assert.equal(body.response_format?.type, "json_object");
+  const imagePart = body.messages?.[0]?.content?.find((part) => part.type === "image_url");
+  assert.equal(imagePart?.image_url?.url, "data:image/png;base64,ZmFrZQ==");
 });

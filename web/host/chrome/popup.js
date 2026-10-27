@@ -28,6 +28,17 @@ function escapeHtml(value) {
   return String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 }
 
+function humanErrorMessage(message) {
+  const text = String(message || "");
+  if (text.includes("真实宿主评审") || text.includes("localhost 模型调用门控") || text.includes("视觉模型尚未开启") || text.includes("local Qwen") || text.includes("local canary") || text.includes("服务端配置")) {
+    return "当前没有开启可用的视觉模型，所以这次没有形成判断。请在 VisionQA 桌面设置中开启模型后再试；当前页面没有被修改。";
+  }
+  if (text.includes("Provider") || text.includes("多模态 API")) {
+    return "视觉模型暂时没有完成这次判断。请检查桌面端模型配置后再试；当前页面没有被修改。";
+  }
+  return text;
+}
+
 async function focusEvidence(selector) {
   if (!reviewedTabId || !selector) return;
   try {
@@ -273,7 +284,7 @@ async function reviewCurrentTab() {
         const candidateResponse = await fetch(`${base}/api/visual-review/host`, {
           method: "POST",
           headers: { "content-type": "application/json", "x-request-id": capture.capture_id },
-          body: JSON.stringify({ provider: "mock", capture }),
+          body: JSON.stringify({ provider: "auto", capture }),
         });
         if (candidateResponse.ok || candidateResponse.status >= 400 && candidateResponse.status !== 404) {
           response = candidateResponse;
@@ -293,7 +304,7 @@ async function reviewCurrentTab() {
     resultNode.className = "result is-error";
     resultNode.innerHTML = `<strong>这次没有完成</strong><p>${escapeHtml(message.includes("Cannot access a chrome:// URL")
       ? "当前页面是浏览器内部页面，Chrome 不允许扩展读取它。请切换到普通网页后再评审。"
-      : message)}</p>`;
+      : humanErrorMessage(message))}</p>`;
   } finally {
     reviewButton.disabled = false;
   }

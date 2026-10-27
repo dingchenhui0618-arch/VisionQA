@@ -43,7 +43,7 @@
     <label>这次要关注什么<textarea id="goal">检查当前页面的层级、可读性和整体完成度</textarea></label>
     <button id="review">评审当前页面</button>
     <section id="result" class="result" hidden aria-live="polite"></section>
-    <div class="hint">真实 API 只在 localhost 服务端配置，浏览器扩展不会接触密钥。</div>
+    <div class="hint">点击后会使用本机已配置的视觉模型检查当前页面；密钥只留在本地服务端。未配置模型时不会生成假结论。</div>
     <script src="popup.js"></script>
   </body>
 </html>
