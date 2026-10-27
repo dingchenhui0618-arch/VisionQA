@@ -42,12 +42,12 @@
   </head>
   <body>
     <h1>VisionQA</h1>
-    <p>读取当前标签页的可见截图、DOM 摘要和已声明的对话上下文，只返回视觉评审结果。</p>
+    <p>读取当前网页的截图和页面内容，只返回视觉评审结果。</p>
     <label>这次要关注什么<textarea id="goal">检查当前页面的层级、可读性和整体完成度</textarea></label>
     <button id="review">评审当前页面</button>
     <section id="result" class="result" hidden aria-live="polite"></section>
-    <div class="hint">点击后会使用本机已配置的视觉模型检查当前页面；密钥只留在本地服务端。未配置模型时不会生成假结论。</div>
-    <button id="settings" class="settings-link" type="button">打开本地设置</button>
+    <div class="hint">点击后会检查当前网页；密钥只留在本机。没有可用的视觉能力时不会生成假结论。</div>
+    <button id="settings" class="settings-link" type="button">查看本机设置说明</button>
     <script src="popup.js"></script>
   </body>
 </html>

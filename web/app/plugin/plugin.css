@@ -494,6 +494,12 @@ body:has(.plugin-host) {
 .plugin-context,
 .plugin-versions,
 .plugin-settings { gap: 17px; }
+.plugin-settings-boundary { display: grid; gap: 12px; align-content: start; margin-top: 4px; padding: 18px 16px; border: 1px solid var(--plugin-line-strong); border-radius: 10px; background: var(--plugin-inset); }
+.plugin-settings-boundary__mark { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid var(--plugin-line-strong); border-radius: 50%; color: var(--plugin-muted-strong); font-size: 14px; }
+.plugin-settings-boundary strong { color: var(--plugin-ink); font-size: 14px; }
+.plugin-settings-boundary p { margin: 0; color: var(--plugin-muted-strong); font-size: 12px; line-height: 1.6; }
+.plugin-settings-boundary button { width: fit-content; min-height: 38px; padding: 0 13px; border: 1px solid var(--plugin-line-strong); border-radius: 7px; background: transparent; color: var(--plugin-ink-soft); cursor: pointer; font: inherit; font-size: 12px; }
+.plugin-settings-boundary button:hover { border-color: #dededb; background: #dededb; color: #171718; }
 .plugin-provider-note { padding: 9px 10px; border: 1px solid var(--plugin-line); border-radius: 7px; color: var(--plugin-muted); background: rgba(255, 255, 255, .02); font-size: 11px; line-height: 1.5; }
 .plugin-settings-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .plugin-settings-status small { color: var(--plugin-accent); font-size: 10px; text-align: right; }

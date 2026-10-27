@@ -82,13 +82,13 @@ async function focusEvidence(selector) {
 }
 
 function describeRevision(currentSnapshot) {
-  if (!lastCaptureSnapshot) return "首次采集";
-  if (lastCaptureSnapshot.revision_id === currentSnapshot.revision_id) return "revision 未变化，仍是同一份页面";
+  if (!lastCaptureSnapshot) return "首次检查";
+  if (lastCaptureSnapshot.revision_id === currentSnapshot.revision_id) return "页面内容和布局看起来没有变化";
   const changes = [];
-  if (lastCaptureSnapshot.headings.join(" / ") !== currentSnapshot.headings.join(" / ")) changes.push("标题层级有变化");
+  if (lastCaptureSnapshot.headings.join(" / ") !== currentSnapshot.headings.join(" / ")) changes.push("标题有变化");
   const elementDelta = currentSnapshot.elements.length - lastCaptureSnapshot.elements.length;
-  if (elementDelta) changes.push(`页面结构摘要 ${elementDelta > 0 ? "增加" : "减少"} ${Math.abs(elementDelta)} 项`);
-  if (lastCaptureSnapshot.interactive_summary !== currentSnapshot.interactive_summary) changes.push("交互元素摘要有变化");
+  if (elementDelta) changes.push("页面布局有变化");
+  if (lastCaptureSnapshot.interactive_summary !== currentSnapshot.interactive_summary) changes.push("页面操作入口有变化");
   const previousBySelector = new Map(lastCaptureSnapshot.elements.map((element) => [element.selector, element]));
   const moved = currentSnapshot.elements.filter((element) => {
     const previous = previousBySelector.get(element.selector);
@@ -101,8 +101,8 @@ function describeRevision(currentSnapshot) {
     if (!previous) return false;
     return JSON.stringify(element.computed_style || {}) !== JSON.stringify(previous.computed_style || {});
   }).length;
-  if (styleChanged) changes.push(`${styleChanged} 个元素的样式摘要发生变化`);
-  return `revision 已变化：${changes.join("、") || "页面内容或布局摘要有变化"}`;
+  if (styleChanged) changes.push(`${styleChanged} 个元素的样式发生变化`);
+  return `页面内容或布局有变化${changes.length ? `：${changes.join("、")}` : ""}`;
 }
 
 function renderResult(payload, capturedRevisionId, currentSnapshot, screenshotDataUrl) {
@@ -123,7 +123,7 @@ function renderResult(payload, capturedRevisionId, currentSnapshot, screenshotDa
   }).join("");
   const previewOnly = ui?.preview_only || payload.provider?.warnings?.some((warning) => String(warning).includes("FIXTURE"));
   resultNode.className = `result${previewOnly ? " is-preview" : ""}`;
-  resultNode.innerHTML = `<figure class="capture-preview"><img alt="本次检查的当前页面截图" /><figcaption>${escapeHtml(currentSnapshot.title || "当前页面")}</figcaption></figure><h2>${escapeHtml(decisionLabels[ui?.decision] || decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(ui?.summary || contract.summary)}</p><div class="meta">已读取当前页面截图和页面摘要 · ${escapeHtml(revisionMessage)}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(ui?.next_step || contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前为离线预览，不是模型视觉结论。" : ""}<button class="evidence-link" type="button" data-action="review">重新评审当前页面</button></div><details class="technical-details"><summary>查看页面识别信息</summary><small>页面版本标识：${escapeHtml(revision)}<br />评审依据：截图、有限页面结构摘要和当前对话上下文</small></details>`;
+  resultNode.innerHTML = `<figure class="capture-preview"><img alt="本次检查的当前页面截图" /><figcaption>${escapeHtml(currentSnapshot.title || "当前页面")}</figcaption></figure><h2>${escapeHtml(decisionLabels[ui?.decision] || decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(ui?.summary || contract.summary)}</p><div class="meta">已读取当前页面截图和页面内容 · ${escapeHtml(revisionMessage)}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(ui?.next_step || contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前只确认了输入，没有形成正式视觉判断。" : ""}<button class="evidence-link" type="button" data-action="review">重新评审当前页面</button></div><details class="technical-details"><summary>查看检查依据</summary><small>页面识别记录：${escapeHtml(revision)}<br />评审依据：当前页面截图、页面内容和已声明的上下文</small></details>`;
   const previewImage = resultNode.querySelector(".capture-preview img");
   if (previewImage && screenshotDataUrl) previewImage.src = screenshotDataUrl;
   resultNode.querySelectorAll("[data-selector]").forEach((button) => button.addEventListener("click", () => focusEvidence(button.dataset.selector)));
@@ -317,7 +317,7 @@ async function reviewCurrentTab() {
     const action = humanErrorAction(message);
     resultNode.innerHTML = `<strong>这次没有完成</strong><p>${escapeHtml(message.includes("Cannot access a chrome:// URL")
       ? "当前页面是浏览器内部页面，Chrome 不允许扩展读取它。请切换到普通网页后再评审。"
-      : humanErrorMessage(message))}</p><button class="evidence-link" type="button" data-action="${action}">${action === "settings" ? "打开本地设置" : "重新试一次"}</button>`;
+      : humanErrorMessage(message))}</p><button class="evidence-link" type="button" data-action="${action}">${action === "settings" ? "查看本机设置说明" : "重新试一次"}</button>`;
     resultNode.querySelector('[data-action="retry"]')?.addEventListener("click", reviewCurrentTab);
     resultNode.querySelector('[data-action="settings"]')?.addEventListener("click", () => settingsButton?.click());
   } finally {

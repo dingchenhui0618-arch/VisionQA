@@ -21,7 +21,7 @@ The following historical SaaS/e-commerce workbench material is removed from the 
 - old login, project, screening, repair, credits and marketing workbench routes;
 - old fashion demonstration images and generated repair libraries.
 
-The pre-cleanup tree is retained only in the local bare mirror `D:\Projects\VisionQA-local-archive-20261027.git` for offline recovery and audit. The public `main` and `codex/visionqa-phase3-qwen` refs were rebuilt from an independent root commit, and the old archive branches/tag were deleted. Git hosting may retain unreachable objects temporarily until its normal garbage collection; the local archive must never be pushed back to the public repository.
+The pre-cleanup tree is retained only in the local bare mirror `D:\Projects\VisionQA-local-archive-20261027.git` and local `archive/*` refs for offline recovery and audit. The public `main` and `codex/visionqa-phase3-qwen` refs were rebuilt from an independent root commit; the archive refs are local-only and are not part of the public repository. Git hosting may retain unreachable objects temporarily until its normal garbage collection; the local archive must never be pushed back to the public repository.
 
 ## Public-repository safety
 

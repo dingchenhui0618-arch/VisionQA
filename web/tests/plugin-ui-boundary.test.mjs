@@ -16,5 +16,7 @@ test("plugin review copy distinguishes empty and ready evidence states", () => {
 test("browser preview keeps local Provider settings read-only", () => {
   assert.match(source, /设置只在桌面应用中生效/);
   assert.match(source, /当前是浏览器预览，不能保存或检查本机模型/);
-  assert.match(source, /disabled={!desktopAvailable}/);
+  assert.match(source, /浏览器预览只用于检查图片/);
+  assert.match(source, /返回检查/);
+  assert.match(source, /!desktopAvailable \? <div className="plugin-settings-boundary"/);
 });

@@ -14,8 +14,9 @@ test("Chrome Host delegates Provider choice to the local server and never hardco
   assert.doesNotMatch(popup, /body: JSON\.stringify\(\{ provider: "mock", capture \}\)/);
   assert.match(popup, /当前没有开启可用的视觉模型/);
   assert.match(popup, /local Qwen|local canary/);
-  assert.match(popupHtml, /未配置模型时不会生成假结论/);
-  assert.match(popupHtml, /打开本地设置/);
+  assert.match(popupHtml, /没有可用的视觉能力时不会生成假结论/);
+  assert.match(popupHtml, /查看本机设置说明/);
+  assert.match(popup, /查看本机设置说明/);
   assert.match(popup, /plugin\?tab=settings/);
   assert.match(popup, /本次检查没有完成。请稍后再试/);
   assert.match(popup, /重新评审当前页面/);
@@ -26,4 +27,11 @@ test("Chrome Host documentation keeps real and preview boundaries explicit", () 
   assert.match(readme, /服务端 `auto`/);
   assert.match(readme, /fail-closed|失败关闭/i);
   assert.match(readme, /没有任何模型密钥/);
+});
+
+test("Chrome Host first layer stays readable without DOM or revision jargon", () => {
+  assert.match(popupHtml, /当前网页的截图和页面内容/);
+  assert.doesNotMatch(popupHtml, /DOM 摘要|对话上下文/);
+  assert.doesNotMatch(popup, /revision 未变化|revision 已变化|页面结构摘要|样式摘要/);
+  assert.match(popup, /查看检查依据/);
 });
