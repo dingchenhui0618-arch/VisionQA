@@ -1,6 +1,8 @@
 const resultNode = document.querySelector("#result");
 const reviewButton = document.querySelector("#review");
 const goalNode = document.querySelector("#goal");
+let reviewedTabId = null;
+let lastRevisionId = null;
 
 const decisionLabels = {
   PASS: "可以继续",
@@ -26,19 +28,58 @@ function escapeHtml(value) {
   return String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 }
 
-function renderResult(payload) {
+async function focusEvidence(selector) {
+  if (!reviewedTabId || !selector) return;
+  try {
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId: reviewedTabId },
+      args: [selector],
+      func: (targetSelector) => {
+        const node = document.querySelector(targetSelector);
+        if (!node) return { found: false };
+        node.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+        const previousOutline = node.style.outline;
+        const previousOffset = node.style.outlineOffset;
+        node.style.outline = "2px solid currentColor";
+        node.style.outlineOffset = "3px";
+        window.setTimeout(() => {
+          node.style.outline = previousOutline;
+          node.style.outlineOffset = previousOffset;
+        }, 1800);
+        return { found: true };
+      },
+    });
+    if (!result?.result?.found) throw new Error("页面中没有找到这处位置，可能页面已经发生变化。");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "无法定位页面位置。";
+    const notice = document.createElement("p");
+    notice.className = "meta";
+    notice.textContent = message;
+    resultNode.appendChild(notice);
+  }
+}
+
+function renderResult(payload, capturedRevisionId) {
   const contract = payload?.contract;
   if (!contract) {
     resultNode.className = "result is-error";
     resultNode.innerHTML = `<strong>没有形成判断</strong><p>当前页面的评审结果不完整，请重新检查。</p>`;
     return;
   }
-  const issues = Array.isArray(contract.issues) ? contract.issues.slice(0, 3) : [];
-  const revision = payload.host_capture?.page_revision_id || contract.revision_id || "当前页面";
-  const issueHtml = issues.map((issue) => `<div class="issue"><strong>${escapeHtml(categoryLabels[issue.category] || "有一处视觉问题需要看一下")}</strong><p>${escapeHtml(issue.suggested_fix || "先确认这处问题，再决定下一步。")}</p>${issue.evidence?.[0] ? `<small>证据 · ${escapeHtml(issue.evidence[0].description)}</small>` : ""}</div>`).join("");
-  const previewOnly = payload.provider?.warnings?.some((warning) => String(warning).includes("FIXTURE"));
+  const ui = payload.ui_result;
+  const issues = Array.isArray(ui?.issues) ? ui.issues.slice(0, 3) : Array.isArray(contract.issues) ? contract.issues.slice(0, 3).map((issue) => ({ title: categoryLabels[issue.category] || "有一处视觉问题需要看一下", nextStep: issue.suggested_fix, evidence: issue.evidence?.slice(0, 1).map((item) => ({ description: item.description })) || [] })) : [];
+  const revision = capturedRevisionId || ui?.revision_id || payload.host_capture?.page_revision_id || contract.revision_id || "当前页面";
+  const revisionMessage = lastRevisionId === null ? "首次采集" : lastRevisionId === revision ? "revision 未变化，仍是同一份页面" : "revision 已变化，可以复验修改结果";
+  const issueHtml = issues.map((issue) => {
+    const evidence = issue.evidence?.[0];
+    const locateButton = evidence?.selector ? `<button class="evidence-link" type="button" data-selector="${escapeHtml(evidence.selector)}">定位页面位置</button>` : "";
+    return `<div class="issue"><strong>${escapeHtml(issue.title || "有一处视觉问题需要看一下")}</strong><p>${escapeHtml(issue.nextStep || "先确认这处问题，再决定下一步。")}</p>${evidence ? `<small>${escapeHtml(evidence.label || "证据")} · ${escapeHtml(evidence.description)}</small>` : ""}${locateButton}</div>`;
+  }).join("");
+  const previewOnly = ui?.preview_only || payload.provider?.warnings?.some((warning) => String(warning).includes("FIXTURE"));
   resultNode.className = `result${previewOnly ? " is-preview" : ""}`;
-  resultNode.innerHTML = `<h2>${escapeHtml(decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(contract.summary)}</p><div class="meta">已读取当前页面截图、DOM 摘要 · ${escapeHtml(revision)}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前为离线预览，不是模型视觉结论。" : ""}</div>`;
+  resultNode.innerHTML = `<h2>${escapeHtml(decisionLabels[ui?.decision] || decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(ui?.summary || contract.summary)}</p><div class="meta">已读取当前页面截图、DOM 摘要 · ${escapeHtml(revision)} · ${revisionMessage}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(ui?.next_step || contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前为离线预览，不是模型视觉结论。" : ""}</div>`;
+  resultNode.querySelectorAll("[data-selector]").forEach((button) => button.addEventListener("click", () => focusEvidence(button.dataset.selector)));
+  lastRevisionId = revision;
 }
 
 async function collectDomContext() {
@@ -179,6 +220,7 @@ async function reviewCurrentTab() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id || !tab.windowId) throw new Error("没有找到当前标签页。");
+    reviewedTabId = tab.id;
     if (/^(chrome|edge|about|devtools):\/\//i.test(tab.url || "")) {
       throw new Error("当前页面是浏览器内部页面，Chrome 不允许扩展读取它。请切换到普通网页后再评审，例如 localhost:6300/plugin。");
     }
@@ -219,7 +261,7 @@ async function reviewCurrentTab() {
     if (!response) throw lastError || new Error("本地服务没有响应，请确认 VisionQA 已启动。");
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error?.message || "本次宿主评审没有完成。");
-    renderResult(payload);
+    renderResult(payload, dom.result.revision_id);
   } catch (error) {
     const message = error instanceof Error ? error.message : "本次宿主评审没有完成。";
     resultNode.className = "result is-error";
