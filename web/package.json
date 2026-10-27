@@ -21,7 +21,7 @@
     "release:export": "node scripts/export-release.mjs",
     "test:release": "node scripts/release-check.mjs",
     "test:contracts": "node --experimental-strip-types --test tests/visual-review-contract.test.ts tests/review-contract-v0.2.test.ts tests/review-profiles.test.ts tests/host-adapter.test.ts tests/multimodal-provider.test.ts",
-    "test:plugin": "npx tsx --test tests/visual-plugin-runtime.test.ts tests/plugin-runtime-v02.test.ts tests/m2-host-fixtures.test.ts tests/host-evidence-v02.test.ts tests/review-ui-adapter.test.ts tests/mcp-host-contract.test.ts tests/host-evidence-route.test.ts tests/host-adapter.test.ts tests/multimodal-provider.test.ts tests/desktop-provider-config.test.mjs tests/chrome-host-contract.test.mjs",
+    "test:plugin": "npx tsx --test tests/visual-plugin-runtime.test.ts tests/plugin-runtime-v02.test.ts tests/m2-host-fixtures.test.ts tests/host-evidence-v02.test.ts tests/review-ui-adapter.test.ts tests/mcp-host-contract.test.ts tests/host-evidence-route.test.ts tests/host-adapter.test.ts tests/multimodal-provider.test.ts tests/desktop-provider-config.test.mjs tests/chrome-host-contract.test.mjs tests/plugin-ui-boundary.test.mjs",
     "test:adapters": "node --experimental-strip-types --test tests/model-adapter.test.ts",
     "test:agent": "npm run test:plugin",
     "test:production-smoke": "node --test tests/production-smoke.test.mjs",
