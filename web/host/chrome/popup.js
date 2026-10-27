@@ -37,7 +37,17 @@ function humanErrorMessage(message) {
   if (text.includes("Provider") || text.includes("多模态 API")) {
     return "视觉模型暂时没有完成这次判断。请检查桌面端模型配置后再试；当前页面没有被修改。";
   }
-  return text;
+  if (text.includes("浏览器内部页面") || text.includes("Chrome 不允许扩展读取")) {
+    return "当前页面不允许扩展读取。请切换到普通网页后再评审；当前页面没有被修改。";
+  }
+  return "本次检查没有完成。请稍后再试；当前页面没有被修改。";
+}
+
+function humanErrorAction(message) {
+  const text = String(message || "");
+  return text.includes("Provider") || text.includes("多模态 API") || text.includes("模型") || text.includes("local Qwen") || text.includes("local canary") || text.includes("服务端配置")
+    ? "settings"
+    : "retry";
 }
 
 async function focusEvidence(selector) {
@@ -113,10 +123,11 @@ function renderResult(payload, capturedRevisionId, currentSnapshot, screenshotDa
   }).join("");
   const previewOnly = ui?.preview_only || payload.provider?.warnings?.some((warning) => String(warning).includes("FIXTURE"));
   resultNode.className = `result${previewOnly ? " is-preview" : ""}`;
-  resultNode.innerHTML = `<figure class="capture-preview"><img alt="本次检查的当前页面截图" /><figcaption>${escapeHtml(currentSnapshot.title || "当前页面")}</figcaption></figure><h2>${escapeHtml(decisionLabels[ui?.decision] || decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(ui?.summary || contract.summary)}</p><div class="meta">已读取当前页面截图和页面摘要 · ${escapeHtml(revisionMessage)}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(ui?.next_step || contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前为离线预览，不是模型视觉结论。" : ""}</div><details class="technical-details"><summary>查看页面识别信息</summary><small>页面版本标识：${escapeHtml(revision)}<br />评审依据：截图、有限页面结构摘要和当前对话上下文</small></details>`;
+  resultNode.innerHTML = `<figure class="capture-preview"><img alt="本次检查的当前页面截图" /><figcaption>${escapeHtml(currentSnapshot.title || "当前页面")}</figcaption></figure><h2>${escapeHtml(decisionLabels[ui?.decision] || decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(ui?.summary || contract.summary)}</p><div class="meta">已读取当前页面截图和页面摘要 · ${escapeHtml(revisionMessage)}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(ui?.next_step || contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前为离线预览，不是模型视觉结论。" : ""}<button class="evidence-link" type="button" data-action="review">重新评审当前页面</button></div><details class="technical-details"><summary>查看页面识别信息</summary><small>页面版本标识：${escapeHtml(revision)}<br />评审依据：截图、有限页面结构摘要和当前对话上下文</small></details>`;
   const previewImage = resultNode.querySelector(".capture-preview img");
   if (previewImage && screenshotDataUrl) previewImage.src = screenshotDataUrl;
   resultNode.querySelectorAll("[data-selector]").forEach((button) => button.addEventListener("click", () => focusEvidence(button.dataset.selector)));
+  resultNode.querySelector('[data-action="review"]')?.addEventListener("click", reviewCurrentTab);
   lastCaptureSnapshot = currentSnapshot;
 }
 
@@ -303,9 +314,12 @@ async function reviewCurrentTab() {
   } catch (error) {
     const message = error instanceof Error ? error.message : "本次宿主评审没有完成。";
     resultNode.className = "result is-error";
+    const action = humanErrorAction(message);
     resultNode.innerHTML = `<strong>这次没有完成</strong><p>${escapeHtml(message.includes("Cannot access a chrome:// URL")
       ? "当前页面是浏览器内部页面，Chrome 不允许扩展读取它。请切换到普通网页后再评审。"
-      : humanErrorMessage(message))}</p>`;
+      : humanErrorMessage(message))}</p><button class="evidence-link" type="button" data-action="${action}">${action === "settings" ? "打开本地设置" : "重新试一次"}</button>`;
+    resultNode.querySelector('[data-action="retry"]')?.addEventListener("click", reviewCurrentTab);
+    resultNode.querySelector('[data-action="settings"]')?.addEventListener("click", () => settingsButton?.click());
   } finally {
     reviewButton.disabled = false;
   }

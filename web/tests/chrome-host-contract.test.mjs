@@ -17,6 +17,9 @@ test("Chrome Host delegates Provider choice to the local server and never hardco
   assert.match(popupHtml, /未配置模型时不会生成假结论/);
   assert.match(popupHtml, /打开本地设置/);
   assert.match(popup, /plugin\?tab=settings/);
+  assert.match(popup, /本次检查没有完成。请稍后再试/);
+  assert.match(popup, /重新评审当前页面/);
+  assert.match(popup, /data-action/);
 });
 
 test("Chrome Host documentation keeps real and preview boundaries explicit", () => {
