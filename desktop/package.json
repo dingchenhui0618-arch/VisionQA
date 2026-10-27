@@ -1,0 +1,11 @@
+{
+  "name": "visionqa-desktop-alpha",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VisionQA local desktop Alpha shell",
+  "main": "main.mjs",
+  "author": "VisionQA",
+  "devDependencies": {
+    "electron": "38.2.0"
+  }
+}

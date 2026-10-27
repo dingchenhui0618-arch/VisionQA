@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.local/contracts/host-capture-v0.1.schema.json",
+  "title": "VisionQA Host Capture v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "capture_id", "conversation_id", "host", "page", "dom", "intent"],
+  "properties": {
+    "schema_version": { "const": "visionqa-host-capture-v0.1" },
+    "capture_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "conversation_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "adapter_version"],
+      "properties": {
+        "type": { "enum": ["chrome-extension", "mcp", "manual"] },
+        "adapter_version": { "type": "string", "minLength": 1, "maxLength": 80 }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "title", "viewport"],
+      "properties": {
+        "url": { "type": "string", "format": "uri", "maxLength": 2000 },
+        "title": { "type": "string", "maxLength": 500 },
+        "viewport": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height", "device_scale_factor"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1, "maximum": 10000 },
+            "height": { "type": "integer", "minimum": 1, "maximum": 10000 },
+            "device_scale_factor": { "type": "number", "exclusiveMinimum": 0, "maximum": 8 }
+          }
+        }
+      }
+    },
+    "dom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "headings", "landmarks", "interactive_summary"],
+      "properties": {
+        "text": { "type": "string", "maxLength": 12000 },
+        "headings": { "type": "array", "maxItems": 80, "items": { "type": "string", "minLength": 1, "maxLength": 300 } },
+        "landmarks": { "type": "array", "maxItems": 40, "items": { "type": "string", "minLength": 1, "maxLength": 200 } },
+        "interactive_summary": { "type": "string", "maxLength": 4000 }
+      }
+    },
+    "conversation": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "content"],
+        "properties": {
+          "role": { "enum": ["user", "assistant", "system"] },
+          "content": { "type": "string", "minLength": 1, "maxLength": 4000 },
+          "created_at": { "type": "string", "maxLength": 80 }
+        }
+      }
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["goal"],
+      "properties": {
+        "goal": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "audience": { "type": "string", "maxLength": 500 },
+        "must_keep": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1, "maxLength": 300 } }
+      }
+    },
+    "images": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "name", "mime_type", "data_url"],
+        "properties": {
+          "role": { "enum": ["candidate", "reference"] },
+          "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "mime_type": { "enum": ["image/jpeg", "image/png", "image/webp"] },
+          "data_url": { "type": "string", "pattern": "^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$" }
+        }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["can_call_model", "can_read_source", "can_write_source"],
+      "properties": {
+        "can_call_model": { "type": "boolean" },
+        "can_read_source": { "type": "boolean" },
+        "can_write_source": { "const": false }
+      }
+    }
+  }
+}

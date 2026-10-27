@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.dionysusding.cn/contracts/visual-review-v0.1.schema.json",
+  "title": "VisionQA VisualReview Contract v0.1",
+  "oneOf": [
+    { "$ref": "#/$defs/VisualReviewRequest" },
+    { "$ref": "#/$defs/VisualReviewResponse" }
+  ],
+  "$defs": {
+    "ArtifactType": {
+      "type": "string",
+      "enum": ["web_page", "slide", "image", "document_render", "unknown"]
+    },
+    "Decision": {
+      "type": "string",
+      "enum": ["PASS", "NEEDS_REVISION", "MANUAL_REVIEW", "BLOCKED", "NEEDS_CONTEXT", "NOT_ASSESSABLE"]
+    },
+    "Host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "adapter_version"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "adapter_version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ArtifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "$ref": "#/$defs/ArtifactType" },
+        "name": { "type": "string" },
+        "mime_type": { "type": "string" },
+        "screenshot_ref": { "type": "string" },
+        "source_ref": { "type": "string" },
+        "structure_ref": { "type": "string" },
+        "viewport": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 },
+            "device_scale_factor": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        }
+      }
+    },
+    "Intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["goal"],
+      "properties": {
+        "goal": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "audience": { "type": "string", "maxLength": 500 },
+        "platform": { "type": "string", "maxLength": 200 },
+        "brand_profile": { "type": "string", "maxLength": 200 }
+      }
+    },
+    "Constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "must_keep": { "type": "array", "items": { "type": "string", "minLength": 1 }, "maxItems": 32 },
+        "must_change": { "type": "array", "items": { "type": "string", "minLength": 1 }, "maxItems": 32 },
+        "style_profile": { "type": "string", "maxLength": 200 },
+        "rubric_profile": { "type": "string", "maxLength": 200 }
+      }
+    },
+    "Permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "can_read_source": { "type": "boolean" },
+        "can_write_source": { "type": "boolean" },
+        "can_call_model": { "type": "boolean" },
+        "can_render": { "type": "boolean" },
+        "can_run_commands": { "type": "boolean" }
+      }
+    },
+    "VisualReviewRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "request_id", "conversation_id", "host", "artifact", "intent", "operation"],
+      "properties": {
+        "schema_version": { "const": "visual-review-v0.1" },
+        "request_id": { "type": "string", "minLength": 1 },
+        "conversation_id": { "type": "string", "minLength": 1 },
+        "host": { "$ref": "#/$defs/Host" },
+        "artifact": { "$ref": "#/$defs/ArtifactRef" },
+        "intent": { "$ref": "#/$defs/Intent" },
+        "constraints": { "$ref": "#/$defs/Constraints" },
+        "permissions": { "$ref": "#/$defs/Permissions" },
+        "operation": { "type": "string", "enum": ["review", "repair_plan", "verify"] },
+        "revision_id": { "type": "string" }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description"],
+      "properties": {
+        "location": { "type": "string" },
+        "description": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "enum": ["pixel", "structure", "context", "comparison"] }
+      }
+    },
+    "Issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "severity", "confidence", "evidence", "suggested_fix"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "severity": { "type": "string", "enum": ["blocker", "high", "medium", "low", "observation"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/Evidence" }, "minItems": 1, "maxItems": 8 },
+        "suggested_fix": { "type": "string", "minLength": 1 }
+      }
+    },
+    "RepairPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "requires_approval", "operations"],
+      "properties": {
+        "type": { "type": "string", "enum": ["source_patch", "structured_edit", "image_edit", "manual_plan", "none"] },
+        "requires_approval": { "const": true },
+        "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["action"], "properties": { "action": { "type": "string", "minLength": 1 }, "target": { "type": "string" }, "reason": { "type": "string" } } }, "maxItems": 16 }
+      }
+    },
+    "VisualReviewResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "request_id", "decision", "summary", "issues", "repair_plan", "verification", "usage"],
+      "properties": {
+        "schema_version": { "const": "visual-review-v0.1" },
+        "request_id": { "type": "string", "minLength": 1 },
+        "decision": { "$ref": "#/$defs/Decision" },
+        "summary": { "type": "string", "minLength": 1 },
+        "issues": { "type": "array", "items": { "$ref": "#/$defs/Issue" }, "maxItems": 16 },
+        "repair_plan": { "$ref": "#/$defs/RepairPlan" },
+        "verification": { "type": "object", "additionalProperties": false, "required": ["required", "checks"], "properties": { "required": { "type": "boolean" }, "checks": { "type": "array", "items": { "type": "string" }, "maxItems": 16 } } },
+        "usage": { "type": "object", "additionalProperties": false, "required": ["mode", "provider"], "properties": { "mode": { "type": "string", "enum": ["mock", "byok", "host_managed", "managed"] }, "provider": { "type": "string" }, "model": { "type": "string" }, "input_images": { "type": "integer", "minimum": 0 }, "estimated_cost_minor_units": { "type": "integer", "minimum": 0 } } }
+      }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+appId: cn.dionysusding.visionqa.desktop
+productName: VisionQA
+artifactName: VisionQA-Desktop-${version}-${arch}.${ext}
+asar: true
+compression: maximum
+directories:
+  output: ../web/dist/electron
+  buildResources: resources
+files:
+  - '**/*'
+  - '!**/.env*'
+  - '!**/secrets/**'
+  - '!**/uploads/**'
+  - '!**/node_modules/**'
+extraResources:
+  - from: ../web
+    to: web
+    filter:
+      - app/**
+      - lib/**
+      - public/**
+      - scripts/start-local.mjs
+      - scripts/desktop-provider-config.mjs
+      - package.json
+      - package-lock.json
+      - next.config.ts
+      - vite.config.ts
+      - dist/client/**
+      - dist/server/**
+      - '!**/.env*'
+      - '!**/node_modules/**'
+      - '!**/secrets/**'
+      - '!**/uploads/**'
+      - '!**/artifacts/**'
+      - '!**/runs/**'
+npmRebuild: false
+nodeGypRebuild: false
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  verifyUpdateCodeSignature: false
+portable:
+  artifactName: VisionQA-Desktop-${version}-portable.${ext}
+mac:
+  target:
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.developer-tools
+  # Alpha builds are unsigned and must not imply notarization or a trusted
+  # distribution channel. A macOS runner can add signing/notarization later.
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  identity: null

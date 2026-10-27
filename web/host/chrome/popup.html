@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>VisionQA</title>
+    <style>
+      :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      body { width: 320px; margin: 0; padding: 16px; background: #171718; color: #f2f2ee; }
+      h1 { margin: 0 0 4px; font-size: 17px; }
+      p { margin: 0 0 12px; color: #a4a4a8; font-size: 12px; line-height: 1.5; }
+      label { display: grid; gap: 6px; margin: 12px 0; color: #bcbcc0; font-size: 12px; }
+      textarea { min-height: 62px; resize: vertical; border: 1px solid #424245; border-radius: 8px; padding: 9px; background: #222224; color: #f2f2ee; font: inherit; }
+      button { width: 100%; min-height: 42px; border: 1px solid #d8d8d2; border-radius: 8px; background: #f0f0eb; color: #161617; font-weight: 650; cursor: pointer; }
+      button:disabled { cursor: wait; opacity: .5; }
+      pre { max-height: 220px; overflow: auto; margin: 12px 0 0; padding: 10px; border: 1px solid #363638; border-radius: 8px; white-space: pre-wrap; color: #bfd8c0; font: 11px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; }
+      .hint { margin-top: 10px; color: #77777c; font-size: 11px; }
+    </style>
+  </head>
+  <body>
+    <h1>VisionQA</h1>
+    <p>读取当前标签页的可见截图、DOM 摘要和已声明的对话上下文，只返回视觉评审结果。</p>
+    <label>这次要关注什么<textarea id="goal">检查当前页面的层级、可读性和整体完成度</textarea></label>
+    <button id="review">评审当前页面</button>
+    <pre id="result" hidden></pre>
+    <div class="hint">真实 API 只在 localhost 服务端配置，浏览器扩展不会接触密钥。</div>
+    <script src="popup.js"></script>
+  </body>
+</html>

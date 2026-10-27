@@ -1,0 +1,39 @@
+{
+  "schema_version": "visual-review-v0.1",
+  "request_id": "local-demo-001",
+  "conversation_id": "conversation-demo",
+  "host": {
+    "type": "local-cli",
+    "adapter_version": "0.1.0"
+  },
+  "artifact": {
+    "type": "web_page",
+    "name": "visionqa-home",
+    "screenshot_ref": "local://examples/visionqa-home.png",
+    "structure_ref": "local://examples/visionqa-home.structure.json",
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "device_scale_factor": 1
+    }
+  },
+  "intent": {
+    "goal": "制作一个让访问者理解视觉判断插件的官网首页",
+    "audience": "使用智能体完成设计工作的开发者和设计师",
+    "platform": "desktop-web"
+  },
+  "constraints": {
+    "must_keep": ["VisionQA 品牌名", "插件定位", "本地运行命令"],
+    "must_change": ["首屏层级", "下一步入口"],
+    "style_profile": "monochrome-review-desk-v0.1",
+    "rubric_profile": "web-product-v0.1"
+  },
+  "permissions": {
+    "can_read_source": true,
+    "can_write_source": false,
+    "can_call_model": false,
+    "can_render": true,
+    "can_run_commands": false
+  },
+  "operation": "review"
+}

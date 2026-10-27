@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: plugin + desktop checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          # package.json engines: node >=22.13.0
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # package-lock.json is committed, so `npm ci` is the honest install.
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      # Contract tests only need Node's built-in TS stripping.
+      - name: Contract tests
+        run: npm run test:contracts
+
+      # The repo's own release gate: vinext build + plugin runtime/Host contract
+      # tests + desktop boundary tests.
+      - name: Release checks
+        run: npm run test:release

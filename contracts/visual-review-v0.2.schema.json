@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://visionqa.dionysusding.cn/contracts/visual-review-v0.2.schema.json",
+  "title": "VisionQA VisualReview Contract v0.2",
+  "oneOf": [{ "$ref": "#/$defs/VisualReviewRequest" }, { "$ref": "#/$defs/VisualReviewResponse" }],
+  "$defs": {
+    "ProfileRef": { "type": "object", "additionalProperties": false, "required": ["id", "version"], "properties": { "id": { "type": "string", "minLength": 1 }, "version": { "type": "string", "minLength": 1 }, "kind": { "type": "string", "enum": ["builtin", "workspace", "user", "host"] } } },
+    "ReviewMode": { "type": "string", "enum": ["visual", "code", "linked"] },
+    "Host": { "type": "object", "additionalProperties": false, "required": ["type", "adapter_version"], "properties": { "type": { "type": "string", "minLength": 1 }, "adapter_version": { "type": "string", "minLength": 1 } } },
+    "ArtifactType": { "type": "string", "enum": ["web_page", "slide", "image", "document_render", "unknown"] },
+    "Rect": { "type": "object", "additionalProperties": false, "required": ["x", "y", "width", "height"], "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "width": { "type": "number", "minimum": 0 }, "height": { "type": "number", "minimum": 0 } } },
+    "EvidenceAnchor": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["id", "kind", "description", "rect"], "properties": { "id": { "type": "string", "minLength": 1 }, "kind": { "const": "pixel_bbox" }, "description": { "type": "string", "minLength": 1 }, "rect": { "$ref": "#/$defs/Rect" }, "page": { "type": "integer", "minimum": 1 } } },
+        { "type": "object", "additionalProperties": false, "required": ["id", "kind", "description", "selector"], "properties": { "id": { "type": "string", "minLength": 1 }, "kind": { "const": "dom_selector" }, "description": { "type": "string", "minLength": 1 }, "selector": { "type": "string", "minLength": 1 }, "rect": { "$ref": "#/$defs/Rect" } } },
+        { "type": "object", "additionalProperties": false, "required": ["id", "kind", "description", "file", "start_line", "end_line"], "properties": { "id": { "type": "string", "minLength": 1 }, "kind": { "const": "source_range" }, "description": { "type": "string", "minLength": 1 }, "file": { "type": "string", "minLength": 1 }, "start_line": { "type": "integer", "minimum": 1 }, "end_line": { "type": "integer", "minimum": 1 } } },
+        { "type": "object", "additionalProperties": false, "required": ["id", "kind", "description", "object_id", "page"], "properties": { "id": { "type": "string", "minLength": 1 }, "kind": { "const": "slide_object" }, "description": { "type": "string", "minLength": 1 }, "object_id": { "type": "string", "minLength": 1 }, "page": { "type": "integer", "minimum": 1 }, "rect": { "$ref": "#/$defs/Rect" } } },
+        { "type": "object", "additionalProperties": false, "required": ["id", "kind", "description", "page", "rect"], "properties": { "id": { "type": "string", "minLength": 1 }, "kind": { "const": "document_region" }, "description": { "type": "string", "minLength": 1 }, "page": { "type": "integer", "minimum": 1 }, "rect": { "$ref": "#/$defs/Rect" } } },
+        { "type": "object", "additionalProperties": false, "required": ["id", "kind", "description", "text"], "properties": { "id": { "type": "string", "minLength": 1 }, "kind": { "const": "text_range" }, "description": { "type": "string", "minLength": 1 }, "text": { "type": "string", "minLength": 1 } } }
+      ]
+    },
+    "ArtifactRef": {
+      "type": "object", "additionalProperties": false, "required": ["type"],
+      "properties": {
+        "type": { "$ref": "#/$defs/ArtifactType" }, "role": { "type": "string", "enum": ["primary", "reference", "supporting"] }, "name": { "type": "string" }, "mime_type": { "type": "string" }, "screenshot_ref": { "type": "string" }, "source_ref": { "type": "string" }, "structure_ref": { "type": "string" }, "evidence_anchors": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/EvidenceAnchor" } },
+        "viewport": { "type": "object", "additionalProperties": false, "properties": { "width": { "type": "integer", "minimum": 1 }, "height": { "type": "integer", "minimum": 1 }, "device_scale_factor": { "type": "number", "exclusiveMinimum": 0 } } }
+      }
+    },
+    "Intent": { "type": "object", "additionalProperties": false, "required": ["goal"], "properties": { "goal": { "type": "string", "minLength": 1 }, "audience": { "type": "string" }, "platform": { "type": "string" }, "brand_profile": { "type": "string" } } },
+    "Constraints": { "type": "object", "additionalProperties": false, "properties": { "must_keep": { "type": "array", "items": { "type": "string" }, "maxItems": 32 }, "must_change": { "type": "array", "items": { "type": "string" }, "maxItems": 32 }, "style_profile": { "type": "string" }, "rubric_profile": { "type": "string" } } },
+    "Permissions": { "type": "object", "additionalProperties": false, "properties": { "can_read_source": { "type": "boolean" }, "can_write_source": { "type": "boolean" }, "can_call_model": { "type": "boolean" }, "can_render": { "type": "boolean" }, "can_run_commands": { "type": "boolean" } } },
+    "Context": { "type": "object", "additionalProperties": false, "properties": { "conversation": { "type": "array", "maxItems": 48 }, "dom_summary": { "type": "string" }, "source_summary": { "type": "string" }, "comparison_revision_id": { "type": "string" } } },
+    "Profile": { "$ref": "#/$defs/ProfileRef" },
+    "VisualReviewRequest": {
+      "type": "object", "additionalProperties": false, "required": ["schema_version", "request_id", "conversation_id", "host", "artifact", "intent", "profile", "operation"],
+      "properties": {
+        "schema_version": { "const": "visual-review-v0.2" }, "request_id": { "type": "string", "minLength": 1 }, "conversation_id": { "type": "string", "minLength": 1 }, "host": { "$ref": "#/$defs/Host" }, "artifact": { "$ref": "#/$defs/ArtifactRef" }, "artifacts": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/ArtifactRef" } }, "intent": { "$ref": "#/$defs/Intent" }, "constraints": { "$ref": "#/$defs/Constraints" }, "profile": { "$ref": "#/$defs/Profile" }, "review_mode": { "enum": ["visual", "linked"] }, "context": { "$ref": "#/$defs/Context" }, "permissions": { "$ref": "#/$defs/Permissions" }, "operation": { "type": "string", "enum": ["review", "repair_plan", "verify"] }, "revision_id": { "type": "string" }, "requested_dimensions": { "type": "array", "maxItems": 32, "items": { "type": "string" } }
+      }
+    },
+    "Observation": { "type": "object", "additionalProperties": false, "required": ["id", "dimension", "statement", "status", "confidence", "evidence"], "properties": { "id": { "type": "string", "minLength": 1 }, "dimension": { "type": "string", "minLength": 1 }, "statement": { "type": "string", "minLength": 1 }, "status": { "type": "string", "enum": ["confirmed", "possible", "not_assessable"] }, "severity": { "type": "string", "enum": ["blocker", "high", "medium", "low", "observation"] }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "evidence": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/EvidenceAnchor" } }, "recommendation": { "type": "string" }, "profile": { "$ref": "#/$defs/ProfileRef" } } },
+    "ObservationEnvelope": { "type": "object", "additionalProperties": false, "required": ["schema_version", "review_mode", "profile", "observations"], "properties": { "schema_version": { "const": "observation-envelope-v0.1" }, "review_mode": { "$ref": "#/$defs/ReviewMode" }, "profile": { "$ref": "#/$defs/ProfileRef" }, "observations": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/Observation" } }, "generated_at": { "type": "string" } } },
+    "Issue": { "type": "object", "additionalProperties": false, "required": ["id", "category", "severity", "confidence", "evidence", "suggested_fix"], "properties": { "id": { "type": "string", "minLength": 1 }, "category": { "type": "string", "minLength": 1 }, "severity": { "type": "string", "enum": ["blocker", "high", "medium", "low", "observation"] }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "evidence": { "type": "array", "minItems": 1, "items": { "type": "object" } }, "evidence_anchors": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/EvidenceAnchor" } }, "suggested_fix": { "type": "string", "minLength": 1 } } },
+    "RepairPlan": { "type": "object", "additionalProperties": false, "required": ["type", "requires_approval", "operations"], "properties": { "type": { "type": "string", "enum": ["source_patch", "structured_edit", "image_edit", "manual_plan", "none"] }, "requires_approval": { "const": true }, "operations": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["action"], "properties": { "action": { "type": "string" }, "target": { "type": "string" }, "reason": { "type": "string" } } } } } },
+    "Verification": { "type": "object", "additionalProperties": false, "required": ["required", "checks"], "properties": { "required": { "type": "boolean" }, "checks": { "type": "array", "maxItems": 24, "items": { "type": "string", "minLength": 1 } } } },
+    "Usage": { "type": "object", "additionalProperties": false, "required": ["mode", "provider"], "properties": { "mode": { "type": "string", "enum": ["mock", "byok", "host_managed", "managed"] }, "provider": { "type": "string", "minLength": 1 }, "model": { "type": "string" }, "input_images": { "type": "integer", "minimum": 0 }, "estimated_cost_minor_units": { "type": "integer", "minimum": 0 }, "latency_ms": { "type": "integer", "minimum": 0 } } },
+    "VisualReviewResponse": {
+      "type": "object", "additionalProperties": false, "required": ["schema_version", "request_id", "decision", "summary", "observations", "issues", "repair_plan", "verification", "usage"],
+      "properties": {
+        "schema_version": { "const": "visual-review-v0.2" }, "request_id": { "type": "string", "minLength": 1 }, "decision": { "type": "string", "enum": ["PASS", "NEEDS_REVISION", "MANUAL_REVIEW", "BLOCKED", "NEEDS_CONTEXT", "NOT_ASSESSABLE"] }, "summary": { "type": "string", "minLength": 1 }, "observations": { "$ref": "#/$defs/ObservationEnvelope" }, "issues": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/Issue" } }, "repair_plan": { "$ref": "#/$defs/RepairPlan" }, "verification": { "$ref": "#/$defs/Verification" }, "usage": { "$ref": "#/$defs/Usage" }
+      }
+    }
+  }
+}
