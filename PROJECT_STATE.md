@@ -13,7 +13,7 @@ VisionQA 是一个可嵌入 Chrome、MCP 或桌面宿主的视觉评审插件：
 - VisualReview/Host 契约：`contracts/` 与 `web/lib/visionqa/`
 - Chrome Host adapter：`web/host/chrome/`
 - 当前默认 Provider：fixture/Mock；真实 Provider 只有显式本地配置才可用。
-- 归档分支：`archive/pre-plugin-release-20261027`
+- 本地历史归档（不上传）：`D:\Projects\VisionQA-local-archive-20261027.git`
 
 ## 本地验收证据
 
@@ -28,7 +28,7 @@ VisionQA 是一个可嵌入 Chrome、MCP 或桌面宿主的视觉评审插件：
 
 ## 产品边界
 
-当前 `main` 只保留独立插件、桌面端、契约、测试、品牌资源和脱敏文档。旧 SaaS/电商工作台、历史修图业务、客户/商业数据和运行报告已从当前快照移除；恢复入口是 archive 分支。Git 历史对象的进一步清理需要单独的仓库安全决策。
+当前 `main` 只保留独立插件、桌面端、契约、测试、品牌资源和脱敏文档。旧 SaaS/电商工作台、历史修图业务、客户/商业数据和运行报告已从公开可达 refs 移除；恢复入口是本机离线 bare mirror，不是公开分支。公开 refs 目前仅为 `main` 与 `codex/visionqa-phase3-qwen`，均指向独立根提交。
 
 ## 安全边界
 
@@ -39,4 +39,4 @@ VisionQA 是一个可嵌入 Chrome、MCP 或桌面宿主的视觉评审插件：
 1. 安全地把 Host capture 截图传入插件证据槽位。
 2. 用明确预算完成真实多模态 Provider 小样本回归。
 3. 完成 Windows/macOS Alpha 安装、签名和卸载验收。
-4. 在考虑 public 历史重写、仓库转私有或新建干净仓库前，先做完整 secret/material exposure audit。
+4. 若继续扩展公开仓库，先做完整 secret/material exposure audit，并保持本地归档与公开 refs 分离。

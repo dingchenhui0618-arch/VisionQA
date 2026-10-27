@@ -54,7 +54,7 @@ npm run desktop:portable
 It writes `web/dist/visionqa-desktop-alpha-portable/`. This is a slim
 plugin-only developer bundle: it keeps `/plugin`, `/api/health`,
 `/api/visual-review` and their VisionQA runtime closure, while excluding the
-legacy workbench routes and sample fashion images. It also excludes
+historical workbench routes and sample image paths. It also excludes
 `node_modules`, Electron binaries, `.env` files, secrets, uploads and user
 assets. Run `npm ci` inside its `web/` directory before launching.
 

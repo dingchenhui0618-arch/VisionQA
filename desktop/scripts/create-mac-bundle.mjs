@@ -114,7 +114,7 @@ await writeFile(
 
 This is a slim, reproducible source/developer bundle for macOS x64 and arm64.
 It keeps the standalone plugin route and its VisionQA runtime closure while
-leaving legacy workbench routes and sample fashion images in the repository.
+excluding historical workbench routes and sample image paths from the bundle.
 It is not a signed or notarized Electron application and it does not contain
 an Electron binary or dependency tree.
 

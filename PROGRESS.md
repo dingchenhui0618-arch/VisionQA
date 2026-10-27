@@ -5,8 +5,8 @@
 - 本地 `/plugin` 完成真实点击验收：选择本地产物后显示缩略图、文件名、大小和证据状态；点击评审返回 fixture/人工判断结果，并明确未调用真实模型。
 - portable shell 已验证默认端口被占用时切换到备用端口；Electron 窗口正常加载插件，原生标题栏使用 C3 品牌图标。
 - `npm run build`、`npm run lint`、`npm run test:plugin`（34/34）、`npm run desktop:test`（9/9）通过。
-- 远程当前 `main` 已建立归档分支 `archive/pre-plugin-release-20261027`；当前发布快照只保留插件、桌面端、契约、测试、品牌资源和脱敏文档。
-- 旧 SaaS/电商工作台、客户/商业素材和历史运行数据从当前 `main` 删除；历史恢复与审计使用 archive 分支。历史 Git 对象是否需要进一步重写，另行评估，不在本次工程验收中冒充已完成。
+- 公开 `main` 与 `codex/visionqa-phase3-qwen` 已重建为独立根提交 `e909816`；远程旧 archive 分支和历史 tag 已删除。
+- 旧 SaaS/电商工作台、客户/商业素材和历史运行数据已从公开可达 refs 清除。完整旧历史仅保留在本机 `D:\Projects\VisionQA-local-archive-20261027.git`，不属于公开发布内容。
 
 ## 当前产品边界
 
@@ -32,4 +32,4 @@ VisionQA 是宿主智能体的视觉评审插件，不是独立的生图、修�
 1. 完成 Host capture 截图到插件证据槽位的安全消息桥。
 2. 在本地显式 Provider 配置下做小预算真实多模态回归，并分别记录工程与模型证据。
 3. 为 Windows/macOS Alpha 做签名、安装和卸载测试，再讨论生产发布。
-4. 若需要清除公开 Git 历史中的受限素材，先决定仓库转私有、历史重写或新建干净 public repo；不能把删除当前文件当作历史清除。
+4. 若将来发现新的受限内容，先更新本地归档并审计所有公开 refs；不要把删除当前文件误认为已清除 Git 历史。

@@ -34,12 +34,12 @@
 
 ## 发布边界
 
-公开仓库只应包含源码、契约、测试、脱敏文档和可复现脚本；不得提交 API key、`.env`、客户图片、真实素材清单、开发日志或 portable/build 产物。历史业务代码和旧阶段文档仍保留在 Git 历史与归档分支，除非另行确认明确的删除清单，不做不可逆的整库清空。
+公开仓库只应包含源码、契约、测试、脱敏文档和可复现脚本；不得提交 API key、`.env`、客户图片、真实素材清单、开发日志或 portable/build 产物。清理前的完整历史已保存到本机 `D:\Projects\VisionQA-local-archive-20261027.git`，公开 refs 不再保留旧 archive 分支或历史 tag。
 
 ## GitHub 同步记录
 
 - 远程仓库：`https://github.com/dingchenhui0618-arch/VisionQA.git`
-- 当前 `main` / `codex/visionqa-phase3-qwen`：`6f30ee7`（独立插件快照）。
-- 清理前归档分支：`archive/pre-plugin-release-20261027`，指向清理前的 `origin/main`，用于恢复和历史审计。
-- 当前 `main` 不含旧 `data/`、`datasets/`、`agents/`、`handoffs/`、`reports/`、`standards/`、`src/`、旧工作台路由、旧商品图和旧商业评测契约。
-- 这次删除只改变当前分支树；如果需要从 public Git 历史彻底清除受限素材，仍需单独完成历史重写、转私有或新建干净仓库的安全决策。
+- 当前 `main` / `codex/visionqa-phase3-qwen`：`e909816`（独立根提交的插件仓库）。
+- 清理前本地归档：`D:\Projects\VisionQA-local-archive-20261027.git`，通过 `git fsck --full --no-reflogs` 校验。
+- 当前公开 refs 仅保留 `main` 与 `codex/visionqa-phase3-qwen`，不含旧 `data/`、`datasets/`、`agents/`、`handoffs/`、`reports/`、`standards/`、`src/`、旧工作台路由、旧商品图和旧商业评测契约。
+- 公开历史已通过 orphan 根提交重建；Git hosting 对不可达对象的最终回收取决于平台垃圾回收，不应把本地归档再次推送。
