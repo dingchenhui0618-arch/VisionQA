@@ -2,7 +2,7 @@ const resultNode = document.querySelector("#result");
 const reviewButton = document.querySelector("#review");
 const goalNode = document.querySelector("#goal");
 let reviewedTabId = null;
-let lastRevisionId = null;
+let lastCaptureSnapshot = null;
 
 const decisionLabels = {
   PASS: "可以继续",
@@ -59,7 +59,18 @@ async function focusEvidence(selector) {
   }
 }
 
-function renderResult(payload, capturedRevisionId) {
+function describeRevision(currentSnapshot) {
+  if (!lastCaptureSnapshot) return "首次采集";
+  if (lastCaptureSnapshot.revision_id === currentSnapshot.revision_id) return "revision 未变化，仍是同一份页面";
+  const changes = [];
+  if (lastCaptureSnapshot.headings.join(" / ") !== currentSnapshot.headings.join(" / ")) changes.push("标题层级有变化");
+  const elementDelta = currentSnapshot.elements.length - lastCaptureSnapshot.elements.length;
+  if (elementDelta) changes.push(`页面结构摘要 ${elementDelta > 0 ? "增加" : "减少"} ${Math.abs(elementDelta)} 项`);
+  if (lastCaptureSnapshot.interactive_summary !== currentSnapshot.interactive_summary) changes.push("交互元素摘要有变化");
+  return `revision 已变化：${changes.join("、") || "页面内容或布局摘要有变化"}`;
+}
+
+function renderResult(payload, capturedRevisionId, currentSnapshot) {
   const contract = payload?.contract;
   if (!contract) {
     resultNode.className = "result is-error";
@@ -69,7 +80,7 @@ function renderResult(payload, capturedRevisionId) {
   const ui = payload.ui_result;
   const issues = Array.isArray(ui?.issues) ? ui.issues.slice(0, 3) : Array.isArray(contract.issues) ? contract.issues.slice(0, 3).map((issue) => ({ title: categoryLabels[issue.category] || "有一处视觉问题需要看一下", nextStep: issue.suggested_fix, evidence: issue.evidence?.slice(0, 1).map((item) => ({ description: item.description })) || [] })) : [];
   const revision = capturedRevisionId || ui?.revision_id || payload.host_capture?.page_revision_id || contract.revision_id || "当前页面";
-  const revisionMessage = lastRevisionId === null ? "首次采集" : lastRevisionId === revision ? "revision 未变化，仍是同一份页面" : "revision 已变化，可以复验修改结果";
+  const revisionMessage = describeRevision(currentSnapshot);
   const issueHtml = issues.map((issue) => {
     const evidence = issue.evidence?.[0];
     const locateButton = evidence?.selector ? `<button class="evidence-link" type="button" data-selector="${escapeHtml(evidence.selector)}">定位页面位置</button>` : "";
@@ -79,7 +90,7 @@ function renderResult(payload, capturedRevisionId) {
   resultNode.className = `result${previewOnly ? " is-preview" : ""}`;
   resultNode.innerHTML = `<h2>${escapeHtml(decisionLabels[ui?.decision] || decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(ui?.summary || contract.summary)}</p><div class="meta">已读取当前页面截图、DOM 摘要 · ${escapeHtml(revision)} · ${revisionMessage}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(ui?.next_step || contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前为离线预览，不是模型视觉结论。" : ""}</div>`;
   resultNode.querySelectorAll("[data-selector]").forEach((button) => button.addEventListener("click", () => focusEvidence(button.dataset.selector)));
-  lastRevisionId = revision;
+  lastCaptureSnapshot = currentSnapshot;
 }
 
 async function collectDomContext() {
@@ -261,7 +272,7 @@ async function reviewCurrentTab() {
     if (!response) throw lastError || new Error("本地服务没有响应，请确认 VisionQA 已启动。");
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error?.message || "本次宿主评审没有完成。");
-    renderResult(payload, dom.result.revision_id);
+    renderResult(payload, dom.result.revision_id, { revision_id: dom.result.revision_id, headings: dom.result.headings, elements: dom.result.elements, interactive_summary: dom.result.interactive_summary });
   } catch (error) {
     const message = error instanceof Error ? error.message : "本次宿主评审没有完成。";
     resultNode.className = "result is-error";
