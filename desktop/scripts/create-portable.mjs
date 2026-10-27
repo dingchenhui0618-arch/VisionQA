@@ -45,6 +45,7 @@ if (existsSync(output)) {
 await mkdir(output, { recursive: true });
 
 await copyRequired("desktop/main.mjs");
+await copyRequired("desktop/built-server.mjs");
 await copyRequired("desktop/provider-settings.mjs");
 await copyRequired("desktop/preload.cjs");
 await copyRequired("desktop/export.mjs");

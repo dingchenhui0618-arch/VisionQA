@@ -5,8 +5,10 @@ does not change the website or deploy anything online.
 
 ## Boundary
 
-- `main.mjs` owns the BrowserWindow and starts `web/scripts/start-local.mjs`
-  on port 6300 when a local server is not already running.
+- `main.mjs` owns the BrowserWindow. In development it starts
+  `web/scripts/start-local.mjs` on port 6300; in a packaged app it starts the
+  built `dist/server/index.js` through `built-server.mjs`, so the end user does
+  not need Vinext or npm at runtime.
 - `preload.cjs` exposes only allow-listed status, capability, and export IPC.
 - `renderer/` documents the renderer contract; the renderer has no Node.js
   access.
@@ -71,10 +73,10 @@ npm run desktop:builder:portable
 The checked Windows evidence is the unpacked Electron shell at
 `web/dist/electron/win-unpacked/VisionQA.exe`; a valid portable `.exe` was not
 verified (the builder produced no usable portable artifact on this host).
-Do not treat the unpacked shell as a customer installer. It is unsigned and
-does not contain the full development dependency tree. A future customer
-installer must bundle or replace the local server runtime, add signing, and
-define update/rollback behavior before release.
+The packaged shell now contains the built server and client assets, so it does
+not require the development dependency tree or Node.js at runtime. Do not
+treat the unpacked shell as a customer installer yet: it is unsigned, and
+installation/update/rollback behavior still needs a dedicated acceptance pass.
 
 ## macOS Alpha distribution
 
@@ -101,8 +103,9 @@ npm run desktop:builder:mac
 ```
 
 This repository does not claim a macOS `.app` or `.zip` has been generated or
-visually verified yet. Signing, notarization, update and rollback policy remain
-release decisions.
+visually verified yet. The packaged entrypoint is prepared to use the same
+built local server bridge, but signing, notarization, update and rollback
+policy remain release decisions.
 
 ## Existing localhost service recovery
 

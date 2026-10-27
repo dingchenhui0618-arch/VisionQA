@@ -18,6 +18,7 @@ test("portable bundle script refuses non-generated paths and excludes secrets", 
   assert.match(source, /provider_calls: false/);
   assert.match(source, /desktop-provider-config\.mjs/);
   assert.match(source, /desktop\/provider-settings\.mjs/);
+  assert.match(source, /desktop\/built-server\.mjs/);
   assert.match(source, /desktop-bundle-filter\.mjs/);
   assert.match(source, /web\/.openai\/hosting\.json/);
   assert.match(source, /web\/build\/sites-vite-plugin\.ts/);

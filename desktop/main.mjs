@@ -9,7 +9,9 @@ import { clearProviderKey, readPersistedDesktopSettings, readProviderSettingsMet
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
-const webRoot = path.join(repoRoot, "web");
+const repoWebRoot = path.join(repoRoot, "web");
+const packagedWebRoot = path.join(process.resourcesPath || "", "web");
+const webRoot = existsSync(path.join(repoWebRoot, "package.json")) ? repoWebRoot : packagedWebRoot;
 
 function resolveAppIcon() {
   const candidates = [
@@ -40,7 +42,7 @@ const requestedProviderMode = process.env.VISIONQA_DESKTOP_PROVIDER_MODE
   || (process.env.VISIONQA_DESKTOP_PROVIDER_ENABLED === "true" ? "real" : persistedDesktopSettings.mode);
 const desktopProviderMode = String(requestedProviderMode).trim().toLowerCase() === "real" ? "real" : "off";
 const desktopSecretsFile = process.env.VISIONQA_DESKTOP_SECRETS_FILE?.trim() || persistedDesktopSettings.secretsFile || "";
-const ownedServer = { child: null, started: false };
+const ownedServer = { child: null, server: null, started: false };
 
 // Do not pass the parent process environment wholesale to the local web
 // server. Provider keys are intentionally absent here; the server-side launch
@@ -169,7 +171,32 @@ async function waitForLocalServer(timeoutMs = 30_000) {
   throw new Error(`VisionQA local server did not become ready at ${localUrl}`);
 }
 
-function startLocalServer() {
+async function startLocalServer() {
+  if (app.isPackaged) {
+    const serverEntry = path.join(webRoot, "dist", "server", "index.js");
+    if (!existsSync(serverEntry)) throw new Error(`built VisionQA server not found: ${serverEntry}`);
+    // The production route reads these markers at module import time. Keep
+    // them explicit and non-secret in packaged mode, just like the developer
+    // child process below; API keys still come only from the external secrets
+    // file when the desktop Provider mode is explicitly real.
+    process.env.VISIONQA_AGENT_LOCAL = "true";
+    process.env.VISIONQA_AGENT_MOCK = desktopProviderMode === "off" ? "true" : "false";
+    process.env.VISIONQA_DESKTOP_MODE = desktopProviderMode;
+    process.env.VISIONQA_DESKTOP_PROVIDER_MODE = desktopProviderMode;
+    process.env.VISIONQA_DESKTOP_SECRETS_FILE = desktopSecretsFile;
+    process.env.VISIONQA_DESKTOP_PORT = parsedLocalUrl.port || "6300";
+    process.env.VISION_MULTIMODAL_ENABLED = desktopProviderMode === "real" ? "true" : "false";
+    process.env.VISION_LOCAL_CANARY_ALLOW_LOCALHOST = desktopProviderMode === "real" ? "true" : "false";
+    const { startBuiltVisionqaServer } = await import("./built-server.mjs");
+    ownedServer.server = await startBuiltVisionqaServer({
+      serverEntry,
+      clientRoot: path.join(webRoot, "dist", "client"),
+      host: "127.0.0.1",
+      port: Number(parsedLocalUrl.port || 6300),
+    });
+    ownedServer.started = true;
+    return;
+  }
   if (!existsSync(path.join(webRoot, "package.json"))) throw new Error(`web package not found: ${webRoot}`);
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
   const command = process.platform === "win32" ? (process.env.ComSpec || process.env.COMSPEC || "cmd.exe") : npm;
@@ -199,8 +226,11 @@ function startLocalServer() {
 }
 
 function stopLocalServer() {
-  if (!ownedServer.child || ownedServer.child.killed) return;
-  ownedServer.child.kill("SIGTERM");
+  if (ownedServer.server) {
+    ownedServer.server.close();
+    ownedServer.server = null;
+  }
+  if (ownedServer.child && !ownedServer.child.killed) ownedServer.child.kill("SIGTERM");
   ownedServer.child = null;
 }
 
@@ -318,7 +348,7 @@ if (!process.versions.electron) {
       registerIpc();
       await selectLocalEndpoint();
       if (!(await localServerReady())) {
-        startLocalServer();
+        await startLocalServer();
         await waitForLocalServer();
       }
       await assertLocalServerMode();

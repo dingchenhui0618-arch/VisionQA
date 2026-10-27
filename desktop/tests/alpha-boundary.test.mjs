@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { startBuiltVisionqaServer } from "../built-server.mjs";
 import { REVIEW_EXPORT_FORMATS, serializeReview, toSarif } from "../export.mjs";
 
 const desktopRoot = new URL("../", import.meta.url);
@@ -62,4 +64,41 @@ test("main and preload preserve the Electron security boundary", async () => {
   assert.match(main, /provider-settings\.mjs/);
   assert.match(main, /readProviderSettingsMeta/);
   assert.match(main, /saveProviderSettings/);
+});
+
+test("packaged desktop runtime uses the built local server instead of a developer server", async () => {
+  const main = await readFile(new URL("main.mjs", desktopRoot), "utf8");
+  const runtime = await readFile(new URL("built-server.mjs", desktopRoot), "utf8");
+  assert.match(main, /app\.isPackaged/);
+  assert.match(main, /startBuiltVisionqaServer/);
+  assert.match(main, /dist.*server.*index\.js/);
+  assert.match(runtime, /createServer/);
+  assert.match(runtime, /handler\.fetch/);
+  assert.match(runtime, /serveStatic/);
+  assert.match(runtime, /clientRoot/);
+  assert.match(runtime, /MAX_REQUEST_BYTES/);
+  assert.doesNotMatch(runtime, /process\.env\.[A-Z0-9_]*(KEY|TOKEN|SECRET)/i);
+});
+
+test("built desktop server serves the plugin and its local client assets", async () => {
+  const server = await startBuiltVisionqaServer({
+    serverEntry: fileURLToPath(new URL("../../web/dist/server/index.js", import.meta.url)),
+    clientRoot: fileURLToPath(new URL("../../web/dist/client/", import.meta.url)),
+    port: 0,
+  });
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+  try {
+    assert.equal((await fetch(`http://127.0.0.1:${port}/api/health`)).status, 200);
+    const page = await fetch(`http://127.0.0.1:${port}/plugin`);
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    const asset = html.match(/(?:src|href)="([^"]+\.(?:js|css))"/)?.[1];
+    assert.ok(asset, "the plugin page should reference a local JS or CSS asset");
+    assert.equal((await fetch(`http://127.0.0.1:${port}${asset}`)).status, 200);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/brand/visionqa-favicon.svg`)).status, 200);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/%2e%2e/%2e%2e/package.json`)).status, 404);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
 });

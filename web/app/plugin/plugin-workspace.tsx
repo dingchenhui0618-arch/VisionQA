@@ -4,13 +4,13 @@
 // these tiny local assets through the image optimizer would add no value.
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { VisualReviewRequest, VisualReviewResponse } from "../../lib/visionqa/visual-review-contract";
 import { toPluginUiResult, type PluginUiResult } from "../../lib/visionqa/review-ui-adapter";
 
 type Provider = "mock" | "auto";
 type RunState = "idle" | "running" | "success" | "error";
-type ResultPayload = { contract?: VisualReviewResponse; provider?: { providerId: string; modelSnapshot: string; latencyMs: number; warnings: string[] }; ui_result?: PluginUiResult; error?: { code: string; message: string; request_id?: string } };
+type ResultPayload = { contract?: VisualReviewResponse; provider?: { providerId: string; modelSnapshot: string; latencyMs: number; warnings: string[] }; ui_result?: PluginUiResult; error?: { code: string; message: string; request_id?: string; action?: "settings" | "retry" } };
 type DesktopRuntimeStatus = { provider_mode?: "off" | "real"; provider_calls?: boolean; provider_config_source?: string };
 type ProviderSettings = { mode: "off" | "real"; provider_id: string; endpoint: string; model: string; max_total_requests: number; api_key_configured: boolean; secrets_file?: string | null; settings_file?: string | null; source?: string; restart_required?: boolean };
 type ProviderCheck = ProviderSettings & { server?: { reachable: boolean; mode: "off" | "real" | null; available: boolean; missing: string[] } };
@@ -38,6 +38,32 @@ const initialProviderForm: ProviderSettingsForm = {
 };
 
 const newId = () => crypto.randomUUID();
+const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+function imageFileError(file: File | undefined): string | null {
+  if (!file) return null;
+  if (!IMAGE_TYPES.has(file.type)) return "请添加 JPG、PNG 或 WebP 图片。";
+  if (file.size > MAX_IMAGE_BYTES) return "这张图片超过 12 MB，请压缩后再添加。";
+  return null;
+}
+
+function humanClientError(error: unknown, payload?: ResultPayload): { message: string; action: "settings" | "retry" } {
+  const raw = `${payload?.error?.code || ""} ${payload?.error?.message || ""} ${error instanceof Error ? error.message : ""}`.toLowerCase();
+  if (raw.includes("provider") || raw.includes("model") || raw.includes("multimodal") || raw.includes("api key") || raw.includes("api_key") || raw.includes("configured")) {
+    return { message: "当前还没有可用的视觉模型。请打开本机设置完成配置；图片不会被修改。", action: "settings" };
+  }
+  if (raw.includes("413") || raw.includes("too large") || raw.includes("payload")) {
+    return { message: "图片太大，暂时无法送检。请压缩图片后再试。", action: "retry" };
+  }
+  if (raw.includes("decode") || raw.includes("image") || raw.includes("file")) {
+    return { message: "这张图片暂时无法读取。请换一张能正常打开的 JPG、PNG 或 WebP 图片。", action: "retry" };
+  }
+  if (raw.includes("fetch") || raw.includes("network") || raw.includes("request") || raw.includes("service")) {
+    return { message: "本次检查没有完成，可能是本地服务暂时没有响应。请稍后再试。", action: "retry" };
+  }
+  return { message: "本次检查没有完成。请确认图片仍然存在后再试。", action: "retry" };
+}
 
 function runtimeStatus(status: DesktopRuntimeStatus | null, state: RunState, providerCheck: ProviderCheck | null): { label: string; tone: "preview" | "ready" | "pending" | "offline" | "running" | "success" | "error" } {
   if (state === "running") return { label: "正在评审", tone: "running" };
@@ -99,6 +125,7 @@ export function PluginWorkspace() {
   const [providerMessage, setProviderMessage] = useState("");
   const [providerError, setProviderError] = useState("");
   const [providerCheck, setProviderCheck] = useState<ProviderCheck | null>(null);
+  const candidateInputRef = useRef<HTMLInputElement>(null);
 
   function getDesktopBridge(): DesktopBridge | null {
     if (typeof window === "undefined") return null;
@@ -128,6 +155,18 @@ export function PluginWorkspace() {
   const requestPreview = useMemo(() => makeRequest({ conversationId, goal, context, mustKeep, candidate, provider }), [conversationId, goal, context, mustKeep, candidate, provider]);
   const uiResult = result?.contract ? result.ui_result || toPluginUiResult(result.contract) : null;
 
+  function selectCandidate(file: File | undefined) {
+    const validationError = imageFileError(file);
+    if (validationError) {
+      setAttachmentNotice(validationError);
+      return;
+    }
+    setCandidate(file || null);
+    setAttachmentNotice("");
+    setResult(null);
+    setRunState("idle");
+  }
+
   async function runReview(event?: FormEvent) {
     event?.preventDefault();
     setRunState("running");
@@ -141,12 +180,16 @@ export function PluginWorkspace() {
     try {
       const response = await fetch("/api/visual-review", { method: "POST", body: form, headers: { "x-request-id": request.request_id } });
       const payload = await response.json() as ResultPayload;
-      if (!response.ok) throw new Error(payload.error?.message || "本次评审没有形成结果。");
+      if (!response.ok) {
+        const friendly = humanClientError(new Error(payload.error?.message || "request failed"), payload);
+        throw Object.assign(new Error(friendly.message), { action: friendly.action });
+      }
       setResult(payload);
       setMessage("");
       setRunState("success");
     } catch (error) {
-      setResult({ error: { code: "CLIENT_REQUEST_FAILED", message: error instanceof Error ? error.message : "本次评审没有形成结果，请稍后重试。" } });
+      const friendly = humanClientError(error);
+      setResult({ error: { code: "CLIENT_REQUEST_FAILED", message: friendly.message, action: (error as Error & { action?: "settings" | "retry" }).action || friendly.action } });
       setRunState("error");
     }
   }
@@ -236,19 +279,20 @@ export function PluginWorkspace() {
 
         {activeTab === "review" && <div id="plugin-panel-review" className="plugin-body" role="tabpanel" aria-labelledby="plugin-tab-review" tabIndex={0}>
           <div className="plugin-statusline"><div className="plugin-session"><span className="plugin-kicker">当前会话</span><span className="plugin-session-value">{candidate ? `1 张待检查图片 · ${candidate.name}` : "等待添加图片"}</span></div><span className={`plugin-evidence-state ${candidate ? "is-ready" : "is-empty"}`}><i /> {candidate ? "已添加图片" : "等待图片"}</span></div>
-          {!result && <div className="plugin-empty"><div className="plugin-empty__identity"><div className="plugin-mark"><img src="/brand/visionqa-favicon.svg" alt="VisionQA" /></div><span className="plugin-kicker">图片检查</span></div><h1>先放入一张要检查的图片。</h1><p>上传截图或导出的图片，VisionQA 会帮你找出最需要处理的地方，并给出下一步建议。要检查正在打开的网页，请从 Chrome 侧边面板发起。</p><div className={`plugin-evidence-anchor ${candidate ? "has-file" : "is-empty"}`} aria-label="当前待检查图片"><div className="plugin-evidence-media">{candidatePreviewUrl ? <img src={candidatePreviewUrl} alt="当前待检查图片缩略图" /> : <span aria-hidden="true">—</span>}</div><div className="plugin-evidence-copy"><span className="plugin-kicker">当前图片</span><strong>{candidate ? candidate.name : "尚未添加图片"}</strong><small>{candidate ? `${formatFileSize(candidate)} · 可以开始检查` : "支持截图或导出的 JPG、PNG、WebP"}</small></div><em>{candidate ? "待检查" : "等待添加"}</em></div><div className="plugin-goal-anchor"><span className="plugin-kicker">检查目标</span><strong>{goal || "等待补充检查目标"}</strong></div></div>}
+          {!result && <div className="plugin-empty"><div className="plugin-empty__identity"><div className="plugin-mark"><img src="/brand/visionqa-favicon.svg" alt="VisionQA" /></div><span className="plugin-kicker">图片检查</span></div><h1>先放入一张要检查的图片。</h1><p>上传截图或导出的图片，VisionQA 会帮你找出最需要处理的地方，并给出下一步建议。要检查正在打开的网页，请从 Chrome 侧边面板发起。</p><div className={`plugin-evidence-anchor ${candidate ? "has-file" : "is-empty"}`} aria-label="当前待检查图片"><div className="plugin-evidence-media">{candidatePreviewUrl ? <img src={candidatePreviewUrl} alt="当前待检查图片缩略图" /> : <span aria-hidden="true">—</span>}</div><div className="plugin-evidence-copy"><span className="plugin-kicker">当前图片</span><strong>{candidate ? candidate.name : "尚未添加图片"}</strong><small>{candidate ? `${formatFileSize(candidate)} · 可以开始检查` : "支持截图或导出的 JPG、PNG、WebP · 单张不超过 12 MB"}</small></div><em>{candidate ? "待检查" : "等待添加"}</em></div><div className="plugin-goal-anchor"><span className="plugin-kicker">检查目标</span><strong>{goal || "等待补充检查目标"}</strong></div></div>}
           {uiResult && <article className="plugin-result" aria-live="polite">
             {candidatePreviewUrl && <div className="plugin-result-evidence"><div className="plugin-result-evidence__media"><img src={candidatePreviewUrl} alt="本次检查的图片" /></div><div><span className="plugin-kicker">本次检查的图片</span><strong>{candidate.name}</strong><small>{formatFileSize(candidate)} · 结果对应当前文件</small></div></div>}
             <div className="plugin-result__headline"><span className={`plugin-decision decision-${uiResult.decision.toLowerCase()}`} aria-hidden="true" /><div><span className="plugin-kicker">检查结果</span><h2>{uiResult.decision_label}</h2></div><small>{uiResult.preview_only ? "离线预览" : "请结合证据确认"}</small></div>
             <p className="plugin-summary">{uiResult.summary}</p>
             {uiResult.issues.length > 0 ? <div className="plugin-issues">{uiResult.issues.slice(0, 3).map(issue => <div className="plugin-issue" key={issue.id}><div><strong>{issue.title}</strong><span>{issue.priority}</span></div><p>{issue.nextStep}</p>{issue.evidence[0] && <small>{issue.evidence[0].label} · {issue.evidence[0].description}</small>}</div>)}{uiResult.issues.length > 3 && <p className="plugin-issue-more">还有 {uiResult.issues.length - 3} 项细节，已放入版本记录。</p>}</div> : <p className="plugin-no-issues">当前没有需要单独列出的视觉问题。</p>}
-            <div className="plugin-repair"><span className="plugin-kicker">下一步</span><p>{uiResult.next_step}</p><div className="plugin-checks">{uiResult.verification_checks.map(check => <span key={check}>○ {check}</span>)}</div><div className="plugin-result-actions"><button type="button" onClick={() => { setResult(null); setRunState("idle"); setMessage(""); }}>用当前作品再次检查</button><button type="button" onClick={() => setActiveTab("versions")}>查看检查记录</button></div></div>
+            <div className="plugin-repair"><span className="plugin-kicker">下一步</span><p>{uiResult.next_step}</p><div className="plugin-checks">{uiResult.verification_checks.map(check => <span key={check}>○ {check}</span>)}</div><div className="plugin-result-actions"><button type="button" onClick={() => { setResult(null); setRunState("idle"); setMessage(""); }}>用当前作品再次检查</button><button type="button" onClick={() => candidateInputRef.current?.click()}>替换这张图片</button><button type="button" onClick={() => setActiveTab("versions")}>查看检查记录</button></div></div>
           </article>}
-          {result?.error && <div className="plugin-error" role="alert"><strong>这次没有完成</strong><p>{result.error.message}</p><small>{result.error.code}</small></div>}
+          {result?.error && <div className="plugin-error" role="alert"><strong>这次没有完成</strong><p>{result.error.message}</p><button type="button" onClick={() => { if (result.error?.action === "settings") setActiveTab("settings"); else { setResult(null); setRunState("idle"); } }}>{result.error.action === "settings" ? "打开本机设置" : "重新试一次"}</button></div>}
           <form className="plugin-composer" onSubmit={runReview}>
             <label htmlFor="plugin-message">这次想重点看什么？</label>
             <textarea id="plugin-message" value={message} onChange={event => setMessage(event.target.value)} placeholder="例如：先看首屏是否清楚，保留现有品牌标识…" maxLength={2000} disabled={isBusy} />
-            <div className="plugin-composer__bar"><label className="plugin-file"><input type="file" accept="image/jpeg,image/png,image/webp" onChange={event => { setCandidate(event.target.files?.[0] || null); setAttachmentNotice(""); }} disabled={isBusy} />{candidate ? `图片 · ${candidate.name}` : "添加要检查的图片"}</label><button type="submit" className="plugin-send" disabled={isBusy || !candidate} aria-label={isBusy ? "检查中" : "开始检查"}><span>{isBusy ? "检查中" : "开始检查"}</span><b aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8h9" /><path d="m8.5 4.5 3.5 3.5-3.5 3.5" /></svg></b></button></div>
+            <div className="plugin-composer__bar"><label className="plugin-file"><input ref={candidateInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={event => selectCandidate(event.target.files?.[0])} disabled={isBusy} />{candidate ? `图片 · ${candidate.name}` : "添加要检查的图片"}</label><button type="submit" className="plugin-send" disabled={isBusy || !candidate} aria-label={isBusy ? "检查中" : "开始检查"}><span>{isBusy ? "检查中" : "开始检查"}</span><b aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8h9" /><path d="m8.5 4.5 3.5 3.5-3.5 3.5" /></svg></b></button></div>
+            <small className="plugin-composer-hint">{candidate ? "证据已准备好，可以开始检查。" : "请先添加图片；没有图片时不会发起检查。"}</small>
             {attachmentNotice && <small className="plugin-attachment-notice">{attachmentNotice}</small>}
           </form>
         </div>}

@@ -489,6 +489,7 @@ body:has(.plugin-host) {
 .plugin-send:active:not(:disabled) { transform: translateY(1px); }
 .plugin-send:disabled { cursor: not-allowed; opacity: .46; }
 .plugin-attachment-notice { display: block; padding: 0 11px 8px; color: var(--plugin-warning); font-size: 11px; }
+.plugin-composer-hint { display: block; padding: 0 11px 8px; color: var(--plugin-muted); font-size: 10px; line-height: 1.4; }
 
 .plugin-context,
 .plugin-versions,
@@ -539,7 +540,8 @@ body:has(.plugin-host) {
 .plugin-error { margin: 16px 0; padding: 12px; border: 1px solid var(--plugin-line-strong); border-radius: 9px; background: #202022; }
 .plugin-error strong { color: #f0f0ec; font-size: 12px; }
 .plugin-error p { margin: 5px 0; color: #d1d1ce; font-size: 12px; line-height: 1.5; }
-.plugin-error small { color: #a6a6a4; font-size: 10px; }
+.plugin-error button { min-height: 34px; margin-top: 7px; padding: 0 10px; border: 1px solid var(--plugin-line-strong); border-radius: 7px; background: transparent; color: var(--plugin-ink-soft); cursor: pointer; font: inherit; font-size: 11px; }
+.plugin-error button:hover { border-color: #dededb; background: #dededb; color: #171718; }
 
 .plugin-disclaimer {
   position: absolute;
