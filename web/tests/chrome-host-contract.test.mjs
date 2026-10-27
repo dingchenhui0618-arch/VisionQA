@@ -15,6 +15,8 @@ test("Chrome Host delegates Provider choice to the local server and never hardco
   assert.match(popup, /当前没有开启可用的视觉模型/);
   assert.match(popup, /local Qwen|local canary/);
   assert.match(popupHtml, /未配置模型时不会生成假结论/);
+  assert.match(popupHtml, /打开本地设置/);
+  assert.match(popup, /plugin\?tab=settings/);
 });
 
 test("Chrome Host documentation keeps real and preview boundaries explicit", () => {

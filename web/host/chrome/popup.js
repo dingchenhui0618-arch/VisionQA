@@ -1,5 +1,6 @@
 const resultNode = document.querySelector("#result");
 const reviewButton = document.querySelector("#review");
+const settingsButton = document.querySelector("#settings");
 const goalNode = document.querySelector("#goal");
 let reviewedTabId = null;
 let lastCaptureSnapshot = null;
@@ -311,3 +312,6 @@ async function reviewCurrentTab() {
 }
 
 reviewButton.addEventListener("click", reviewCurrentTab);
+settingsButton?.addEventListener("click", () => {
+  chrome.tabs.create({ url: "http://localhost:6300/plugin?tab=settings" });
+});

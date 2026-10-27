@@ -35,6 +35,8 @@
       .result.is-error { border-color: #685050; }
       .result.is-preview { border-color: #4f4f52; }
       .hint { margin-top: 10px; color: #77777c; font-size: 11px; }
+      .settings-link { width: auto; min-height: 30px; margin: 4px 0 0; padding: 0; border: 0; background: transparent; color: #c9c9c3; font-size: 11px; font-weight: 500; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
+      .settings-link:hover { color: #f0f0eb; }
     </style>
   </head>
   <body>
@@ -44,6 +46,7 @@
     <button id="review">评审当前页面</button>
     <section id="result" class="result" hidden aria-live="polite"></section>
     <div class="hint">点击后会使用本机已配置的视觉模型检查当前页面；密钥只留在本地服务端。未配置模型时不会生成假结论。</div>
+    <button id="settings" class="settings-link" type="button">打开本地设置</button>
     <script src="popup.js"></script>
   </body>
 </html>

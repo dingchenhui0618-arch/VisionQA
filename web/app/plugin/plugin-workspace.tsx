@@ -20,6 +20,14 @@ type DesktopBridge = {
   provider?: { getSettings?: () => Promise<ProviderSettings>; check?: () => Promise<ProviderCheck>; saveSettings?: (input: ProviderSettingsForm) => Promise<ProviderSettings>; clearKey?: () => Promise<ProviderSettings>; restart?: () => Promise<{ accepted: boolean }> };
 };
 
+type PluginTab = "review" | "context" | "versions" | "settings";
+
+function initialPluginTab(): PluginTab {
+  if (typeof window === "undefined") return "review";
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  return tab === "context" || tab === "versions" || tab === "settings" ? tab : "review";
+}
+
 const initialProviderForm: ProviderSettingsForm = {
   mode: "off",
   provider_id: "deepseek",
@@ -83,7 +91,7 @@ export function PluginWorkspace() {
   const [runState, setRunState] = useState<RunState>("idle");
   const [result, setResult] = useState<ResultPayload | null>(null);
   const [attachmentNotice, setAttachmentNotice] = useState("");
-  const [activeTab, setActiveTab] = useState<"review" | "context" | "versions" | "settings">("review");
+  const [activeTab, setActiveTab] = useState<PluginTab>(initialPluginTab);
   const [desktopStatus, setDesktopStatus] = useState<DesktopRuntimeStatus | null>(null);
   const [providerSettings, setProviderSettings] = useState<ProviderSettings | null>(null);
   const [providerForm, setProviderForm] = useState<ProviderSettingsForm>(initialProviderForm);
