@@ -533,6 +533,9 @@ body:has(.plugin-host) {
 .plugin-version-row em { font-style: normal; color: #bababa; font-size: 11px; }
 .plugin-version-row.is-current strong { color: #e8e8e5; }
 .plugin-contract-preview { max-height: 210px; overflow: auto; margin: 7px 0 0; padding: 10px; border: 1px solid var(--plugin-line); border-radius: 7px; color: #c1c1bf; background: #111112; font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.plugin-technical-details { margin-top: auto; border-top: 1px solid var(--plugin-line); padding-top: 10px; }
+.plugin-technical-details summary { color: var(--plugin-muted); cursor: pointer; font-size: 11px; }
+.plugin-technical-details summary:hover { color: var(--plugin-ink-soft); }
 .plugin-error { margin: 16px 0; padding: 12px; border: 1px solid var(--plugin-line-strong); border-radius: 9px; background: #202022; }
 .plugin-error strong { color: #f0f0ec; font-size: 12px; }
 .plugin-error p { margin: 5px 0; color: #d1d1ce; font-size: 12px; line-height: 1.5; }
