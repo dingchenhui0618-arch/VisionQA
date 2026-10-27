@@ -162,7 +162,7 @@ VisionQA 当前不应该继续堆 Provider、模型、版本树或更多评审�
 
 - Chrome 扩展增加 Side Panel 配置和最小 Service Worker：点击扩展动作时，优先打开可持续停留在页面旁的评审面板，而不是一次性弹出 JSON 工具。
 - Popup/Side Panel 共用同一份页面截图、DOM 摘要、对话上下文和结果渲染；本地服务 6300 不可用时，会按 6301 备用端口尝试，扩展权限也同步覆盖两个本地端口。
-- 这一步不增加模型能力，只改变证据采集和结果阅读的容器。Chrome Side Panel 的产品定位本身就是“持续伴随浏览过程”的体验，适合 VisionQA 的复验循环。
+- 这一步不增加模型能力，只改变证据采集和结果阅读的容器。Chrome 官方将 Side Panel 定位为“与网页主内容并行、持续伴随浏览过程”的体验，适合 VisionQA 的复验循环（[Side Panel API](https://developer.chrome.com/docs/extensions/reference/api/sidePanel)）。
 
 自问：**用户能否在页面旁持续看到“当前页面—结果—下一步”，而不必反复打开一次性工具？**
 
