@@ -2,6 +2,45 @@ const resultNode = document.querySelector("#result");
 const reviewButton = document.querySelector("#review");
 const goalNode = document.querySelector("#goal");
 
+const decisionLabels = {
+  PASS: "可以继续",
+  NEEDS_REVISION: "建议处理一下",
+  MANUAL_REVIEW: "需要你确认",
+  BLOCKED: "暂时不能判断",
+  NEEDS_CONTEXT: "还缺少一些信息",
+  NOT_ASSESSABLE: "暂时不能评估",
+};
+
+const categoryLabels = {
+  hierarchy: "层级不够清楚",
+  readability: "阅读不够顺畅",
+  alignment: "对齐关系需要调整",
+  contrast: "对比度需要确认",
+  spacing: "间距关系需要调整",
+  interaction: "交互提示不够明显",
+  responsive: "不同屏幕下需要确认",
+  provider: "当前还缺少可判断的证据",
+};
+
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
+}
+
+function renderResult(payload) {
+  const contract = payload?.contract;
+  if (!contract) {
+    resultNode.className = "result is-error";
+    resultNode.innerHTML = `<strong>没有形成判断</strong><p>当前页面的评审结果不完整，请重新检查。</p>`;
+    return;
+  }
+  const issues = Array.isArray(contract.issues) ? contract.issues.slice(0, 3) : [];
+  const revision = payload.host_capture?.page_revision_id || contract.revision_id || "当前页面";
+  const issueHtml = issues.map((issue) => `<div class="issue"><strong>${escapeHtml(categoryLabels[issue.category] || "有一处视觉问题需要看一下")}</strong><p>${escapeHtml(issue.suggested_fix || "先确认这处问题，再决定下一步。")}</p>${issue.evidence?.[0] ? `<small>证据 · ${escapeHtml(issue.evidence[0].description)}</small>` : ""}</div>`).join("");
+  const previewOnly = payload.provider?.warnings?.some((warning) => String(warning).includes("FIXTURE"));
+  resultNode.className = `result${previewOnly ? " is-preview" : ""}`;
+  resultNode.innerHTML = `<h2>${escapeHtml(decisionLabels[contract.decision] || "检查完成")}</h2><p>${escapeHtml(contract.summary)}</p><div class="meta">已读取当前页面截图、DOM 摘要 · ${escapeHtml(revision)}</div>${issueHtml || `<p>当前没有单独列出的视觉问题。</p>`}<div class="next"><strong>下一步</strong><br />${escapeHtml(contract.repair_plan?.operations?.[0]?.action || "请结合当前页面确认结果；插件不会自动修改页面。")}<br />${previewOnly ? "当前为离线预览，不是模型视觉结论。" : ""}</div>`;
+}
+
 async function collectDomContext() {
   const clean = (value, max) => String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
   const root = document.body;
@@ -135,7 +174,8 @@ async function compressScreenshot(dataUrl) {
 async function reviewCurrentTab() {
   reviewButton.disabled = true;
   resultNode.hidden = false;
-  resultNode.textContent = "正在读取当前标签页…";
+    resultNode.className = "result";
+    resultNode.textContent = "正在读取当前页面…";
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id || !tab.windowId) throw new Error("没有找到当前标签页。");
@@ -158,19 +198,34 @@ async function reviewCurrentTab() {
       images: [{ role: "candidate", name: `current-visible-tab.${screenshotMime === "image/jpeg" ? "jpg" : "png"}`, mime_type: screenshotMime, data_url: screenshot }],
       permissions: { can_call_model: true, can_read_source: false, can_write_source: false },
     };
-    const response = await fetch("http://localhost:6300/api/visual-review/host", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-request-id": capture.capture_id },
-      body: JSON.stringify({ provider: "mock", capture }),
-    });
+    let response;
+    let lastError;
+    for (const base of ["http://localhost:6300", "http://localhost:6301"]) {
+      try {
+        const candidateResponse = await fetch(`${base}/api/visual-review/host`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-request-id": capture.capture_id },
+          body: JSON.stringify({ provider: "mock", capture }),
+        });
+        if (candidateResponse.ok || candidateResponse.status >= 400 && candidateResponse.status !== 404) {
+          response = candidateResponse;
+          break;
+        }
+        lastError = new Error(`本地服务 ${base} 没有提供评审接口。`);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (!response) throw lastError || new Error("本地服务没有响应，请确认 VisionQA 已启动。");
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error?.message || "本次宿主评审没有完成。");
-    resultNode.textContent = JSON.stringify({ decision: payload.contract?.decision, summary: payload.contract?.summary, issues: payload.contract?.issues?.length || 0, provider: payload.provider?.providerId, model: payload.provider?.modelSnapshot }, null, 2);
+    renderResult(payload);
   } catch (error) {
     const message = error instanceof Error ? error.message : "本次宿主评审没有完成。";
-    resultNode.textContent = message.includes("Cannot access a chrome:// URL")
+    resultNode.className = "result is-error";
+    resultNode.innerHTML = `<strong>这次没有完成</strong><p>${escapeHtml(message.includes("Cannot access a chrome:// URL")
       ? "当前页面是浏览器内部页面，Chrome 不允许扩展读取它。请切换到普通网页后再评审。"
-      : message;
+      : message)}</p>`;
   } finally {
     reviewButton.disabled = false;
   }

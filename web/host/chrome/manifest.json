@@ -3,8 +3,10 @@
   "name": "VisionQA Host Adapter",
   "version": "0.2.0",
   "description": "将当前 Chrome 标签页的截图、DOM 几何、有限 computed style、页面 revision 和宿主对话上下文交给本地 VisionQA 视觉评审插件。",
-  "permissions": ["activeTab", "scripting", "tabs"],
-  "host_permissions": ["http://localhost:6300/*", "http://127.0.0.1:6300/*"],
+  "permissions": ["activeTab", "scripting", "tabs", "sidePanel"],
+  "host_permissions": ["http://localhost:6300/*", "http://localhost:6301/*", "http://127.0.0.1:6300/*", "http://127.0.0.1:6301/*"],
+  "background": { "service_worker": "service-worker.js" },
+  "side_panel": { "default_path": "popup.html" },
   "action": {
     "default_title": "用 VisionQA 评审当前页面",
     "default_popup": "popup.html"
