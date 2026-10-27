@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  legacyVisualReviewToV02Response,
   hostEvidenceSchemaVersion,
   hostEvidenceToVisualReviewV02Request,
   parseHostEvidenceCapture,
@@ -70,4 +71,29 @@ test("M3 converter produces v0.2 evidence anchors and keeps source writes off", 
 
 test("M3 host evidence cannot elevate source-write permission", () => {
   assert.throws(() => parseHostEvidenceCapture({ ...capture(), permissions: { can_call_model: false, can_read_source: true, can_write_source: true } }), /write|permissions/i);
+});
+
+test("legacy provider results are lifted to v0.2 without losing revision or DOM anchors", () => {
+  const request = hostEvidenceToVisualReviewV02Request(capture());
+  const result = legacyVisualReviewToV02Response(request, {
+    schema_version: "visual-review-v0.1",
+    request_id: request.request_id,
+    decision: "NEEDS_REVISION",
+    summary: "标题层级需要人工复核。",
+    issues: [{
+      id: "heading-1",
+      category: "hierarchy",
+      severity: "high",
+      confidence: 0.82,
+      evidence: [{ source: "structure", description: "主标题与正文层级过近。" }],
+      suggested_fix: "拉开标题与正文的字号和间距。",
+    }],
+    repair_plan: { type: "manual_plan", requires_approval: true, operations: [] },
+    verification: { required: true, checks: ["确认同一 revision"] },
+    usage: { mode: "byok", provider: "deepseek", model: "deepseek-flash", input_images: 1 },
+  });
+  assert.equal(result.schema_version, "visual-review-v0.2");
+  assert.equal(result.revision_id, "rev-123");
+  assert.equal(result.issues[0]?.evidence_anchors[0]?.selector, "main h1");
+  assert.equal(result.observations.observations[0]?.evidence[0]?.kind, "dom_selector");
 });

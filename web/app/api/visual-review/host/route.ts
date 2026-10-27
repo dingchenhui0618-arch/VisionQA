@@ -8,6 +8,7 @@ import {
 } from "../../../../lib/visionqa/host-adapter-contract.ts";
 import {
   hostEvidenceSchemaVersion,
+  legacyVisualReviewToV02Response,
   hostEvidenceToLegacyVisualReviewRequest,
   hostEvidenceToVisualReviewV02Request,
   hostEvidencePromptContext,
@@ -100,7 +101,10 @@ export async function POST(request: Request) {
             contextSummary: hostEvidencePromptContext(capture),
             env: process.env,
             signal: request.signal,
-          });
+          }).then((legacyResult) => ({
+            ...legacyResult,
+            contract: legacyVisualReviewToV02Response(v02Request, legacyResult.contract),
+          }));
       const responsePayload = {
         ...result,
         host_capture: {

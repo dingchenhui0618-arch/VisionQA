@@ -163,6 +163,8 @@ export const visualReviewV02RequestSchema = z.object({
 export const visualReviewV02ResponseSchema = z.object({
   schema_version: z.literal(visualReviewV02SchemaVersion),
   request_id: z.string().trim().min(1).max(160),
+  /** The host revision that produced this result, when the adapter supplied one. */
+  revision_id: z.string().trim().max(160).optional(),
   decision: decisionSchema,
   summary: z.string().trim().min(1).max(2000),
   observations: observationEnvelopeSchema,

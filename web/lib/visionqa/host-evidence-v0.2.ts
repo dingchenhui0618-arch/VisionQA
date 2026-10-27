@@ -7,7 +7,12 @@ import {
 import {
   parseVisualReviewRequest,
   type VisualReviewRequest,
+  type VisualReviewResponse,
 } from "./visual-review-contract.ts";
+import {
+  parseVisualReviewV02Response,
+  type VisualReviewV02Response,
+} from "./review-contract-v0.2.ts";
 import { hostCaptureSchema } from "./host-adapter-contract.ts";
 
 /**
@@ -205,4 +210,82 @@ export function hostEvidencePromptContext(capture: HostEvidenceCapture): string 
     `DOM evidence：\n${domEvidence || "未提供"}`,
     `对话上下文：\n${conversation || "未提供"}`,
   ].join("\n");
+}
+
+/**
+ * Keep the host adapter on the v0.2 wire contract even while the existing
+ * multimodal provider still returns the stable v0.1 response.  This is an
+ * additive boundary: provider details remain unchanged, while the host's
+ * revision and evidence anchors survive the conversion instead of being
+ * dropped by a legacy response.
+ */
+export function legacyVisualReviewToV02Response(
+  request: VisualReviewV02Request,
+  legacy: VisualReviewResponse,
+): VisualReviewV02Response {
+  const fallbackAnchor: EvidenceAnchor = request.artifact.evidence_anchors[0] ?? {
+    id: "host-context",
+    kind: "text_range",
+    text: "当前宿主页面视觉证据",
+    description: "当前宿主截图与有限 DOM 摘要已随本次 revision 送入评审。",
+  };
+  const textAnchor = (id: string, description: string): EvidenceAnchor => ({
+    id: `${id}-text`,
+    kind: "text_range",
+    text: description.slice(0, 2000),
+    description: description.slice(0, 1000),
+  });
+  const observations = legacy.issues.length
+    ? legacy.issues.map((issue) => ({
+        id: `legacy-${issue.id}`,
+        dimension: issue.category,
+        statement: issue.evidence[0]?.description || issue.suggested_fix,
+        status: (legacy.decision === "MANUAL_REVIEW" || issue.severity === "observation" ? "possible" : "confirmed") as "possible" | "confirmed",
+        severity: issue.severity,
+        confidence: issue.confidence,
+        evidence: [
+          ...(request.artifact.evidence_anchors.slice(0, 2)),
+          ...(issue.evidence.length ? issue.evidence.map((item, index) => textAnchor(`${issue.id}-${index}`, item.description)) : [fallbackAnchor]),
+        ].slice(0, 16),
+        recommendation: issue.suggested_fix,
+        profile: request.profile,
+      }))
+    : [{
+        id: "legacy-host-context",
+        dimension: "provider_evidence",
+        statement: legacy.summary,
+        status: "possible" as const,
+        severity: "observation" as const,
+        confidence: 1,
+        evidence: [fallbackAnchor],
+        recommendation: "人工确认当前 revision 后，再决定是否接受或继续修改。",
+        profile: request.profile,
+      }];
+
+  return parseVisualReviewV02Response({
+    schema_version: "visual-review-v0.2",
+    request_id: legacy.request_id,
+    revision_id: request.revision_id,
+    decision: legacy.decision,
+    summary: legacy.summary,
+    observations: {
+      schema_version: "observation-envelope-v0.1",
+      review_mode: request.review_mode,
+      profile: request.profile,
+      observations,
+    },
+    issues: legacy.issues.map((issue) => ({
+      ...issue,
+      evidence_anchors: request.artifact.evidence_anchors.slice(0, 4),
+    })),
+    repair_plan: legacy.repair_plan,
+    verification: legacy.verification,
+    usage: {
+      ...legacy.usage,
+      mode: legacy.usage.mode,
+      provider: legacy.usage.provider,
+      model: legacy.usage.model,
+      latency_ms: undefined,
+    },
+  });
 }

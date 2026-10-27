@@ -14,6 +14,15 @@
   --plugin-focus: rgba(244, 244, 240, .76);
 }
 
+/* The shared app shell keeps a 320px minimum for full web pages.  The
+   compact extension surface must be allowed to use the actual viewport
+   (including the width lost to a vertical scrollbar) at 320px and below. */
+html:has(.plugin-host),
+body:has(.plugin-host) {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
 .plugin-host {
   min-height: 100dvh;
   display: grid;
@@ -140,6 +149,7 @@
 
 .plugin-connection {
   margin-left: auto;
+  min-width: 0;
   min-height: 28px;
   display: inline-flex;
   align-items: center;
@@ -147,10 +157,13 @@
   border: 1px solid var(--plugin-line);
   border-radius: 7px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   -webkit-app-region: no-drag;
 }
 
 .plugin-titlebar__actions {
+  min-width: 0;
   margin-left: auto;
   display: inline-flex;
   align-items: center;
@@ -194,6 +207,7 @@
 
 .plugin-tabs button {
   min-height: 40px;
+  min-width: 0;
   flex: 1;
   border: 0;
   border-radius: 6px;
@@ -222,6 +236,7 @@
 }
 
 .plugin-statusline {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -236,7 +251,7 @@
 }
 
 .plugin-session-value {
-  max-width: 235px;
+  max-width: min(235px, 100%);
   overflow: hidden;
   color: var(--plugin-ink-soft);
   font-size: 11px;
@@ -565,7 +580,7 @@
   .plugin-disclaimer { display: none; }
   .plugin-composer__bar { align-items: stretch; }
   .plugin-edit-button { width: 44px; min-width: 44px; }
-  .plugin-file { flex: 0 1 auto; min-width: 0; max-width: calc(100% - 61px); }
+  .plugin-file { flex: 1 1 auto; width: auto; min-width: 0; max-width: none; }
   .plugin-edit-button,
   .plugin-tabs button,
   .plugin-file,
@@ -581,6 +596,22 @@
   .plugin-send b { opacity: 1; transform: none; }
   .plugin-result__headline small { max-width: 100px; }
   .plugin-context textarea { min-height: 78px; }
+}
+
+@media (max-width: 380px) {
+  .plugin-statusline {
+    align-items: start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .plugin-evidence-state {
+    justify-self: start;
+  }
+
+  .plugin-session-value {
+    max-width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -169,6 +169,7 @@ function visualFixtureResult(
   return parseVisualReviewV02Response({
     schema_version: "visual-review-v0.2",
     request_id: request.request_id,
+    revision_id: request.revision_id,
     decision: artifactEvidence ? "NOT_ASSESSABLE" : "NEEDS_CONTEXT",
     summary: artifactEvidence
       ? "Mock 已接收视觉评审上下文，但没有调用真实模型，因此不会伪造视觉、审美或交互结论。"
