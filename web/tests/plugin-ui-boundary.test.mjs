@@ -40,4 +40,7 @@ test("result issues preserve the reason and business recovery language", () => {
   assert.match(source, /真实评审会把当前图片/);
   assert.match(source, /正在连接本机服务/);
   assert.match(source, /选择参考图|selectReferences/);
+  assert.match(source, /我已确认这次结果/);
+  assert.match(source, /放大查看本次检查的图片/);
+  assert.match(source, /页面版本/);
 });
